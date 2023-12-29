@@ -6,7 +6,7 @@ authors = ["Clement Jambou"]
 
 [tool.poetry.dependencies]
 python = "^3.8"  
-numpy = "^1.21.2" 
+numpy = "^1.23.4"
 
 
 [tool.poetry.dev-dependencies]
