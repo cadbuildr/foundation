@@ -5,7 +5,9 @@ description = "Python core package for builder"
 authors = ["Clement Jambou"]
 
 [tool.poetry.dependencies]
-python = "^3.8"  # Specify your Python version compatibility
+python = "^3.8"  
+numpy = "^1.23.4"
+
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"  # Example, add your dev dependencies here
