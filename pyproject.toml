@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "foundation"
+version = "0.0.0.3"
+description = "Python core package for builder"
+authors = ["Clement Jambou"]
+
+[tool.poetry.dependencies]
+python = "^3.8"  # Specify your Python version compatibility
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"  # Example, add your dev dependencies here
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
