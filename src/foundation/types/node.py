@@ -1,0 +1,181 @@
+import inspect
+from typing import List
+from itertools import count
+
+
+class RegisteredObject(object):
+    def __new__(cls, *args, **kwargs):
+        new_instance = super(RegisteredObject, cls).__new__(cls)  # , *args, **kwargs)
+        stack_trace = inspect.stack()
+        file_line = (stack_trace[1][1], stack_trace[1][2])
+        new_instance.file_line = file_line
+
+        return new_instance
+
+    def __init__(self):
+        self.var_name = None
+
+    def get_file_and_line_of_object_creation(self):
+        return self.file_line
+
+    def set_var_name(self, key):
+        self.var_name = key
+
+
+class Node(object):  # RegisteredObject):
+    """
+    Nodes of the Tree ( Component)
+    the Node class can be many objects such as
+    - assembly/subassembly
+    -  a Component ( for instance an assembly is a tree of multiple Node, some of which can be Compments)
+    -  an Operation
+    - a Frame
+    - a Parameter (leaf of the tree)
+    - a Point
+    - a Constraint ( joint, or sketch constraint)
+
+    # TODO list all types of Node.
+
+    a List of parents to the Node are provided, if it is empty, it means the Node is the OriginFrame.
+    """
+
+    parent_types = (
+        []
+    )  # can be reimplemented in child classes to enforce a parent type to the Node
+    _ids = count(0)
+
+    def __init__(self, parents=[]):
+        """At Init we register the new node to all provided parents"""
+        # RegisteredObject.__init__(self)
+        self.params = None
+        self.extra_params = {}
+        self.parents = parents
+        # print(self.parents)
+        self.children = []  # TODO should probably be a dict
+        # node id used to identify component  (maybe should be a UUID to keep state
+        self.id = next(self._ids)
+        # accross multiple compilations ... )
+
+        self.metadata = {}
+
+        if self.parents is not None:
+            for p in self.parents:
+                p.register_child(self)
+
+    def set_metadata(self, filename: str, line: int):
+        self.metadata = {filename: filename, line: line}
+
+    def check_parent_type(self):
+        """If the Node has a parent, we check that the parent is of the correct type,
+        If not it can only be OriginFrame ( the only root node )"""
+        if len(self.parents) != 0:
+            for pt, parent in zip(self.parent_types, self.parents):
+                assert pt == type(parent).__name__
+        else:
+            assert type(self).__name__ == "OriginFrame"
+
+    def register_child(self, child: "Node"):
+        """Adds a child to the list"""
+        if child not in self.children:
+            # print("Registering child", child, " to ", self)
+            self.children.append(child)
+
+    def rec_list_nodes(self, type_filter: List[str], include_only_interface=True):
+        """Recursibely go through all the children and return a list of all the nodes of the provided types"""
+        res = []
+        collect_all = len(type_filter) == 0
+        # check if we collect all nodes, or if the types match
+        if collect_all or len(
+            list(
+                set(self.get_types(include_only_interface=include_only_interface))
+                & set(type_filter)
+            )
+        ):
+            res.append(self)
+        for c in self.children:
+            res += c.rec_list_nodes(type_filter)
+        return res
+
+    def to_dict(self, serializable_nodes):
+        """Serialize a Directed Acyclic Graph (DAG) into a dict with
+        (id_of_node:
+            {'type': type_of_node, 'deps': [list_of_ids_of_children]}  #TODO convert list of ids of children
+            to a dict that contains the parameter name of the children
+        recursive function.
+        """
+        # print("GOING in : ", type(self), " my id is ", self.id)
+
+        if type(self).__name__ not in serializable_nodes.keys():
+            print(serializable_nodes.keys())
+            raise TypeError(f"Node type {type(self).__name__} is not serializable")
+        node_dict = {
+            "type": serializable_nodes[type(self).__name__],
+            # 'params':  TODO add the parameters of the node, if any
+            "deps": [],
+        }
+
+        if self.params is not None:
+            # TODO instead of using self.params,
+            # we should generate self.params from the children
+            # for this we need to have named children ( switch to dict instead of list)
+
+            node_dict["params"] = self.params
+        res = {}
+        res[self.id] = node_dict
+
+        # print("My children are ", self.children)
+        for n in self.children:
+            res.update(n.to_dict(serializable_nodes))
+            node_dict["deps"].append(n.id)
+        return res
+
+    def get_children(self, type_filter: List[str]):
+        """return the children of the component, eventually filtered"""
+        res = []
+        collect_all = len(type_filter) == 0
+        # check if we collect all nodes, or if the types match
+        for c in self.children:
+            if collect_all or len(list(set(c.get_types()) & set(type_filter))):
+                res.append(c)
+        return res
+
+    @classmethod
+    def get_types(cls, include_only_interface=True):
+        """return the inherited types as a list. Used for the compiler to work and check if one of the parent_types is in these classes
+        If the node inherits from a nodeinterface we return these interfaces as well"""
+        types = []
+        for o in cls.mro():
+            if (not include_only_interface) or (
+                hasattr(o, "is_interface") and o.is_interface
+            ):
+                types.append(o.__name__)
+            else:
+                pass
+        return types
+
+
+class Orphan(Node):
+    """
+    Some nodes are always attached to the same type of parent
+    ( for instance a sketch always has a plane as parent ).
+    But for some nodes there could be many different types of parents that
+    could be valid. For instance a parameter could be reused accross multiple
+    parent nodes.
+     For these nodes we don't explicitely write the type of the
+     parents in the class definition.
+
+     Parents can be added dynamically to the node.
+    """
+
+    def __init__(self):
+        super().__init__(parents=[])
+        # No parents are defined in init
+
+    def attach_to_parent(self, parent: Node):
+        """Attach the node to the parent"""
+        # print(" TRYING TO ATTACH ", self, " to ", parent)
+        # print("is parent already there ? ", parent in self.parents)
+        if parent not in self.parents:
+            # print("adding parent")
+            self.parents.append(parent)
+            parent.register_child(self)

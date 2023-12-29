@@ -1,0 +1,53 @@
+# Compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Byte-compiled Python files
+*.pyc
+
+# Distribution / packaging
+/dist/
+/build/
+*.egg-info/
+*.egg
+*.exe
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tgz
+*.txz
+*.swp
+MANIFEST
+
+# Local development settings
+*.idea/
+.vscode/
+__pycache__/
+
+# Editor-specific files
+*.swp
+*.swo
+*.swn
+*.swm
+
+# Logs and databases
+*.log
+*.sql
+*.sqlite
+
+# Environment and virtual environment files
+.env
+.venv/
+venv/
+*.env.*
+
+# Other generated files
+*.bak
+*.tmp
+
+# OS or IDE specific files
+.DS_Store
+Thumbs.db
