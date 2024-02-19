@@ -63,7 +63,7 @@ def check_dict(d) -> None:
                     print(k, v)
 
 
-def show(component):
+def show(component: Component) -> None:
     """Function that is actually mocked on
     server and browser, but not on the tests"""
     if sys.platform == "emscripten":

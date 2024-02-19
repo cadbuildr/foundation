@@ -5,7 +5,7 @@ from foundation.sketch.base import SketchShape
 from foundation.sketch.closed_sketch_shape import Circle, ClosedSketchShape
 from foundation.geometry.frame import OriginFrame
 
-from foundation.types.types import (
+from foundation.types.parameters import (
     UnCastFloat,
     UnCastInt,
     UnCastBool,

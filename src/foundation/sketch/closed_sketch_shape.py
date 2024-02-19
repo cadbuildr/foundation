@@ -5,7 +5,7 @@ from foundation.sketch.base import SketchShape
 from foundation.sketch.line import Line
 from foundation.sketch.point import Point
 from typing import List
-from foundation.types.types import (
+from foundation.types.parameters import (
     UnCastFloat,
     UnCastInt,
     cast_to_float_parameter,

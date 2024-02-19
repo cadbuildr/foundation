@@ -19,7 +19,7 @@ class FrameInterface(NodeInterface):
         self.top_frame = top_frame
         self.transform = transform
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
     def get_parent_name(self):
@@ -107,11 +107,7 @@ class FrameInterface(NodeInterface):
 
 
 class Frame(FrameInterface, Orphan):
-    """The default Frame needs a parent as a Frame
-    but can also have other parents (-> Orphan)
-    """
-
-    # parent_types could be recursively set ?
+    """Frame class"""
 
     def __init__(
         self,

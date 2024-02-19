@@ -1,6 +1,4 @@
 from foundation.types.node import Node
-from foundation.geometry.plane import PlaneBase
-from foundation.gcs.constraints.constraints2d_factory import ConstraintsFactory
 from foundation.sketch.point import Point
 from foundation.sketch.draw import Draw
 
@@ -22,7 +20,6 @@ class Sketch(Node):
     def __init__(self, plane):
         super().__init__()
         self.register_child(plane)
-        self.cf = ConstraintsFactory(self)  # sektch helper for constraints
         self.plane = plane
         self.frame = self.plane.frame
         # create sketch origin and adds it as a child
@@ -34,7 +31,3 @@ class Sketch(Node):
             "n_origin": self.origin.id,
         }
         self.pencil = Draw(self)
-
-    def add_constraint(self, constraint):
-        # TODO add a constraint to the nodes
-        pass

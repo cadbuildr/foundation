@@ -3,7 +3,7 @@ from foundation.sketch.sketch import Sketch, Point
 from foundation.sketch.line import Line
 from foundation.types.node import Node
 import numpy as np
-from foundation.types.types import UnCastFloat, cast_to_float_parameter
+from foundation.types.parameters import UnCastFloat, cast_to_float_parameter
 
 
 def get_arc_center_from_3_points_coords(p1x, p1y, p2x, p2y, p3x, p3y):
