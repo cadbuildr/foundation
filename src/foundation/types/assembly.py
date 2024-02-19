@@ -1,29 +1,11 @@
-from foundation.types.node import Node
 from foundation.types.component import Component
-from foundation.geometry.frame import OriginFrame
 import numpy as np
 
-from foundation.gcs.constraints.joints_factory import JointFactory
 from foundation.geometry.transform3d import TransformMatrix
-from foundation.types.types import (
-    UnCastString,
-    cast_to_string_parameter,
-)
 from itertools import count
 from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
-
-
-class AssemblyHead(Node):
-    def __init__(self, name: UnCastString = None):
-        super().__init__()
-        self.origin_frame = OriginFrame()
-        self.register_child(self.origin_frame)
-        if name is None:
-            name = "assembly_" + str(self.id)
-        self.name = cast_to_string_parameter(name)
-        self.name.attach_to_parent(self)
-        self.params = {"n_name": self.name.id}
+from foundation.types.roots import AssemblyRoot
 
 
 class Assembly(CompOrAssy):
@@ -39,8 +21,7 @@ class Assembly(CompOrAssy):
         self.components = []  # list of components/subassemblies
         # list of transform from origin frame to component origin frame.
         self.tf_list = []
-        self.head = AssemblyHead()
-        # self.joint_factory = JointFactory(self.joints_cluster_manager)
+        self.head = AssemblyRoot()
         self.id = "assy" + str(next(self._ids))
 
     def add_component(self, component: Component, tf: TransformMatrix = None):

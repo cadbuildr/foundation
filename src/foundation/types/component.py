@@ -1,31 +1,10 @@
 from typing import List
 from itertools import count
-from foundation.types.node import Node
-from foundation.geometry.frame import OriginFrame
 from foundation.geometry.plane import PlaneFromFrame
 from foundation.sketch.sketch import Sketch
-from foundation.types.types import (
-    UnCastString,
-    cast_to_string_parameter,
-)
 from foundation.types.comp_or_assy import CompOrAssy
-
-
-class ComponentHead(Node):
-    def __init__(
-        self,
-        name: UnCastString = None,
-    ):
-        super().__init__()
-        self.origin_frame = OriginFrame()
-        self.register_child(self.origin_frame)
-        if name is None:
-            name = "component_" + str(self.id)
-        self.name = cast_to_string_parameter(name)
-        self.name.attach_to_parent(self)
-        self.params = {
-            "n_name": self.name.id,
-        }
+from foundation.geometry.frame import OriginFrame
+from foundation.types.roots import ComponentRoot
 
 
 class Component(CompOrAssy):
@@ -38,10 +17,10 @@ class Component(CompOrAssy):
 
     def __init__(self):
         super().__init__()
-        self.head = ComponentHead()
+        self.head = ComponentRoot()
         self.id = "part" + str(next(self._ids))
 
-    def get_origin_frame(self):
+    def get_origin_frame(self) -> OriginFrame:
         origin = self.head.origin_frame
         # Check the type of the head TODO move this to the tests
         assert isinstance(origin, OriginFrame)

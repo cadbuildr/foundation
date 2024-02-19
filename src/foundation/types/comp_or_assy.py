@@ -1,15 +1,21 @@
 from foundation.rendering.material import Material
 from foundation.geometry.tf_helper import TFHelper
+from foundation.types.node_interface import NodeInterface
+from foundation.types.roots import ComponentRoot, AssemblyRoot
 import numpy as np
+from foundation.geometry.plane import PlaneFactory
 
 
-class CompOrAssy:
+class CompOrAssy(NodeInterface):
     """Abstract parent class of Component and Assembly"""
 
     def __init__(self):
+        super().__init__()
         self.construction_elements = {}
         self.material = None
         self.tfh = TFHelper()
+        self.head: None | ComponentRoot | AssemblyRoot = None
+        self.pf = PlaneFactory()
 
     def set_origin_planes(self, planes):
         """Set the origin planes of the component"""

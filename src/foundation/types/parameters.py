@@ -17,17 +17,17 @@ class Parameter(NodeInterface):
 
 
 class FloatParameter(Parameter, Orphan):
-    # parent_types = [Node] How to deal with a node with many different types of parents
+    """Store a float value as a parameter"""
+
     def __init__(self, value):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
         self.params = {"value": value}
 
-        # print("FloatParameter created", type(self), " with parents ", self.parents)
-
 
 class IntParameter(Parameter, Orphan):
-    # parent_types = [Node] How to deal with a node with many different types of parents
+    """Store an int value as a parameter"""
+
     def __init__(self, value):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
@@ -35,7 +35,8 @@ class IntParameter(Parameter, Orphan):
 
 
 class BoolParameter(Parameter, Orphan):
-    # parent_types = [Node] How to deal with a node with many different types of parents
+    """Store a boolean value as a parameter"""
+
     def __init__(self, value):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
@@ -43,7 +44,8 @@ class BoolParameter(Parameter, Orphan):
 
 
 class StringParameter(Parameter, Orphan):
-    # parent_types = [Node] How to deal with a node with many different types of parents
+    """Store a string value as a parameter"""
+
     def __init__(self, value):
         Parameter.__init__(self, value)
         Orphan.__init__(self)

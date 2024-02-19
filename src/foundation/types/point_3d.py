@@ -1,5 +1,5 @@
-from foundation.types.node import Node, Orphan
-from foundation.types.types import (
+from foundation.types.node import Orphan
+from foundation.types.parameters import (
     UnCastFloat,
     cast_to_float_parameter,
 )
@@ -7,6 +7,8 @@ from foundation.geometry.transform3d import TransformMatrix
 
 
 class Point3D(Orphan):
+    """A 3D point in space. Can be attached to many types of Parents -> Orphan"""
+
     def __init__(self, x: UnCastFloat, y: UnCastFloat, z: UnCastFloat):
         self.x = cast_to_float_parameter(x)
         self.y = cast_to_float_parameter(y)
@@ -20,10 +22,11 @@ class Point3D(Orphan):
             "n_y": self.y.id,
             "n_z": self.z.id,
         }
-        # print("Point created", type(self), " with parents ", self.parents)
 
 
 class Point3DWithOrientation(Orphan):
+    """A 3D points with orientation ( roll, pitch, yaw)"""
+
     def __init__(
         self, p: Point3D, roll: UnCastFloat, pitch: UnCastFloat, yaw: UnCastFloat
     ):

@@ -5,11 +5,11 @@ description = "Python core package for builder"
 authors = ["Clement Jambou"]
 
 [tool.poetry.dependencies]
-python = "^3.8"  
+python = "^3.8"
 numpy = "^1.23.4"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5" 
+pytest = "^6.2.5"
 pytransform3d = "==1.13.0"
 
 [build-system]
