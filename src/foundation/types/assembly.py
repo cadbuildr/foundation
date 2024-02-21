@@ -45,6 +45,7 @@ class Assembly(CompOrAssy):
             component.head.origin_frame.to_default_frame(
                 self.head.origin_frame, component.id, tf
             )
+
         assert component.head.origin_frame.name != "origin"
         self.head.register_child(component.head)
         # component.head.parents.append(self.head)

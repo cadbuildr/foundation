@@ -22,6 +22,8 @@ class Frame(Orphan):
         Orphan.__init__(self)
         assert type(transform) == TransformMatrix
         self.top_frame = top_frame
+        if self.top_frame is not None:
+            self.top_frame.parents.append(self)
         self.transform = transform
         self.point_with_orientation = Point3DWithOrientation.from_transform(
             self.transform
@@ -147,12 +149,24 @@ class OriginFrame(Frame):
     def to_default_frame(self, top_frame, component_id, tf):
         """When adding a part to an assembly its originframe will be converted to a
         default frame"""
-
+        top_frame.parents.append(self)
         self.top_frame = top_frame
         self.name = self.name + f"_{component_id}"
+
+        # print("New name", self.name, "has top frame", self.top_frame.name)
+        # print(
+        #     "Calling recompute params on children",
+        #     [t.name for t in self.children if type(t) in [Frame, OriginFrame]],
+        # )
+        # print(
+        #     "Calling recompute params on parents",
+        #     [t.name for t in self.parents if type(t) in [Frame, OriginFrame]],
+        # )
+
         self.transform = tf
         self.compute_params()
 
-        for child in self.children:
-            if type(child) in [Frame, OriginFrame]:
-                child.compute_params()
+        # There is a bug here it should be the parents not the children
+        for p in self.parents:
+            if type(p) in [Frame, OriginFrame]:
+                p.compute_params()
