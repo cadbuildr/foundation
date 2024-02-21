@@ -5,6 +5,9 @@ from foundation.sketch.sketch import Sketch
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.geometry.frame import OriginFrame
 from foundation.types.roots import ComponentRoot
+from foundation.operations import OperationTypes
+
+from typing import List
 
 
 class Component(CompOrAssy):
@@ -16,15 +19,9 @@ class Component(CompOrAssy):
     _ids = count(0)
 
     def __init__(self):
-        super().__init__()
-        self.head = ComponentRoot()
-        self.id = "part" + str(next(self._ids))
-
-    def get_origin_frame(self) -> OriginFrame:
-        origin = self.head.origin_frame
-        # Check the type of the head TODO move this to the tests
-        assert isinstance(origin, OriginFrame)
-        return origin
+        name = "part" + str(next(self._ids))
+        super().__init__(root=ComponentRoot(name))
+        self.id = name
 
     def get_sketch_from_plane(self, plane_node):
         # TODO move this ?
@@ -33,10 +30,14 @@ class Component(CompOrAssy):
                 return c
         return None
 
-    def add_operation(self, op):
+    def add_operation(self, op: OperationTypes):
+        """Add an operation to the component
+        @param op: Instance of one of the OperationTypes
+        """
         self.head.register_child(op)
 
-    def add_operations(self, ops):
+    def add_operations(self, ops: List[OperationTypes]):
+        """Add a list of operations to the component"""
         for op in ops:
             self.add_operation(op)
 
@@ -57,13 +58,13 @@ class Component(CompOrAssy):
     def get_sketches(self):
         return list(set(self.head.rec_list_nodes(type_filter=["Sketch"])))
 
-    def get_frames(self):
-        frames = []
-        if isinstance(self.head, OriginFrame):
-            frames.append(self.head)
-        frames += self.head.rec_list_nodes(type_filter=["Frame"])
-        return frames
-
     def attach_operations(self):
         for o in self.get_operations():
             o.set_component_name(self.id)
+
+    @classmethod
+    def reset_ids(cls):
+        """
+        Resets the _ids counter to 0.
+        """
+        cls._ids = count(0)

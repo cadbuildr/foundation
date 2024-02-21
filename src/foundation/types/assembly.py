@@ -6,6 +6,7 @@ from itertools import count
 from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.types.roots import AssemblyRoot
+from typing import List
 
 
 class Assembly(CompOrAssy):
@@ -17,14 +18,22 @@ class Assembly(CompOrAssy):
     _ids = count(0)
 
     def __init__(self):
-        super().__init__()
+        name = "assy" + str(next(self._ids))
+        super().__init__(AssemblyRoot(name))
         self.components = []  # list of components/subassemblies
         # list of transform from origin frame to component origin frame.
-        self.tf_list = []
-        self.head = AssemblyRoot()
-        self.id = "assy" + str(next(self._ids))
+        self.tf_list: List[TransformMatrix] = []
+        self.id = name
 
-    def add_component(self, component: Component, tf: TransformMatrix = None):
+    # TODO rename to add_part or add_assy (both are possible)
+    def add_component(
+        self, component: Component, tf: TransformMatrix | None | np.ndarray = None
+    ):
+        """Add a component to the assembly
+        We first figure out the transform from the assembly root to the component root
+        We convert the OriginFrame of the component to be a default Frame and then register the
+        component root as a child of the assembly root.
+        """
         if tf is None:
             tf = component.get_tf()
         if type(tf) == np.ndarray:
@@ -38,6 +47,7 @@ class Assembly(CompOrAssy):
             )
         assert component.head.origin_frame.name != "origin"
         self.head.register_child(component.head)
+        # component.head.parents.append(self.head)
         self.components.append(component)
         self.tf_list.append(tf)
 
@@ -80,3 +90,10 @@ class Assembly(CompOrAssy):
         """Attach operations to the assembly"""
         for c in self.components:
             c.attach_operations()
+
+    @classmethod
+    def reset_ids(cls):
+        """
+        Resets the _ids counter to 0.
+        """
+        cls._ids = count(0)

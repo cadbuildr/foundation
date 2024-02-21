@@ -24,3 +24,10 @@ from foundation.operations.grid import GridXY
 from foundation.sketch.pattern import *
 from foundation.types.parameterUI import ParameterUI
 from foundation.sketch.sketch import Sketch
+from foundation.types.node import Node
+
+
+def reset_ids():
+    Node.reset_ids()
+    Component.reset_ids()
+    Assembly.reset_ids()

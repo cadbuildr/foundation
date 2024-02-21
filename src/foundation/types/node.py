@@ -70,6 +70,7 @@ class Node(object):
         return res
 
     def to_dict(self, serializable_nodes):
+        # TODO remove serializable_nodes as a param as it can just be imported
         """Serialize a Directed Acyclic Graph (DAG) into a dict with
         (id_of_node:
             {'type': type_of_node, 'deps': [list_of_ids_of_children]}  #TODO convert list of ids of children
@@ -125,6 +126,13 @@ class Node(object):
             else:
                 pass
         return types
+
+    @classmethod
+    def reset_ids(cls):
+        """
+        Resets the _ids counter to 0.
+        """
+        cls._ids = count(0)
 
 
 class Orphan(Node):

@@ -6,15 +6,32 @@ from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
 from typing import Union, List
 
 
-class FrameInterface(NodeInterface):
+class Frame(Orphan):
     """a FrameInterface
     describes a 3D frame (position and orientation) in space.
     The head node of any assembly or comonent is a FrameInterface( see OriginFrame)
 
     """
 
-    def __init__(self, top_frame, name: str, transform: TransformMatrix):
-        super().__init__()
+    def __init__(
+        self,
+        top_frame: "Frame",
+        name: str,
+        transform: TransformMatrix,
+    ):
+        Orphan.__init__(self)
+        assert type(transform) == TransformMatrix
+        self.top_frame = top_frame
+        self.transform = transform
+        self.point_with_orientation = Point3DWithOrientation.from_transform(
+            self.transform
+        )
+        self.name = name
+
+        if top_frame is not None:
+            self.register_child(top_frame)
+            top_frame.compute_params()
+        self.compute_params()
         self.name = name
         self.top_frame = top_frame
         self.transform = transform
@@ -104,31 +121,6 @@ class FrameInterface(NodeInterface):
         """return the rotated frame rotated by given axis and angle"""
         rot_mat = RotationMatrix.from_axis_angle(axis, angle)
         return self.get_rotated_frame(name=name, rot_mat=rot_mat)
-
-
-class Frame(FrameInterface, Orphan):
-    """Frame class"""
-
-    def __init__(
-        self,
-        top_frame: "Frame",
-        name: str,
-        transform: TransformMatrix,
-    ):
-        FrameInterface.__init__(self, top_frame, name, transform)
-        Orphan.__init__(self)
-        assert type(transform) == TransformMatrix
-        self.top_frame = top_frame
-        self.transform = transform
-        self.point_with_orientation = Point3DWithOrientation.from_transform(
-            self.transform
-        )
-        self.name = name
-
-        if top_frame is not None:
-            self.register_child(top_frame)
-            top_frame.compute_params()
-        self.compute_params()
 
     def compute_params(self):
         p, q = self.transform.to_position_quaternion()
