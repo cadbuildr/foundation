@@ -1,10 +1,11 @@
 class NodeInterface:
     """A node interface is a group of node that shares similar "type". For instance a plane can be defined using multiple parents
-    In implementing such a node, we use double ( or more ) inheritance of that node from the Node class ( or inherited) as well as
-    a Nodeinterface ( or inherited). An interface can contain methods that can be shared among the different child class. For instance a
-    rendering function for a plane will be shared among all the plane nodes."""
+    In implementing such a node, we use multiple inheritance of that node from the Node class ( or inherited) as well as
+    a Nodeinterface ( or inherited). An interface can contain methods that can be shared among the different children classes.
+    For instance a rendering function for a plane will be shared among all the plane nodes.
+    """
 
-    is_interface = True
+    is_interface: bool = True
 
     def __init__(self):
         pass

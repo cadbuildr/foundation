@@ -1,15 +1,23 @@
 from foundation.rendering.material import Material
 from foundation.geometry.tf_helper import TFHelper
+from foundation.types.node_interface import NodeInterface
+from foundation.types.roots import ComponentRoot, AssemblyRoot
 import numpy as np
+from foundation.geometry.plane import PlaneFactory
 
 
-class CompOrAssy:
+class CompOrAssy(NodeInterface):
     """Abstract parent class of Component and Assembly"""
 
-    def __init__(self):
+    def __init__(self, root: ComponentRoot | AssemblyRoot):
+        super().__init__()
         self.construction_elements = {}
         self.material = None
-        self.tfh = TFHelper()
+        self.tfh = (
+            TFHelper()
+        )  # Components or Assemblies have a tf helper to manage their transform
+        self.head = root  # TODO change head to root
+        self.pf = PlaneFactory()
 
     def set_origin_planes(self, planes):
         """Set the origin planes of the component"""
@@ -25,7 +33,7 @@ class CompOrAssy:
         material.attach_to_node(self.id)
         # TODO  Could make this redundent by using the parent from the material
 
-    def paint(self, color="green"):
+    def paint(self, color: str = "green"):
         """Paint the component"""
         self.material = Material()
         self.material.set_diffuse_color(color)

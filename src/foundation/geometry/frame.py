@@ -6,20 +6,39 @@ from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
 from typing import Union, List
 
 
-class FrameInterface(NodeInterface):
+class Frame(Orphan):
     """a FrameInterface
     describes a 3D frame (position and orientation) in space.
     The head node of any assembly or comonent is a FrameInterface( see OriginFrame)
 
     """
 
-    def __init__(self, top_frame, name: str, transform: TransformMatrix):
-        super().__init__()
+    def __init__(
+        self,
+        top_frame: "Frame",
+        name: str,
+        transform: TransformMatrix,
+    ):
+        Orphan.__init__(self)
+        assert type(transform) == TransformMatrix
+        self.top_frame = top_frame
+        if self.top_frame is not None:
+            self.top_frame.parents.append(self)
+        self.transform = transform
+        self.point_with_orientation = Point3DWithOrientation.from_transform(
+            self.transform
+        )
+        self.name = name
+
+        if top_frame is not None:
+            self.register_child(top_frame)
+            top_frame.compute_params()
+        self.compute_params()
         self.name = name
         self.top_frame = top_frame
         self.transform = transform
 
-    def get_name(self):
+    def get_name(self) -> str:
         return self.name
 
     def get_parent_name(self):
@@ -105,35 +124,6 @@ class FrameInterface(NodeInterface):
         rot_mat = RotationMatrix.from_axis_angle(axis, angle)
         return self.get_rotated_frame(name=name, rot_mat=rot_mat)
 
-
-class Frame(FrameInterface, Orphan):
-    """The default Frame needs a parent as a Frame
-    but can also have other parents (-> Orphan)
-    """
-
-    # parent_types could be recursively set ?
-
-    def __init__(
-        self,
-        top_frame: "Frame",
-        name: str,
-        transform: TransformMatrix,
-    ):
-        FrameInterface.__init__(self, top_frame, name, transform)
-        Orphan.__init__(self)
-        assert type(transform) == TransformMatrix
-        self.top_frame = top_frame
-        self.transform = transform
-        self.point_with_orientation = Point3DWithOrientation.from_transform(
-            self.transform
-        )
-        self.name = name
-
-        if top_frame is not None:
-            self.register_child(top_frame)
-            top_frame.compute_params()
-        self.compute_params()
-
     def compute_params(self):
         p, q = self.transform.to_position_quaternion()
         self.params = {
@@ -159,12 +149,14 @@ class OriginFrame(Frame):
     def to_default_frame(self, top_frame, component_id, tf):
         """When adding a part to an assembly its originframe will be converted to a
         default frame"""
-
+        top_frame.parents.append(self)
         self.top_frame = top_frame
         self.name = self.name + f"_{component_id}"
+
         self.transform = tf
         self.compute_params()
 
-        for child in self.children:
-            if type(child) in [Frame, OriginFrame]:
-                child.compute_params()
+        # There is a bug here it should be the parents not the children
+        for p in self.parents:
+            if type(p) in [Frame, OriginFrame]:
+                p.compute_params()

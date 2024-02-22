@@ -1,29 +1,12 @@
-from foundation.types.node import Node
 from foundation.types.component import Component
-from foundation.geometry.frame import OriginFrame
 import numpy as np
 
-from foundation.gcs.constraints.joints_factory import JointFactory
 from foundation.geometry.transform3d import TransformMatrix
-from foundation.types.types import (
-    UnCastString,
-    cast_to_string_parameter,
-)
 from itertools import count
 from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
-
-
-class AssemblyHead(Node):
-    def __init__(self, name: UnCastString = None):
-        super().__init__()
-        self.origin_frame = OriginFrame()
-        self.register_child(self.origin_frame)
-        if name is None:
-            name = "assembly_" + str(self.id)
-        self.name = cast_to_string_parameter(name)
-        self.name.attach_to_parent(self)
-        self.params = {"n_name": self.name.id}
+from foundation.types.roots import AssemblyRoot
+from typing import List
 
 
 class Assembly(CompOrAssy):
@@ -35,15 +18,22 @@ class Assembly(CompOrAssy):
     _ids = count(0)
 
     def __init__(self):
-        super().__init__()
+        name = "assy" + str(next(self._ids))
+        super().__init__(AssemblyRoot(name))
         self.components = []  # list of components/subassemblies
         # list of transform from origin frame to component origin frame.
-        self.tf_list = []
-        self.head = AssemblyHead()
-        # self.joint_factory = JointFactory(self.joints_cluster_manager)
-        self.id = "assy" + str(next(self._ids))
+        self.tf_list: List[TransformMatrix] = []
+        self.id = name
 
-    def add_component(self, component: Component, tf: TransformMatrix = None):
+    # TODO rename to add_part or add_assy (both are possible)
+    def add_component(
+        self, component: Component, tf: TransformMatrix | None | np.ndarray = None
+    ):
+        """Add a component to the assembly
+        We first figure out the transform from the assembly root to the component root
+        We convert the OriginFrame of the component to be a default Frame and then register the
+        component root as a child of the assembly root.
+        """
         if tf is None:
             tf = component.get_tf()
         if type(tf) == np.ndarray:
@@ -55,8 +45,10 @@ class Assembly(CompOrAssy):
             component.head.origin_frame.to_default_frame(
                 self.head.origin_frame, component.id, tf
             )
+
         assert component.head.origin_frame.name != "origin"
         self.head.register_child(component.head)
+        # component.head.parents.append(self.head)
         self.components.append(component)
         self.tf_list.append(tf)
 
@@ -99,3 +91,10 @@ class Assembly(CompOrAssy):
         """Attach operations to the assembly"""
         for c in self.components:
             c.attach_operations()
+
+    @classmethod
+    def reset_ids(cls):
+        """
+        Resets the _ids counter to 0.
+        """
+        cls._ids = count(0)

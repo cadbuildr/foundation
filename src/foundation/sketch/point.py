@@ -1,19 +1,16 @@
-from foundation.types.types import (
+from foundation.types.parameters import (
     UnCastFloat,
-    UnCastInt,
     UnCastBool,
     UnCastString,
     cast_to_float_parameter,
-    cast_to_int_parameter,
     cast_to_bool_parameter,
     cast_to_string_parameter,
 )
-from foundation.types.node import Node, Orphan
+from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 
 from typing import TYPE_CHECKING
 import numpy as np
-from itertools import count
 import math
 
 if TYPE_CHECKING:
@@ -33,7 +30,7 @@ class Point(SketchShape, Node):
         x: UnCastFloat,
         y: UnCastFloat,
         anchor: UnCastBool = False,
-        name: UnCastString = None,
+        name: UnCastString | None = None,
     ):
         self.x = cast_to_float_parameter(x)
         self.y = cast_to_float_parameter(y)

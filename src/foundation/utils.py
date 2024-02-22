@@ -1,15 +1,17 @@
-from foundation.geometry.frame import OriginFrame
 from foundation.types.component import Component
 from foundation.types.assembly import Assembly
 from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
-from typing import Union
 import numpy as np
 import sys
 
 # TODO clean this code to remove copy paste
 
 
-def start_component():
+def start_component() -> Component:
+    """
+    Start a component with an origin frame and 3 planes
+
+    """
     component = Component()
     # Add the 2 other frames
     o = component.head.origin_frame
@@ -20,18 +22,14 @@ def start_component():
     pxz = PlaneFromFrame(component.head, xz, component.id + "_pxz")
     pyz = PlaneFromFrame(component.head, yz, component.id + "_pyz")
 
-    component.pf = PlaneFactory()
-
-    # TODO do we need this ?
-    # build_tree.add_construction_element("xy_plane", xy)
-    # build_tree.add_construction_element("xz_plane", xz)
-    # build_tree.add_construction_element("yz_plane", yz)
-
     component.set_origin_planes([pxy, pxz, pyz])
     return component
 
 
-def start_assembly():
+def start_assembly() -> Assembly:
+    """
+    Start an assembly with an origin frame and 3 planes
+    """
     assembly = Assembly()
     o = assembly.head.origin_frame
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
@@ -41,19 +39,12 @@ def start_assembly():
     pxz = PlaneFromFrame(assembly.head, xz, assembly.id + "_pxz")
     pyz = PlaneFromFrame(assembly.head, yz, assembly.id + "_pyz")
 
-    assembly.pf = PlaneFactory()
-
-    # TODO do we need this ?
-    # build_tree.add_construction_element("xy_plane", xy)
-    # build_tree.add_construction_element("xz_plane", xz)
-    # build_tree.add_construction_element("yz_plane", yz)
-
     assembly.set_origin_planes([pxy, pxz, pyz])
 
     return assembly
 
 
-def check_dict(d):
+def check_dict(d) -> None:
     """Useful debug tool on dict to see if any value is nan"""
     for k, v in d.items():
         if isinstance(v, dict):
@@ -72,7 +63,7 @@ def check_dict(d):
                     print(k, v)
 
 
-def show(component):
+def show(component: Component) -> None:
     """Function that is actually mocked on
     server and browser, but not on the tests"""
     if sys.platform == "emscripten":

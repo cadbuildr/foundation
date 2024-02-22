@@ -2,7 +2,7 @@ from foundation.operations.base import Operation
 from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 from foundation.sketch.axis import Axis
-from foundation.types.types import (
+from foundation.types.parameters import (
     UnCastBool,
     cast_to_bool_parameter,
 )

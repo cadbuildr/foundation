@@ -1,52 +1,31 @@
-import inspect
 from typing import List
 from itertools import count
 
 
-class RegisteredObject(object):
-    def __new__(cls, *args, **kwargs):
-        new_instance = super(RegisteredObject, cls).__new__(cls)  # , *args, **kwargs)
-        stack_trace = inspect.stack()
-        file_line = (stack_trace[1][1], stack_trace[1][2])
-        new_instance.file_line = file_line
-
-        return new_instance
-
-    def __init__(self):
-        self.var_name = None
-
-    def get_file_and_line_of_object_creation(self):
-        return self.file_line
-
-    def set_var_name(self, key):
-        self.var_name = key
-
-
-class Node(object):  # RegisteredObject):
+class Node(object):
     """
-    Nodes of the Tree ( Component)
-    the Node class can be many objects such as
-    - assembly/subassembly
-    -  a Component ( for instance an assembly is a tree of multiple Node, some of which can be Compments)
-    -  an Operation
-    - a Frame
-    - a Parameter (leaf of the tree)
-    - a Point
-    - a Constraint ( joint, or sketch constraint)
-
-    # TODO list all types of Node.
+    Nodes of the Directed Acyclic Graph (DAG) representing parts and assemblies.
+    The Node class is a base class meant to be inherited by all the nodes of the DAG:
+    - Assembly
+    - Component
+    - Operations
+    - Frame
+    - Parameter (leaf of the tree)
+    - Point
 
     a List of parents to the Node are provided, if it is empty, it means the Node is the OriginFrame.
+
+    A Node can also have parameters attached to it that will be used when converting to a dict.
+
     """
 
-    parent_types = (
-        []
-    )  # can be reimplemented in child classes to enforce a parent type to the Node
-    _ids = count(0)
+    parent_types: List[
+        str
+    ] = []  # can be reimplemented in child classes to enforce a parent type to the Node
+    _ids = count(0)  # used to generate unique ids for the node
 
     def __init__(self, parents=[]):
         """At Init we register the new node to all provided parents"""
-        # RegisteredObject.__init__(self)
         self.params = None
         self.extra_params = {}
         self.parents = parents
@@ -55,15 +34,9 @@ class Node(object):  # RegisteredObject):
         # node id used to identify component  (maybe should be a UUID to keep state
         self.id = next(self._ids)
         # accross multiple compilations ... )
-
-        self.metadata = {}
-
         if self.parents is not None:
             for p in self.parents:
                 p.register_child(self)
-
-    def set_metadata(self, filename: str, line: int):
-        self.metadata = {filename: filename, line: line}
 
     def check_parent_type(self):
         """If the Node has a parent, we check that the parent is of the correct type,
@@ -97,6 +70,7 @@ class Node(object):  # RegisteredObject):
         return res
 
     def to_dict(self, serializable_nodes):
+        # TODO remove serializable_nodes as a param as it can just be imported
         """Serialize a Directed Acyclic Graph (DAG) into a dict with
         (id_of_node:
             {'type': type_of_node, 'deps': [list_of_ids_of_children]}  #TODO convert list of ids of children
@@ -153,6 +127,13 @@ class Node(object):  # RegisteredObject):
                 pass
         return types
 
+    @classmethod
+    def reset_ids(cls):
+        """
+        Resets the _ids counter to 0.
+        """
+        cls._ids = count(0)
+
 
 class Orphan(Node):
     """
@@ -173,8 +154,6 @@ class Orphan(Node):
 
     def attach_to_parent(self, parent: Node):
         """Attach the node to the parent"""
-        # print(" TRYING TO ATTACH ", self, " to ", parent)
-        # print("is parent already there ? ", parent in self.parents)
         if parent not in self.parents:
             # print("adding parent")
             self.parents.append(parent)
