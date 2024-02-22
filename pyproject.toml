@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "foundation"
-version = "0.0.0.3"
+version = "0.0.0.4"
 description = "Python core package for builder"
 authors = ["Clement Jambou"]
 

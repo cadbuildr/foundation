@@ -153,16 +153,6 @@ class OriginFrame(Frame):
         self.top_frame = top_frame
         self.name = self.name + f"_{component_id}"
 
-        # print("New name", self.name, "has top frame", self.top_frame.name)
-        # print(
-        #     "Calling recompute params on children",
-        #     [t.name for t in self.children if type(t) in [Frame, OriginFrame]],
-        # )
-        # print(
-        #     "Calling recompute params on parents",
-        #     [t.name for t in self.parents if type(t) in [Frame, OriginFrame]],
-        # )
-
         self.transform = tf
         self.compute_params()
 
