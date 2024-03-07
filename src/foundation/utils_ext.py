@@ -6,7 +6,11 @@ try:
     import json
     import websocket
 except ImportError:
-    pass
+
+    class websocket:
+        @staticmethod
+        def create_connection(*args, **kwargs):
+            raise ImportError("websocket not available")
 
 
 def showExt(component: Component) -> None:
