@@ -25,6 +25,7 @@ from foundation.sketch.pattern import *
 from foundation.types.parameterUI import ParameterUI
 from foundation.sketch.sketch import Sketch
 from foundation.types.node import Node
+from foundation.utils_ext import showExt
 
 
 def reset_ids():
