@@ -22,7 +22,7 @@ sketch_components = [
 
 
 class RectangularPattern:
-    def __init__(self, width, height, n_rows, n_cols):
+    def __init__(self, width: float, height: float, n_rows: int, n_cols: int):
         self.width = width
         self.height = height
         self.n_rows = n_rows

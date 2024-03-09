@@ -17,6 +17,7 @@ class Sketch(Node):
     - a sketch origin(Point, with 0,0 coordinates) as a child
     """
 
+    # TODO check if plane is a PlaneFromFrame
     def __init__(self, plane):
         super().__init__()
         self.register_child(plane)

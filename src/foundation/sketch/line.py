@@ -1,5 +1,6 @@
 from foundation.types.node import Node, Orphan
 from foundation.sketch.base import SketchShape
+from foundation.sketch.point import Point
 
 from typing import TYPE_CHECKING, Tuple
 import numpy as np
@@ -9,7 +10,7 @@ if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
 
 
-def triangle_area(p1, p2, p3, absolute=True):
+def triangle_area(p1: Point, p2: Point, p3: Point, absolute: bool = True) -> float:
     """Area of a triangle given 3 points"""
 
     mat = np.array(
@@ -34,7 +35,7 @@ class Line(SketchShape, Orphan):
 
     parent_types = ["Sketch"]
 
-    def __init__(self, p1, p2):
+    def __init__(self, p1: Point, p2: Point):
         # geometry.Line.__init__(self, p1, p2)
         Node.__init__(self, [p1.sketch])
         if p1.sketch != p2.sketch:
@@ -50,7 +51,7 @@ class Line(SketchShape, Orphan):
             "n_p2": p2.id,
         }
 
-    def rotate(self, angle, center=None):
+    def rotate(self, angle: float, center: Point | None = None) -> "Line":
         if center is None:
             center = self.p1.frame.origin.point
 
@@ -58,19 +59,20 @@ class Line(SketchShape, Orphan):
         p2 = self.p2.rotate(angle, center)
         return Line(p1, p2)
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "Line":
         return Line(self.p1.translate(dx, dy), self.p2.translate(dx, dy))
 
+    # TODO check what is this .value because self.params is a dict[str, int] for dx() and dy()
     def dx(self):
         return self.params[2].value - self.params[0].value
 
     def dy(self):
         return self.params[3].value - self.params[1].value
 
-    def length(self):
+    def length(self) -> float:
         return self.p1.distance_to_other_point(self.p2)
 
-    def angle_to_other_line(self, line_b):
+    def angle_to_other_line(self, line_b: "Line") -> float:
         """Return the angle in degrees to another line.
         TODO this should probablly return a FloatParameter with a parent being the line
         so that we actually propgate the changes in the tree.
@@ -82,7 +84,7 @@ class Line(SketchShape, Orphan):
             % 360
         )
 
-    def distance_to_point(self, p1, absolute=True):
+    def distance_to_point(self, p1: Point, absolute: bool = True) -> float:
         """
         Same here, probably should return a FloatParameter
         area is bxh/2"""
@@ -106,7 +108,9 @@ class Line(SketchShape, Orphan):
 
         return equation
 
-    def closest_point_on_line(self, p0) -> Tuple[float, float]:
+    def closest_point_on_line(
+        self, p0: Point
+    ) -> tuple[float, float]:  # TODO check why return tuple ?
         """
         :param p0: Point
         project point on line,

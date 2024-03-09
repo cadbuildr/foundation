@@ -3,17 +3,20 @@ import numpy as np
 
 
 class RotationMatrix:
-    def __init__(self, matrix):
+    def __init__(self, matrix: np.array):
         self.matrix = matrix
 
     @staticmethod
-    def get_identity():
+    def get_identity() -> "RotationMatrix":
         return RotationMatrix(np.eye(3, dtype="float"))
 
     @staticmethod
-    def from_axis_angle(axis, angle, normalized=False):
+    def from_axis_angle(
+        axis: np.array, angle: float, normalized: bool = True
+    ) -> "RotationMatrix":
         """Create the rotation matrix from an axis and an angle that rotate around that axis
-        if normalized, we normalize the axis ( otherwise will multiple angle by the norm if not 1)"""
+        if normalized, we normalize the axis ( otherwise will multiple angle by the norm if not 1)
+        """
         axis = axis / np.linalg.norm(axis)
         x, y, z = axis
         c = np.cos(angle)
@@ -45,7 +48,7 @@ class RotationMatrix:
         )
 
     @staticmethod
-    def from_quaternion(quaternion):
+    def from_quaternion(quaternion: np.array) -> "RotationMatrix":
         q0, q1, q2, q3 = quaternion
 
         # first row
@@ -67,6 +70,7 @@ class RotationMatrix:
             np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
         )
 
+    # TODO define angles type
     @staticmethod
     def from_euler_angles(angles):
         row, pitch, yaw = angles
@@ -98,7 +102,7 @@ class RotationMatrix:
             np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
         )
 
-    def to_quaternion(self):
+    def to_quaternion(self) -> np.array:
         # return a 4d vector that is a unit quaternion
         # TODO is this safe ? (division by 0)
 
@@ -164,7 +168,7 @@ class TransformMatrix:
         """Considering self as A2B, return A2C"""
         return TransformMatrix(np.dot(B2C.matrix, self.matrix))
 
-    def concat_in_place(self, other):
+    def concat_in_place(self, other: "TransformMatrix"):
         # return a TransformMatrix
         self.matrix = self.concat(other)
 
@@ -204,7 +208,7 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_euler_angles(angles: np.array):
+    def get_from_euler_angles(angles):
         """row, pitch, yaw array as input"""
         rot_mat = RotationMatrix.from_euler_angles(angles)
         matrix = np.eye(4, dtype="float")
@@ -220,14 +224,16 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def from_rotation_matrix_and_position(rot_mat, position):
+    def from_rotation_matrix_and_position(
+        rot_mat: RotationMatrix, position: np.array
+    ) -> "TransformMatrix":
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
         matrix[:3, 3] = position
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_rotation_matrix(rot_mat):
+    def get_from_rotation_matrix(rot_mat: RotationMatrix) -> "TransformMatrix":
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
         return TransformMatrix(matrix)

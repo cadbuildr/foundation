@@ -26,7 +26,7 @@ class Point(SketchShape, Node):
 
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,  # TODO check if I need to use "Sketch" or Sketch https://stackoverflow.com/questions/46458470/should-you-put-quotes-around-type-annotations-in-python
         x: UnCastFloat,
         y: UnCastFloat,
         anchor: UnCastBool = False,
@@ -54,7 +54,7 @@ class Point(SketchShape, Node):
             "n_name": self.name.id,
         }
 
-    def rotate(self, angle, center=None):
+    def rotate(self, angle: float, center: "Point" | None = None) -> "Point":
         """Make a new point by rotating this point around a center point
         angle in radians"""
         if center is None:
@@ -70,11 +70,11 @@ class Point(SketchShape, Node):
         )
         return new_point
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "Point":
         """Make a new point by translating this point by a given distance"""
         return Point(self.sketch, self.x + dx, self.y + dy)
 
-    def distance_to_other_point(self, p2):
+    def distance_to_other_point(self, p2: "Point") -> float:
         return np.sqrt(
             (self.x.value - p2.x.value) ** 2 + (self.y.value - p2.y.value) ** 2
         )

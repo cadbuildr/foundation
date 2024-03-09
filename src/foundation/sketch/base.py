@@ -1,4 +1,6 @@
 from foundation.types.node_interface import NodeInterface
+from foundation.sketch.sketch import Sketch
+from foundation.geometry.frame import Frame
 
 
 """ File with code to produce (2D) sketches on planes
@@ -7,7 +9,7 @@ the library """
 
 
 class SketchShape(NodeInterface):
-    def __init__(self, sketch):
+    def __init__(self, sketch: Sketch) -> None:
         super().__init__()
         # not sure if this is the best way to do this
         # we could have diferent frames on a sketchshape,
@@ -16,8 +18,9 @@ class SketchShape(NodeInterface):
         # change it.
         self.sketch = sketch
 
+    # TODO check what is the plane to use
     def get_plane(self):
         return self.sketch.plane
 
-    def get_frame(self):
+    def get_frame(self) -> Frame:
         return self.sketch.plane.frame

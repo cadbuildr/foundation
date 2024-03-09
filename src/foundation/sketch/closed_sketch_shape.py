@@ -4,6 +4,7 @@ from foundation.sketch.base import SketchShape
 
 from foundation.sketch.line import Line
 from foundation.sketch.point import Point
+from foundation.sketch.sketch import Sketch
 from typing import List
 from foundation.types.parameters import (
     UnCastFloat,
@@ -29,20 +30,22 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
         for l in list_of_prim:
             self.register_child(l)
 
-    def get_points(self):
+    def get_points(self) -> List[Point]:
         # combine all points from the primitives
         points = []
         for prim in self.list_of_prim:
             points += prim.get_points()
         return points
 
-    def rotate(self, angle, center=None):
+    def rotate(
+        self, angle: float, center: Point | None = None
+    ) -> "CustomClosedSketchShape":
         if center is None:
             center = self.list_of_prim[0].get_frame().origin.point
         list_of_prim = [p.rotate(angle, center) for p in self.list_of_prim]
         return CustomClosedSketchShape(list_of_prim)
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "CustomClosedSketchShape":
         list_of_prim = [p.translate(dx, dy) for p in self.list_of_prim]
         return CustomClosedSketchShape(list_of_prim)
 
@@ -50,7 +53,7 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
 class Polygon(ClosedSketchShape, Node):
     """type of closed shape made only of lines"""
 
-    def __init__(self, sketch, lines):
+    def __init__(self, sketch: Sketch, lines: List[Line]):
         # Check all frames are the same ?
         ClosedSketchShape.__init__(self, lines[0].sketch)
         Node.__init__(self, parents=[sketch])
@@ -67,17 +70,17 @@ class Polygon(ClosedSketchShape, Node):
         # TODO
         pass
 
-    def get_points(self):
+    def get_points(self) -> List[Point]:
         """Get the first of each line"""
         return [line.p1 for line in self.lines]
 
-    def rotate(self, angle, center=None):
+    def rotate(self, angle: float, center: Point | None = None) -> "Polygon":
         if center is None:
             center = self.lines[0].get_frame().origin
         lines = [l.rotate(angle, center) for l in self.lines]
         return Polygon(self.sketch, lines)
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "Polygon":
         lines = [l.translate(dx, dy) for l in self.lines]
         return Polygon(self.sketch, lines)
 
@@ -99,11 +102,11 @@ class Circle(ClosedSketchShape, Node):
             "n_points": self.n_points.id,
         }
 
-    def get_center(self):
+    def get_center(self) -> Point:
         """Get the first of each line"""
         return self.center
 
-    def get_points(self):
+    def get_points(self) -> List[Point]:
         """Get points along the circle"""
         return [
             Point(
@@ -116,14 +119,14 @@ class Circle(ClosedSketchShape, Node):
             for i in range(self.n_points.value)
         ]
 
-    def rotate(self, angle, center=None):
+    def rotate(self, angle: float, center: Point | None = None) -> "Circle":
         if center is None:
             center = self.center.get_frame().origin.point
 
         new_center = self.center.rotate(angle, center)
         return Circle(new_center, self.radius)
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "Circle":
         new_center = self.center.translate(dx, dy)
         return Circle(new_center, self.radius)
 
@@ -151,10 +154,13 @@ class Ellipse(ClosedSketchShape, Node):
             "n_points": self.n_points.id,
         }
 
+    # TODO check what is c1 and c2 bc not defined in __init__
     def get_focal_points(self):
         return self.c1, self.c2
 
-    def get_points(self):
+    # TODO check if i use List of typing or list
+    # https://stackoverflow.com/questions/39458193/using-list-tuple-etc-from-typing-vs-directly-referring-type-as-list-tuple-etc
+    def get_points(self) -> list[Point]:
         """Get Point along the eclipse"""
         return [
             Point(
@@ -167,20 +173,21 @@ class Ellipse(ClosedSketchShape, Node):
             for i in range(self.n_points.value)
         ]
 
-    def rotate(self, angle, center=None):
+    def rotate(self, angle: float, center: Point | None = None) -> "Ellipse":
         if center is None:
             center = self.center.get_frame().origin.point
 
         new_center = self.center.rotate(angle, center)
         return Ellipse(new_center, self.a, self.b)
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "Ellipse":
         new_center = self.center.translate(dx, dy)
         return Ellipse(new_center, self.a, self.b)
 
 
 # TODO make it a Node
 class Hexagon(Polygon):
+    # TODO check if center is a point and radius a float and type methods
     def __init__(self, center, radius):
         # TODO : make sure the center is in the sketch
         # TODO : make sure the radius is in the sketch
