@@ -6,7 +6,7 @@ try:
     import json
     import websocket
 except ImportError:
-
+    # mock the websocket module if it is not available
     class websocket:
         @staticmethod
         def create_connection(*args, **kwargs):
