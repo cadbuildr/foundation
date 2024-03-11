@@ -22,11 +22,11 @@ class Point(SketchShape, Node):
     Could have many parents but needs a sketch as a parent.
     """
 
-    parent_type = ["Sketch"]
+    parent_type = [Sketch]
 
     def __init__(
         self,
-        sketch: Sketch,  # TODO check if I need to use "Sketch" or Sketch https://stackoverflow.com/questions/46458470/should-you-put-quotes-around-type-annotations-in-python
+        sketch: Sketch,
         x: UnCastFloat,
         y: UnCastFloat,
         anchor: UnCastBool = False,

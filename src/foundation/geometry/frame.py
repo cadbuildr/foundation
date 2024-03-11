@@ -4,8 +4,6 @@ import numpy as np
 from numpy import ndarray
 from foundation.types.point_3d import Point3DWithOrientation
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
-from typing import Union, List
-
 
 class Frame(Orphan):
     """a FrameInterface

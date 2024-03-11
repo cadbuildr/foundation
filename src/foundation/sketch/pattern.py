@@ -6,6 +6,7 @@ from foundation.sketch.closed_sketch_shape import (
 )
 from foundation.sketch.rectangle import Square, Rectangle
 from foundation.sketch.arc import Arc, EllipseArc
+from foundation.sketch.point import Point
 import numpy as np
 
 sketch_components = [
@@ -46,7 +47,7 @@ class RectangularPattern:
 
 
 class CircularPattern:
-    def __init__(self, center, n_instances):
+    def __init__(self, center: Point, n_instances: int):
         self.center = center
         self.n_instances = n_instances
 

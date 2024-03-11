@@ -1,6 +1,5 @@
-from foundation.types.node import Node, Orphan
+from foundation.types.node import Orphan
 from foundation.types.node_interface import NodeInterface
-from typing import Union
 
 
 class Parameter(NodeInterface):
@@ -19,7 +18,7 @@ class Parameter(NodeInterface):
 class FloatParameter(Parameter, Orphan):
     """Store a float value as a parameter"""
 
-    def __init__(self, value):
+    def __init__(self, value: float):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
         self.params = {"value": value}
@@ -28,7 +27,7 @@ class FloatParameter(Parameter, Orphan):
 class IntParameter(Parameter, Orphan):
     """Store an int value as a parameter"""
 
-    def __init__(self, value):
+    def __init__(self, value: int):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
         self.params = {"value": value}
@@ -37,7 +36,7 @@ class IntParameter(Parameter, Orphan):
 class BoolParameter(Parameter, Orphan):
     """Store a boolean value as a parameter"""
 
-    def __init__(self, value):
+    def __init__(self, value: bool):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
         self.params = {"value": value}
@@ -46,7 +45,7 @@ class BoolParameter(Parameter, Orphan):
 class StringParameter(Parameter, Orphan):
     """Store a string value as a parameter"""
 
-    def __init__(self, value):
+    def __init__(self, value: str):
         Parameter.__init__(self, value)
         Orphan.__init__(self)
         self.params = {"value": value}
@@ -57,7 +56,8 @@ def cast_to_float_parameter(value):
         p = FloatParameter(value)
         return p
     if isinstance(value, int):
-        return FloatParameter(float(value))
+        p = FloatParameter(float(value))
+        return p
     elif isinstance(value, Parameter):
         return value
     else:
@@ -91,7 +91,7 @@ def cast_to_string_parameter(value):
         raise TypeError("value must be a str or a Parameter")
 
 
-UnCastFloat = Union[float, FloatParameter]
-UnCastInt = Union[int, IntParameter]
-UnCastBool = Union[bool, BoolParameter]
-UnCastString = Union[str, StringParameter]
+UnCastFloat = float | FloatParameter
+UnCastInt =  int | IntParameter
+UnCastBool = bool | BoolParameter
+UnCastString = str | StringParameter

@@ -2,10 +2,10 @@ from foundation.types.node import Node, Orphan
 from foundation.sketch.base import SketchShape
 from foundation.sketch.point import Point
 
-from typing import TYPE_CHECKING, Tuple
 import numpy as np
 import math
 
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
 
@@ -33,7 +33,7 @@ class Line(SketchShape, Orphan):
     but needs a sketch for a parent as well.
     """
 
-    parent_types = ["Sketch"]
+    parent_types = [Sketch]
 
     def __init__(self, p1: Point, p2: Point):
         # geometry.Line.__init__(self, p1, p2)

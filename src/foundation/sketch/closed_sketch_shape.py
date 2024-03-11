@@ -5,7 +5,6 @@ from foundation.sketch.base import SketchShape
 from foundation.sketch.line import Line
 from foundation.sketch.point import Point
 from foundation.sketch.sketch import Sketch
-from typing import List
 from foundation.types.parameters import (
     UnCastFloat,
     UnCastInt,
@@ -17,20 +16,20 @@ from foundation.types.parameters import (
 class ClosedSketchShape(SketchShape):
     """a closed shape is a shape that has a closed contour"""
 
-    def get_points(self) -> List[Point]:
+    def get_points(self) -> list[Point]:
         """return the points of the shape"""
         raise NotImplementedError("Implement in children")
 
 
 class CustomClosedSketchShape(ClosedSketchShape, Node):
-    def __init__(self, list_of_prim: List[Node]):
+    def __init__(self, list_of_prim: list[Node]):
         self.list_of_prim = list_of_prim
         ClosedSketchShape.__init__(self, list_of_prim[0].sketch)
         Node.__init__(self, parents=[list_of_prim[0].sketch])
         for l in list_of_prim:
             self.register_child(l)
 
-    def get_points(self) -> List[Point]:
+    def get_points(self) -> list[Point]:
         # combine all points from the primitives
         points = []
         for prim in self.list_of_prim:
@@ -53,7 +52,7 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
 class Polygon(ClosedSketchShape, Node):
     """type of closed shape made only of lines"""
 
-    def __init__(self, sketch: Sketch, lines: List[Line]):
+    def __init__(self, sketch: Sketch, lines: list[Line]):
         # Check all frames are the same ?
         ClosedSketchShape.__init__(self, lines[0].sketch)
         Node.__init__(self, parents=[sketch])
@@ -70,7 +69,7 @@ class Polygon(ClosedSketchShape, Node):
         # TODO
         pass
 
-    def get_points(self) -> List[Point]:
+    def get_points(self) -> list[Point]:
         """Get the first of each line"""
         return [line.p1 for line in self.lines]
 
@@ -106,7 +105,7 @@ class Circle(ClosedSketchShape, Node):
         """Get the first of each line"""
         return self.center
 
-    def get_points(self) -> List[Point]:
+    def get_points(self) -> list[Point]:
         """Get points along the circle"""
         return [
             Point(
@@ -158,7 +157,7 @@ class Ellipse(ClosedSketchShape, Node):
     def get_focal_points(self):
         return self.c1, self.c2
 
-    # TODO check if i use List of typing or list
+    # TODO check if i use list of typing or list
     # https://stackoverflow.com/questions/39458193/using-list-tuple-etc-from-typing-vs-directly-referring-type-as-list-tuple-etc
     def get_points(self) -> list[Point]:
         """Get Point along the eclipse"""

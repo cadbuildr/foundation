@@ -7,8 +7,6 @@ from itertools import count
 from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.types.roots import AssemblyRoot
-from typing import List
-
 
 class Assembly(CompOrAssy):
     """
@@ -23,12 +21,12 @@ class Assembly(CompOrAssy):
         super().__init__(AssemblyRoot(name))
         self.components = []  # list of components/subassemblies
         # list of transform from origin frame to component origin frame.
-        self.tf_list: List[TransformMatrix] = []
+        self.tf_list: list[TransformMatrix] = []
         self.id = name
 
     # TODO rename to add_part or add_assy (both are possible)
     def add_component(
-        self, component: Component, tf: TransformMatrix | None | ndarray = None
+        self, component: Component, tf: TransformMatrix | ndarray | None = None
     ):
         """Add a component to the assembly
         We first figure out the transform from the assembly root to the component root
