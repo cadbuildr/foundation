@@ -1,17 +1,18 @@
 from foundation import *
 
 
+
 class GridXY:
     """Useful wrapper around a class that has a .get_assy method to generate a grid of them"""
 
-    def __init__(self, assy_factory, n_x, n_y, spacing_x, spacing_y):
+    def __init__(self, assy_factory, n_x: int, n_y: int, spacing_x: float, spacing_y: float):
         self.assy_factory = assy_factory
         self.n_x = n_x
         self.n_y = n_y
         self.spacing_x = spacing_x
         self.spacing_y = spacing_y
 
-    def get_assy(self):
+    def get_assy(self) -> Assembly:
         self.assembly = start_assembly()
         for i in range(self.n_x):
             for j in range(self.n_y):
