@@ -87,7 +87,7 @@ class CompOrAssy(NodeInterface):
         """Return the transform of the component"""
         return self.tfh.get_tf()
 
-    def to_dict(self, serializable_nodes):
+    def to_dict(self, serializable_nodes: dict[str, int]) -> dict:
         """Serialize a Directed Acyclic Graph (DAG) into a dictionary
         (key: {type, params, deps})
         recursive function.

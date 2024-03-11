@@ -72,7 +72,7 @@ class Assembly(CompOrAssy):
     def get_sketches(self):
         return list(set(self.head.rec_list_nodes(type_filter=["Sketch"])))
 
-    def solve_joints(self, verbose=False):
+    def solve_joints(self, verbose: bool = False):
         # TODO : GCS
         raise NotImplementedError("GCS not implemented yet")
         # self.joints_cluster_manager.solve(verbose=verbose)

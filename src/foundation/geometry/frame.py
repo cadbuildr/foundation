@@ -40,7 +40,7 @@ class Frame(Orphan):
     def get_name(self) -> str:
         return self.name
 
-    def get_parent_name(self):
+    def get_parent_name(self) -> str | None:
         if self.top_frame is not None:
             return self.top_frame.get_name()
         else:

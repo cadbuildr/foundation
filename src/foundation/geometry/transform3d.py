@@ -137,7 +137,7 @@ class RotationMatrix:
             print("Warning: quaternion is zero, returning identity")
             return np.array([1.0, 0.0, 0.0, 0.0])
 
-    def to_axis_angle(self):
+    def to_axis_angle(self) -> ndarray:
         # return a 3d vector and a scalar
         angle = np.arccos((np.trace(self.matrix) - 1) / 2)
 
@@ -150,7 +150,7 @@ class RotationMatrix:
 
         return np.array([x, y, z]), angle
 
-    def to_euler_angles(self):
+    def to_euler_angles(self) -> ndarray:
         # return a 3d vector
         row = np.arctan2(self.matrix[2, 1], self.matrix[2, 2])
         pitch = np.arctan2(
@@ -171,9 +171,9 @@ class TransformMatrix:
 
     def concat_in_place(self, other: "TransformMatrix"):
         # return a TransformMatrix
-        self.matrix = self.concat(other)
+        self.matrix = self.concat(other).matrix
 
-    def to_position_quaternion(self):
+    def to_position_quaternion(self) -> tuple[ndarray, ndarray]:
         """Return a tuple (position, quaternion)
         position is a 3d vector
         quaternion is a 4d vector
@@ -184,32 +184,32 @@ class TransformMatrix:
         quaternion = rot_mat.to_quaternion()
         return position, quaternion
 
-    def get_position(self):
+    def get_position(self) -> ndarray:
         return self.matrix[:3, 3]
 
-    def get_rotation(self):
+    def get_rotation(self) -> RotationMatrix:
         return RotationMatrix(self.matrix[:3, :3])
 
-    def get_position_and_euler(self):
+    def get_position_and_euler(self) -> tuple[ndarray, ndarray]:
         return self.matrix[:3, 3], self.get_rotation().to_euler_angles()
 
-    def inverse(self):
+    def inverse(self) -> "TransformMatrix":
         # return a TransformMatrix
         return TransformMatrix(np.linalg.inv(self.matrix))
 
     @staticmethod
-    def get_identity():
+    def get_identity() -> "TransformMatrix":
         return TransformMatrix(np.eye(4, dtype="float"))
 
     @staticmethod
-    def get_from_position(translation: ndarray):
+    def get_from_position(translation: ndarray) -> "TransformMatrix":
         """x y z array as input"""
         matrix = np.eye(4, dtype="float")
         matrix[:3, 3] = translation
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_euler_angles(angles):
+    def get_from_euler_angles(angles) -> "TransformMatrix":
         """row, pitch, yaw array as input"""
         rot_mat = RotationMatrix.from_euler_angles(angles)
         matrix = np.eye(4, dtype="float")
@@ -217,7 +217,7 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_quaternion(quaternion: ndarray):
+    def get_from_quaternion(quaternion: ndarray) -> "TransformMatrix":
         """q0, q1, q2, q3 array as input"""
         rot_mat = RotationMatrix.from_quaternion(quaternion)
         matrix = np.eye(4, dtype="float")
