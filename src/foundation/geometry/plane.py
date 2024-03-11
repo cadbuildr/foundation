@@ -15,7 +15,7 @@ class PlaneBase(NodeInterface):
 class PlaneFromFrame(PlaneBase, Node):
     parent_types = []
 
-    def __init__(self, parent, frame: Frame, name: str):
+    def __init__(self, parent: Node, frame: Frame, name: str):
         Node.__init__(self, [parent])
         PlaneBase.__init__(self)
         self.register_child(frame)

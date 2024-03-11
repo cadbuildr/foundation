@@ -10,7 +10,7 @@ from foundation.sketch.line import Line
 class Axis(Node):
     """a special line can be an axis #TODO is this general enough ?"""
 
-    def __init__(self, line: Line) -> None:
+    def __init__(self, line: Line):
         Node.__init__(self, parents=[line.sketch])
         self.register_child(line)
         self.sketch_frame = line.sketch.frame

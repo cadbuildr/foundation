@@ -1,4 +1,3 @@
-from typing import List
 from itertools import count
 
 
@@ -19,12 +18,12 @@ class Node(object):
 
     """
 
-    parent_types: List[
+    parent_types: list[
         str
     ] = []  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
 
-    def __init__(self, parents=[]):
+    def __init__(self, parents: list["Node"] = None):
         """At Init we register the new node to all provided parents"""
         self.params = None
         self.extra_params = {}
@@ -53,7 +52,7 @@ class Node(object):
             # print("Registering child", child, " to ", self)
             self.children.append(child)
 
-    def rec_list_nodes(self, type_filter: List[str], include_only_interface=True):
+    def rec_list_nodes(self, type_filter: list[str], include_only_interface: bool = True):
         """Recursibely go through all the children and return a list of all the nodes of the provided types"""
         res = []
         collect_all = len(type_filter) == 0
@@ -103,7 +102,7 @@ class Node(object):
             node_dict["deps"].append(n.id)
         return res
 
-    def get_children(self, type_filter: List[str]):
+    def get_children(self, type_filter: list[str]):
         """return the children of the component, eventually filtered"""
         res = []
         collect_all = len(type_filter) == 0
@@ -114,7 +113,7 @@ class Node(object):
         return res
 
     @classmethod
-    def get_types(cls, include_only_interface=True):
+    def get_types(cls, include_only_interface: bool = True) -> list[str]:
         """return the inherited types as a list. Used for the compiler to work and check if one of the parent_types is in these classes
         If the node inherits from a nodeinterface we return these interfaces as well"""
         types = []

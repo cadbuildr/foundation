@@ -1,5 +1,6 @@
 from foundation.types.component import Component
 import numpy as np
+from numpy import ndarray
 
 from foundation.geometry.transform3d import TransformMatrix
 from itertools import count
@@ -27,7 +28,7 @@ class Assembly(CompOrAssy):
 
     # TODO rename to add_part or add_assy (both are possible)
     def add_component(
-        self, component: Component, tf: TransformMatrix | None | np.ndarray = None
+        self, component: Component, tf: TransformMatrix | None | ndarray = None
     ):
         """Add a component to the assembly
         We first figure out the transform from the assembly root to the component root
@@ -36,7 +37,7 @@ class Assembly(CompOrAssy):
         """
         if tf is None:
             tf = component.get_tf()
-        if type(tf) == np.ndarray:
+        if type(tf) == ndarray:
             tf = TransformMatrix(tf)
         # Modifying component directly ? Might not be the best.
         if tf is None:

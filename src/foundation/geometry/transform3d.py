@@ -1,9 +1,10 @@
 # File to remove dependenct on pytransform3d
 import numpy as np
+from numpy import ndarray
 
 
 class RotationMatrix:
-    def __init__(self, matrix: np.array):
+    def __init__(self, matrix: ndarray):
         self.matrix = matrix
 
     @staticmethod
@@ -12,7 +13,7 @@ class RotationMatrix:
 
     @staticmethod
     def from_axis_angle(
-        axis: np.array, angle: float, normalized: bool = True
+        axis: ndarray, angle: float, normalized: bool = True
     ) -> "RotationMatrix":
         """Create the rotation matrix from an axis and an angle that rotate around that axis
         if normalized, we normalize the axis ( otherwise will multiple angle by the norm if not 1)
@@ -48,7 +49,7 @@ class RotationMatrix:
         )
 
     @staticmethod
-    def from_quaternion(quaternion: np.array) -> "RotationMatrix":
+    def from_quaternion(quaternion: ndarray) -> "RotationMatrix":
         q0, q1, q2, q3 = quaternion
 
         # first row
@@ -102,7 +103,7 @@ class RotationMatrix:
             np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
         )
 
-    def to_quaternion(self) -> np.array:
+    def to_quaternion(self) -> ndarray:
         # return a 4d vector that is a unit quaternion
         # TODO is this safe ? (division by 0)
 
@@ -161,7 +162,7 @@ class RotationMatrix:
 
 
 class TransformMatrix:
-    def __init__(self, matrix: np.array):
+    def __init__(self, matrix: ndarray):
         self.matrix = matrix
 
     def concat(self, B2C: "TransformMatrix"):
@@ -201,7 +202,7 @@ class TransformMatrix:
         return TransformMatrix(np.eye(4, dtype="float"))
 
     @staticmethod
-    def get_from_position(translation: np.array):
+    def get_from_position(translation: ndarray):
         """x y z array as input"""
         matrix = np.eye(4, dtype="float")
         matrix[:3, 3] = translation
@@ -216,7 +217,7 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_quaternion(quaternion: np.array):
+    def get_from_quaternion(quaternion: ndarray):
         """q0, q1, q2, q3 array as input"""
         rot_mat = RotationMatrix.from_quaternion(quaternion)
         matrix = np.eye(4, dtype="float")
@@ -225,7 +226,7 @@ class TransformMatrix:
 
     @staticmethod
     def from_rotation_matrix_and_position(
-        rot_mat: RotationMatrix, position: np.array
+        rot_mat: RotationMatrix, position: ndarray
     ) -> "TransformMatrix":
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
@@ -239,5 +240,5 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_axis_angle(axis: np.array, angle: float):
+    def get_from_axis_angle(axis: ndarray, angle: float) -> "TransformMatrix":
         pass

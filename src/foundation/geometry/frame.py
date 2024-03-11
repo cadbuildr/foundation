@@ -1,6 +1,7 @@
 from foundation.types.node import Node, Orphan
 from foundation.types.node_interface import NodeInterface
 import numpy as np
+from numpy import ndarray
 from foundation.types.point_3d import Point3DWithOrientation
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
 from typing import Union, List
@@ -50,7 +51,7 @@ class Frame(Orphan):
     def get_frame_coordinates(self):
         return self.transform.get_position()
 
-    def get_x_axis(self, local: bool = True) -> np.array:
+    def get_x_axis(self, local: bool = True) -> ndarray:
         """return a vector orthogonal to the plane ->
         this is the 1st vector of the frame."""
         if local:
@@ -58,7 +59,7 @@ class Frame(Orphan):
         else:
             return self.get_frame_coordinates()[0]
 
-    def get_y_axis(self, local: bool = True) -> np.array:
+    def get_y_axis(self, local: bool = True) -> ndarray:
         """return a vector orthogonal to the plane ->
         this is the 2nd vector of the frame."""
         if local:
@@ -66,7 +67,7 @@ class Frame(Orphan):
         else:
             return self.get_frame_coordinates()[1]
 
-    def get_z_axis(self, local: bool = True) -> np.array:
+    def get_z_axis(self, local: bool = True) -> ndarray:
         """return a vector orthogonal to the plane ->
         this is the 3rd vector of the frame."""
         if local:
@@ -121,7 +122,7 @@ class Frame(Orphan):
         ).concat(top_tf)
         return Frame(self, name, tf)
 
-    def get_rotated_frame_from_axis(self, axis: np.array, angle: float, name: str):
+    def get_rotated_frame_from_axis(self, axis: ndarray, angle: float, name: str):
         """return the rotated frame rotated by given axis and angle"""
         rot_mat = RotationMatrix.from_axis_angle(axis, angle)
         return self.get_rotated_frame(name=name, rot_mat=rot_mat)

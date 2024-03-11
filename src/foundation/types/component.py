@@ -55,7 +55,7 @@ class Component(CompOrAssy):
     def get_operations(self):
         return self.head.get_children(type_filter=["Operation"])
 
-    def get_sketches(self):
+    def get_sketches(self) -> List[Sketch]:
         return list(set(self.head.rec_list_nodes(type_filter=["Sketch"])))
 
     def attach_operations(self):
