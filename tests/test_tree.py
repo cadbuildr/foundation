@@ -17,6 +17,6 @@ class Cube:
         return cube
 
 
-Cube().get_part().to_dict(serializable_nodes=serializable_nodes)
+cube = Cube().get_part()
 
-# %%
+showExt(cube)

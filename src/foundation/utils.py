@@ -4,6 +4,7 @@ from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
 import numpy as np
 import sys
 
+
 # TODO clean this code to remove copy paste
 
 
