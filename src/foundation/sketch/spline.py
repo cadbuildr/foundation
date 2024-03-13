@@ -1,12 +1,12 @@
 import math
 from foundation.sketch.sketch import Sketch
-from foundation.sketch.line import Line
 from foundation.sketch.point import Point, PointWithTangent
 from foundation.types.node import Node
-from typing import List
 
 
-def solve_at3_bt2_ct_d(x0: float, x1: float, xp0: float, xp1: float):
+def solve_at3_bt2_ct_d(
+    x0: float, x1: float, xp0: float, xp1: float
+) -> tuple[float, float, float, float]:
     # solves q = a*t^3 + b*t^2 + c*t + d
     # q(0) = x0
     # q(1) = x1
@@ -36,7 +36,9 @@ class TwoPointsSpline:
         self.p1 = p1
         self.p2 = p2
 
-    def get_xy_coeffs(self, smooth_factor: float = None) -> List[List[float]]:
+    def get_xy_coeffs(
+        self, smooth_factor: float | None = None
+    ) -> tuple[tuple[float, float, float, float], tuple[float, float, float, float]]:
         p1 = self.p1.p
         p2 = self.p2.p
         if smooth_factor is None:
@@ -44,10 +46,10 @@ class TwoPointsSpline:
             dy = p2.y.value - p1.y.value
             smooth_factor = max(abs(dx), abs(dy)) * 3.0
 
-        def kx(angle):
+        def kx(angle: float) -> float:
             return smooth_factor * math.cos(angle)
 
-        def ky(angle):
+        def ky(angle: float) -> float:
             return smooth_factor * math.sin(angle)
 
         x_coeffs = solve_at3_bt2_ct_d(
@@ -56,27 +58,17 @@ class TwoPointsSpline:
         y_coeffs = solve_at3_bt2_ct_d(
             p1.y.value, p2.y.value, ky(self.p1.angle.value), ky(self.p2.angle.value)
         )
-        return x_coeffs, y_coeffs
+        return (x_coeffs, y_coeffs)
 
-    def get_points(self, n_points: int) -> List[Point]:
+    def get_points(self, n_points: int) -> list[Point]:
         x_coeffs, y_coeffs = self.get_xy_coeffs()
 
         # now we can find the points
         points = []
         for i in range(n_points):
             t = i / n_points
-            x = (
-                x_coeffs[0] * t**3
-                + x_coeffs[1] * t**2
-                + x_coeffs[2] * t
-                + x_coeffs[3]
-            )
-            y = (
-                y_coeffs[0] * t**3
-                + y_coeffs[1] * t**2
-                + y_coeffs[2] * t
-                + y_coeffs[3]
-            )
+            x = x_coeffs[0] * t**3 + x_coeffs[1] * t**2 + x_coeffs[2] * t + x_coeffs[3]
+            y = y_coeffs[0] * t**3 + y_coeffs[1] * t**2 + y_coeffs[2] * t + y_coeffs[3]
             points.append(Point(self.p1.sketch, x, y))
         return points
 
@@ -84,7 +76,7 @@ class TwoPointsSpline:
 class Spline(Node):
     parent_types = [Sketch]
 
-    def __init__(self, points_with_tangent: List[PointWithTangent]):
+    def __init__(self, points_with_tangent: list[PointWithTangent]):
         assert len(points_with_tangent) >= 2
         Node.__init__(self, [points_with_tangent[0].p.sketch])
         for p in points_with_tangent:
@@ -92,7 +84,7 @@ class Spline(Node):
 
         self.points_with_tangent = points_with_tangent
 
-    def get_points(self, n_points=None):
+    def get_points(self, n_points: int = None) -> list[Point]:
         """Get Point along the spline, group points by 2 and then use the ThreePointSpline class to find the points"""
         if n_points is None:
             n_points = len(self.points_with_tangent) * 20

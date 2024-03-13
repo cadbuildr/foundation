@@ -20,3 +20,5 @@ class Cube:
 cube = Cube().get_part()
 
 showExt(cube)
+
+# %%

@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import ndarray
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
 
 
@@ -16,13 +17,13 @@ class TFHelper:
     def set_init(self):
         self.tf = TransformMatrix.get_identity()
 
-    def set_tf(self, tf):
+    def set_tf(self, tf: TransformMatrix):
         self.tf = tf
 
-    def get_tf(self):
+    def get_tf(self) -> TransformMatrix:
         return self.tf
 
-    def translate(self, translation: np.array, rotate=False):
+    def translate(self, translation: ndarray, rotate: bool = False) -> "TFHelper":
         """Translation is a 3d vector (numpy array)"""
         translation = np.array(translation, dtype="float")
         if rotate:
@@ -31,18 +32,18 @@ class TFHelper:
             self.tf.matrix[:3, 3] += translation
         return self
 
-    def translate_x(self, x, rotate=False):
+    def translate_x(self, x: float, rotate: bool = False) -> "TFHelper":
         return self.translate([float(x), 0.0, 0.0], rotate)
 
-    def translate_y(self, y, rotate=False):
+    def translate_y(self, y: float, rotate: bool = False) -> "TFHelper":
         return self.translate([0.0, float(y), 0.0], rotate)
 
-    def translate_z(self, z, rotate=False):
+    def translate_z(self, z: float, rotate: bool = False) -> "TFHelper":
         return self.translate([0.0, 0.0, float(z)], rotate)
 
     def rotate(
-        self, axis: np.array = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
-    ):
+        self, axis: ndarray = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
+    ) -> "TFHelper":
         """axis is a 3d vector (numpy array) and angle is a float"""
         axis = np.array(axis, dtype="float")
         rotation_matrix = RotationMatrix.from_axis_angle(axis, angle, normalized=True)
@@ -50,8 +51,8 @@ class TFHelper:
         return self
 
     def rotate_and_translate(
-        self, rotation_matrix: RotationMatrix, translation: np.array
-    ):
+        self, rotation_matrix: RotationMatrix, translation: ndarray
+    ) -> "TFHelper":
         """using a rotation_matrix and translation, update the tf"""
         translation = np.array(translation, dtype="float")
         pq_transform = TransformMatrix.from_rotation_matrix_and_position(

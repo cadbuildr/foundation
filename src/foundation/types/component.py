@@ -1,4 +1,3 @@
-from typing import List
 from itertools import count
 from foundation.geometry.plane import PlaneFromFrame
 from foundation.sketch.sketch import Sketch
@@ -6,8 +5,6 @@ from foundation.types.comp_or_assy import CompOrAssy
 from foundation.geometry.frame import OriginFrame
 from foundation.types.roots import ComponentRoot
 from foundation.operations import OperationTypes
-
-from typing import List
 
 
 class Component(CompOrAssy):
@@ -36,7 +33,7 @@ class Component(CompOrAssy):
         """
         self.head.register_child(op)
 
-    def add_operations(self, ops: List[OperationTypes]):
+    def add_operations(self, ops: list[OperationTypes]):
         """Add a list of operations to the component"""
         for op in ops:
             self.add_operation(op)
@@ -55,7 +52,7 @@ class Component(CompOrAssy):
     def get_operations(self):
         return self.head.get_children(type_filter=["Operation"])
 
-    def get_sketches(self):
+    def get_sketches(self) -> list[Sketch]:
         return list(set(self.head.rec_list_nodes(type_filter=["Sketch"])))
 
     def attach_operations(self):

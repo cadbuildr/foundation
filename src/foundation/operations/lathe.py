@@ -2,6 +2,7 @@ from foundation.operations.base import Operation
 from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 from foundation.sketch.axis import Axis
+from foundation.geometry.frame import Frame
 from foundation.types.parameters import (
     UnCastBool,
     cast_to_bool_parameter,
@@ -29,6 +30,6 @@ class Lathe(Operation, Node):
             "n_sketch": shape.sketch.id,
         }
 
-    def get_frame(self):
+    def get_frame(self) -> Frame:
         # parent 0 is sketchShape
         return self.shape.get_frame()

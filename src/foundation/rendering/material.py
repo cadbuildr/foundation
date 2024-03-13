@@ -42,23 +42,26 @@ class Material(Node):
         self.params = {"name": self.name}
         self.params["painted_node_ids"] = []
 
-    def set_diffuse_colorRGB(self, r, g, b):
+    def set_diffuse_colorRGB(self, r: int, g: int, b: int):
+        if r > 255 or g > 255 or b > 255 or r < 0 or g < 0 or b < 0:
+            raise ValueError("Color values should be between 0 and 255")
         self.diffuse_color = (r, g, b)
         self.params["options"] = {"diffuse_color": self.diffuse_color}
 
-    def set_transparency(self, alpha=0.5):
+    def set_transparency(self, alpha: float):
+        if alpha > 1 or alpha < 0:
+            raise ValueError("Alpha should be between 0 and 1")
         self.params["options"] = {"alpha": alpha}
 
-    def set_diffuse_color(self, color_name):
-        if color_name in default_colors:
-            self.diffuse_color = default_colors[color_name]
-            self.params["options"] = {"diffuse_color": self.diffuse_color}
-        else:
+    def set_diffuse_color(self, color_name: str):
+        if color_name not in default_colors:
             raise ValueError(
                 "Color not found in default colors, maybe try set_diffuse_colorRGB? : Colors available : \n  {}".format(
                     default_colors
                 )
             )
+        self.diffuse_color = default_colors[color_name]
+        self.params["options"] = {"diffuse_color": self.diffuse_color}
 
     def attach_to_node(self, node_id):
         self.params["painted_node_ids"].append(node_id)

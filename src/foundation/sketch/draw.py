@@ -2,12 +2,17 @@ from foundation.sketch.point import Point
 from foundation.sketch.line import Line
 from foundation.sketch.closed_sketch_shape import Polygon
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from foundation.sketch.sketch import Sketch
+
 
 class Draw:
     """small utils to make it easier to
     draw points and lines in a sketch"""
 
-    def __init__(self, sketch):
+    def __init__(self, sketch: "Sketch"):
         self.sketch = sketch
         self.x = 0.0
         self.y = 0.0
@@ -15,13 +20,13 @@ class Draw:
         self.point_idx = 0
         self.points = []
 
-    def move_to(self, x, y):
+    def move_to(self, x: float, y: float):
         """Move to absolute position"""
         self.x = x
         self.y = y
         self.point_added = False
 
-    def move(self, dx, dy):
+    def move(self, dx: float, dy: float):
         """Relative move"""
         self.x += dx
         self.y += dy
@@ -35,7 +40,7 @@ class Draw:
         self.points.append(Point(self.sketch, self.x, self.y))
         self.point_idx = len(self.points) - 1
 
-    def line_to(self, x, y):
+    def line_to(self, x: float, y: float):
         if not self.point_added:
             self.add_point()
         self.x = x
@@ -44,7 +49,7 @@ class Draw:
         self.point_added = True
         return
 
-    def line(self, dx, dy):
+    def line(self, dx: float, dy: float):
         if not self.point_added:
             self.add_point()
         self.x += dx
@@ -58,7 +63,7 @@ class Draw:
         if self.point_idx < 0:
             self.point_idx = 0
 
-    def get_closed_polygon(self):
+    def get_closed_polygon(self) -> Polygon:
         lines = []
         for i in range(len(self.points) - 1):
             lines.append(Line(self.points[i], self.points[i + 1]))

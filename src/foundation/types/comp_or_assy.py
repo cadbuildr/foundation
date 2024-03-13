@@ -3,7 +3,9 @@ from foundation.geometry.tf_helper import TFHelper
 from foundation.types.node_interface import NodeInterface
 from foundation.types.roots import ComponentRoot, AssemblyRoot
 import numpy as np
+from numpy import ndarray
 from foundation.geometry.plane import PlaneFactory
+from foundation.geometry.transform3d import TransformMatrix
 
 
 class CompOrAssy(NodeInterface):
@@ -59,33 +61,33 @@ class CompOrAssy(NodeInterface):
         else:
             self.tfh.set_tf(tf)
 
-    def translate(self, translation: np.array, rotate=False):
+    def translate(self, translation: ndarray, rotate: bool = False):
         """Translate the component"""
         self.tfh.translate(translation, rotate)
 
-    def translate_x(self, x, rotate=False):
+    def translate_x(self, x: float, rotate: bool = False):
         """Translate the component along the x axis"""
         self.tfh.translate_x(x, rotate)
 
-    def translate_y(self, y, rotate=False):
+    def translate_y(self, y: float, rotate: bool = False):
         """Translate the component along the y axis"""
         self.tfh.translate_y(y, rotate)
 
-    def translate_z(self, z, rotate=False):
+    def translate_z(self, z: float, rotate: bool = False):
         """Translate the component along the z axis"""
         self.tfh.translate_z(z, rotate)
 
     def rotate(
-        self, axis: np.array = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
+        self, axis: ndarray = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
     ):
         """Rotate the component around axis, with given angle"""
         self.tfh.rotate(axis, angle)
 
-    def get_tf(self):
+    def get_tf(self) -> TransformMatrix:
         """Return the transform of the component"""
         return self.tfh.get_tf()
 
-    def to_dict(self, serializable_nodes):
+    def to_dict(self, serializable_nodes: dict[str, int]) -> dict:
         """Serialize a Directed Acyclic Graph (DAG) into a dictionary
         (key: {type, params, deps})
         recursive function.
