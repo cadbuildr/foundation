@@ -22,13 +22,11 @@ class Assembly(CompOrAssy):
         super().__init__(AssemblyRoot(name))
         self.components = []  # list of components/subassemblies
         # list of transform from origin frame to component origin frame.
-        self.tf_list: list[TransformMatrix] = []
+        self.tf_list = []  # list[TransformMatrix]
         self.id = name
 
     # TODO rename to add_part or add_assy (both are possible)
-    def add_component(
-        self, component: Component, tf: TransformMatrix | ndarray | None = None
-    ):
+    def add_component(self, component: Component, tf: TransformMatrix | None = None):
         """Add a component to the assembly
         We first figure out the transform from the assembly root to the component root
         We convert the OriginFrame of the component to be a default Frame and then register the
