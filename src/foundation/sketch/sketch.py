@@ -1,11 +1,7 @@
 from foundation.types.node import Node
 from foundation.sketch.point import Point
 from foundation.sketch.draw import Draw
-
-
-class SketchOrigin(Point):
-    def __init__(self, sketch):
-        super().__init__(sketch, 0.0, 0.0)
+from foundation.geometry.plane import PlaneFromFrame
 
 
 class Sketch(Node):
@@ -17,7 +13,8 @@ class Sketch(Node):
     - a sketch origin(Point, with 0,0 coordinates) as a child
     """
 
-    def __init__(self, plane):
+    # TODO check if plane is a PlaneFromFrame
+    def __init__(self, plane: PlaneFromFrame):
         super().__init__()
         self.register_child(plane)
         self.plane = plane
@@ -31,3 +28,8 @@ class Sketch(Node):
             "n_origin": self.origin.id,
         }
         self.pencil = Draw(self)
+
+
+class SketchOrigin(Point):
+    def __init__(self, sketch: Sketch):
+        super().__init__(sketch, 0.0, 0.0)

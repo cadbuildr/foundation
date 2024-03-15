@@ -1,19 +1,23 @@
 # File to remove dependenct on pytransform3d
 import numpy as np
+from numpy import ndarray
 
 
 class RotationMatrix:
-    def __init__(self, matrix):
+    def __init__(self, matrix: ndarray):
         self.matrix = matrix
 
     @staticmethod
-    def get_identity():
+    def get_identity() -> "RotationMatrix":
         return RotationMatrix(np.eye(3, dtype="float"))
 
     @staticmethod
-    def from_axis_angle(axis, angle, normalized=False):
+    def from_axis_angle(
+        axis: ndarray, angle: float, normalized: bool = True
+    ) -> "RotationMatrix":
         """Create the rotation matrix from an axis and an angle that rotate around that axis
-        if normalized, we normalize the axis ( otherwise will multiple angle by the norm if not 1)"""
+        if normalized, we normalize the axis ( otherwise will multiple angle by the norm if not 1)
+        """
         axis = axis / np.linalg.norm(axis)
         x, y, z = axis
         c = np.cos(angle)
@@ -45,7 +49,9 @@ class RotationMatrix:
         )
 
     @staticmethod
-    def from_quaternion(quaternion):
+    def from_quaternion(
+        quaternion: tuple[float, float, float, float] | ndarray
+    ) -> "RotationMatrix":
         q0, q1, q2, q3 = quaternion
 
         # first row
@@ -67,8 +73,11 @@ class RotationMatrix:
             np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
         )
 
+    # TODO define angles type
     @staticmethod
-    def from_euler_angles(angles):
+    def from_euler_angles(
+        angles: tuple[float, float, float] | ndarray
+    ) -> "RotationMatrix":
         row, pitch, yaw = angles
 
         crow = np.cos(row)
@@ -98,7 +107,7 @@ class RotationMatrix:
             np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
         )
 
-    def to_quaternion(self):
+    def to_quaternion(self) -> ndarray:
         # return a 4d vector that is a unit quaternion
         # TODO is this safe ? (division by 0)
 
@@ -132,7 +141,7 @@ class RotationMatrix:
             print("Warning: quaternion is zero, returning identity")
             return np.array([1.0, 0.0, 0.0, 0.0])
 
-    def to_axis_angle(self):
+    def to_axis_angle(self) -> ndarray:
         # return a 3d vector and a scalar
         angle = np.arccos((np.trace(self.matrix) - 1) / 2)
 
@@ -145,7 +154,7 @@ class RotationMatrix:
 
         return np.array([x, y, z]), angle
 
-    def to_euler_angles(self):
+    def to_euler_angles(self) -> ndarray:
         # return a 3d vector
         row = np.arctan2(self.matrix[2, 1], self.matrix[2, 2])
         pitch = np.arctan2(
@@ -157,18 +166,18 @@ class RotationMatrix:
 
 
 class TransformMatrix:
-    def __init__(self, matrix: np.array):
+    def __init__(self, matrix: ndarray):
         self.matrix = matrix
 
     def concat(self, B2C: "TransformMatrix"):
         """Considering self as A2B, return A2C"""
         return TransformMatrix(np.dot(B2C.matrix, self.matrix))
 
-    def concat_in_place(self, other):
+    def concat_in_place(self, other: "TransformMatrix"):
         # return a TransformMatrix
-        self.matrix = self.concat(other)
+        self.matrix = self.concat(other).matrix
 
-    def to_position_quaternion(self):
+    def to_position_quaternion(self) -> tuple[ndarray, ndarray]:
         """Return a tuple (position, quaternion)
         position is a 3d vector
         quaternion is a 4d vector
@@ -179,32 +188,34 @@ class TransformMatrix:
         quaternion = rot_mat.to_quaternion()
         return position, quaternion
 
-    def get_position(self):
+    def get_position(self) -> ndarray:
         return self.matrix[:3, 3]
 
-    def get_rotation(self):
+    def get_rotation(self) -> RotationMatrix:
         return RotationMatrix(self.matrix[:3, :3])
 
-    def get_position_and_euler(self):
+    def get_position_and_euler(self) -> tuple[ndarray, ndarray]:
         return self.matrix[:3, 3], self.get_rotation().to_euler_angles()
 
-    def inverse(self):
+    def inverse(self) -> "TransformMatrix":
         # return a TransformMatrix
         return TransformMatrix(np.linalg.inv(self.matrix))
 
     @staticmethod
-    def get_identity():
+    def get_identity() -> "TransformMatrix":
         return TransformMatrix(np.eye(4, dtype="float"))
 
     @staticmethod
-    def get_from_position(translation: np.array):
+    def get_from_position(translation: ndarray) -> "TransformMatrix":
         """x y z array as input"""
         matrix = np.eye(4, dtype="float")
         matrix[:3, 3] = translation
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_euler_angles(angles: np.array):
+    def get_from_euler_angles(
+        angles: tuple[float, float, float] | ndarray
+    ) -> "TransformMatrix":
         """row, pitch, yaw array as input"""
         rot_mat = RotationMatrix.from_euler_angles(angles)
         matrix = np.eye(4, dtype="float")
@@ -212,7 +223,9 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_quaternion(quaternion: np.array):
+    def get_from_quaternion(
+        quaternion: tuple[float, float, float, float] | ndarray
+    ) -> "TransformMatrix":
         """q0, q1, q2, q3 array as input"""
         rot_mat = RotationMatrix.from_quaternion(quaternion)
         matrix = np.eye(4, dtype="float")
@@ -220,18 +233,20 @@ class TransformMatrix:
         return TransformMatrix(matrix)
 
     @staticmethod
-    def from_rotation_matrix_and_position(rot_mat, position):
+    def from_rotation_matrix_and_position(
+        rot_mat: RotationMatrix, position: ndarray
+    ) -> "TransformMatrix":
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
         matrix[:3, 3] = position
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_rotation_matrix(rot_mat):
+    def get_from_rotation_matrix(rot_mat: RotationMatrix) -> "TransformMatrix":
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
         return TransformMatrix(matrix)
 
     @staticmethod
-    def get_from_axis_angle(axis: np.array, angle: float):
+    def get_from_axis_angle(axis: ndarray, angle: float) -> "TransformMatrix":
         pass

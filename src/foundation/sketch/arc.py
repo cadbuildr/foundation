@@ -6,7 +6,9 @@ import numpy as np
 from foundation.types.parameters import UnCastFloat, cast_to_float_parameter
 
 
-def get_arc_center_from_3_points_coords(p1x, p1y, p2x, p2y, p3x, p3y):
+def get_arc_center_from_3_points_coords(
+    p1x: float, p1y: float, p2x: float, p2y: float, p3x: float, p3y: float
+) -> tuple[float, float]:
     """
     Get the center of an arc from 3 points
     p1x, p1y, p2x, p2y, p3x, p3y"""
@@ -45,14 +47,14 @@ class Arc(Node):  # TODO add SketchShape
         self.register_child(self.p1)
         self.register_child(self.p2)
 
-    def calculate_radius(self):
+    def calculate_radius(self) -> float:
         """Calculate the radius of the arc"""
         return math.sqrt(
             (self.p1.x.value - self.center.x.value) ** 2
             + (self.p1.y.value - self.center.y.value) ** 2
         )
 
-    def calculate_start_and_end_angles(self):
+    def calculate_start_and_end_angles(self) -> tuple[float, float]:
         """Calculate the start and end angles of the arc"""
         return math.atan2(
             self.p1.y.value - self.center.y.value, self.p1.x.value - self.center.x.value
@@ -60,7 +62,7 @@ class Arc(Node):  # TODO add SketchShape
             self.p2.y.value - self.center.y.value, self.p2.x.value - self.center.x.value
         )
 
-    def get_points(self, n_points=20):
+    def get_points(self, n_points: int = 20) -> list[Point]:
         """Get Point along the eclipse"""
         s_angle, end_angle = self.calculate_start_and_end_angles()
         radius = self.calculate_radius()
@@ -76,7 +78,7 @@ class Arc(Node):  # TODO add SketchShape
             for angle in angles
         ]
 
-    def rotate(self, angle, center=None):
+    def rotate(self, angle: float, center: Point | None = None) -> "Arc":
         """Rotate the arc"""
         if center is None:
             center = self.center.frame.origin.point
@@ -85,7 +87,7 @@ class Arc(Node):  # TODO add SketchShape
         )
         return new_arc
 
-    def translate(self, dx, dy):
+    def translate(self, dx: float, dy: float) -> "Arc":
         """Translate the arc"""
         new_arc = Arc(
             self.center.translate(dx, dy),
@@ -95,7 +97,7 @@ class Arc(Node):  # TODO add SketchShape
         return new_arc
 
     @staticmethod
-    def from_three_points(p1: Point, p2: Point, p3: Point):
+    def from_three_points(p1: Point, p2: Point, p3: Point) -> "Arc":
         """Create an arc that starts at p1, then p2 then ends at p3
         Uses matrix formula :
          https://math.stackexchange.com/questions/213658/get-the-equation-of-a-circle-when-given-3-points/1144546#1144546
@@ -132,7 +134,7 @@ class EllipseArc(Node):
         self.end_angle = cast_to_float_parameter(angle2)
         self.sketch = center.sketch
 
-    def get_points(self, n_points=20):
+    def get_points(self, n_points: int = 20) -> list[Point]:
         """Get Point along the eclipse"""
         angles = [
             self.s_angle + (self.end_angle.value - self.s_angle.value) * i / n_points
@@ -147,7 +149,9 @@ class EllipseArc(Node):
             for angle in angles
         ]
 
-    def rotate(self, angle, center=None):
+    def rotate(
+        self, angle: float, center: Point | None = None
+    ) -> "Arc":  # TODO  check why this is not an ellipse
         """Rotate the arc"""
         if center is None:
             center = self.center.frame.origin.point
@@ -156,7 +160,9 @@ class EllipseArc(Node):
         )
         return new_arc
 
-    def translate(self, dx, dy):
+    def translate(
+        self, dx: float, dy: float
+    ) -> "Arc":  # TODO  check why this is not an ellipse
         """Translate the arc"""
         new_arc = Arc(
             self.center.translate(dx, dy),

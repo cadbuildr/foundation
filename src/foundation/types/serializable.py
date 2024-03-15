@@ -1,9 +1,6 @@
-from typing import Dict
-
-
 # This is a dictionary that maps the name of the Serializable Nodes to
 # a unique integer. This is used to serialize the DAG.
-serializable_nodes: Dict[str, int] = {
+serializable_nodes: dict[str, int] = {
     "Component": 0,
     "Assembly": 1,
     "Extrusion": 2,

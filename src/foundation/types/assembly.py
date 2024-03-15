@@ -1,12 +1,12 @@
 from foundation.types.component import Component
 import numpy as np
+from numpy import ndarray
 
 from foundation.geometry.transform3d import TransformMatrix
 from itertools import count
 from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.types.roots import AssemblyRoot
-from typing import List
 
 
 class Assembly(CompOrAssy):
@@ -22,12 +22,12 @@ class Assembly(CompOrAssy):
         super().__init__(AssemblyRoot(name))
         self.components = []  # list of components/subassemblies
         # list of transform from origin frame to component origin frame.
-        self.tf_list: List[TransformMatrix] = []
+        self.tf_list: list[TransformMatrix] = []
         self.id = name
 
     # TODO rename to add_part or add_assy (both are possible)
     def add_component(
-        self, component: Component, tf: TransformMatrix | None | np.ndarray = None
+        self, component: Component, tf: TransformMatrix | ndarray | None = None
     ):
         """Add a component to the assembly
         We first figure out the transform from the assembly root to the component root
@@ -36,7 +36,7 @@ class Assembly(CompOrAssy):
         """
         if tf is None:
             tf = component.get_tf()
-        if type(tf) == np.ndarray:
+        if type(tf) == ndarray:
             tf = TransformMatrix(tf)
         # Modifying component directly ? Might not be the best.
         if tf is None:
@@ -73,7 +73,7 @@ class Assembly(CompOrAssy):
     def get_sketches(self):
         return list(set(self.head.rec_list_nodes(type_filter=["Sketch"])))
 
-    def solve_joints(self, verbose=False):
+    def solve_joints(self, verbose: bool = False):
         # TODO : GCS
         raise NotImplementedError("GCS not implemented yet")
         # self.joints_cluster_manager.solve(verbose=verbose)
