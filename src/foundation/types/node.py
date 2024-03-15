@@ -25,7 +25,7 @@ class Node(object):
 
     def __init__(self, parents: list["Node"] = None):
         """At Init we register the new node to all provided parents"""
-        self.params = None
+        self.params = {}
         self.extra_params = {}
         self.parents = parents
         # print(self.parents)
