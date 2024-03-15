@@ -7,13 +7,14 @@ from foundation.types.parameters import (
     UnCastBool,
     cast_to_bool_parameter,
 )
+from foundation.sketch.closed_sketch_shape import ClosedSketchShapeTypes
 
 
 class Lathe(Operation, Node):
     """A Lathe operation is a closed shape,
     that is revolved around an axis, to make as solid"""
 
-    def __init__(self, shape: SketchShape, axis: Axis, cut: UnCastBool = False):
+    def __init__(self, shape: ClosedSketchShapeTypes, axis: Axis, cut: UnCastBool = False):
         Operation.__init__(self)
         Node.__init__(self, parents=[])
         self.axis = axis

@@ -214,3 +214,6 @@ class Hexagon(Polygon):
         radius = side_length / math.sqrt(3)
         # thanks copilot : https://www.wolframalpha.com/input/?i=side+length+of+hexagon+with+radius+1
         return Hexagon(center, radius)
+
+
+ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedSketchShape

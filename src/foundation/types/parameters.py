@@ -51,23 +51,23 @@ class StringParameter(Parameter, Orphan):
         self.params = {"value": value}
 
 
-def cast_to_float_parameter(value):
+def cast_to_float_parameter(value: int | float | FloatParameter) -> FloatParameter:
     if isinstance(value, float):
         p = FloatParameter(value)
         return p
     if isinstance(value, int):
         p = FloatParameter(float(value))
         return p
-    elif isinstance(value, Parameter):
+    elif isinstance(value, FloatParameter):
         return value
     else:
         raise TypeError("value must be a float or a Parameter")
 
 
-def cast_to_int_parameter(value):
+def cast_to_int_parameter(value: int | IntParameter) -> IntParameter:
     if isinstance(value, int):
         return IntParameter(value)
-    elif isinstance(value, Parameter):
+    elif isinstance(value, IntParameter):
         return value
     else:
         raise TypeError("value must be an int or a Parameter")
