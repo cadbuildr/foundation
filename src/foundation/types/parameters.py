@@ -14,6 +14,9 @@ class Parameter(NodeInterface):
     def set_value(self, value):
         self.value = value
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.value})"
+
 
 class FloatParameter(Parameter, Orphan):
     """Store a float value as a parameter"""
@@ -73,19 +76,19 @@ def cast_to_int_parameter(value: int | IntParameter) -> IntParameter:
         raise TypeError("value must be an int or a Parameter")
 
 
-def cast_to_bool_parameter(value):
+def cast_to_bool_parameter(value: bool | BoolParameter) -> BoolParameter:
     if isinstance(value, bool):
         return BoolParameter(value)
-    elif isinstance(value, Parameter):
+    elif isinstance(value, BoolParameter):
         return value
     else:
         raise TypeError("value must be a bool or a Parameter")
 
 
-def cast_to_string_parameter(value):
+def cast_to_string_parameter(value: str | StringParameter) -> StringParameter:
     if isinstance(value, str):
         return StringParameter(value)
-    elif isinstance(value, Parameter):
+    elif isinstance(value, StringParameter):
         return value
     else:
         raise TypeError("value must be a str or a Parameter")

@@ -16,13 +16,15 @@ from foundation.types.parameters import (
     cast_to_string_parameter,
 )
 
+from foundation.sketch.closed_sketch_shape import ClosedSketchShapeTypes
+
 
 class Extrusion(Operation, Node):
-    parent_types = [OriginFrame]
+    parent_types = ["OriginFrame"]
 
     def __init__(
         self,
-        shape: ClosedSketchShape,
+        shape: ClosedSketchShapeTypes,
         end: UnCastFloat = 1.0,
         start: UnCastFloat = 0.0,
         cut: UnCastBool = False,

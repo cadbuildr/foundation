@@ -23,13 +23,13 @@ class Rectangle(Polygon):
 
     def rotate(self, angle: float, center: Point | None = None) -> "Rectangle":
         if center is None:
-            center = self.lines[0].p1.point
-        lines = [l.rotate(angle, center) for l in self.lines]
-        return Rectangle(self.sketch, *lines)
+            center = self.lines[0].p1
+        points = [l.rotate(angle, center).p1 for l in self.lines]
+        return Rectangle(self.sketch, *points)
 
     def translate(self, dx: float, dy: float) -> "Rectangle":
-        lines = [l.translate(dx, dy) for l in self.lines]
-        return Rectangle(self.sketch, *lines)
+        points = [l.translate(dx, dy).p1 for l in self.lines]
+        return Rectangle(self.sketch, *points)
 
     @staticmethod
     def from_center_and_point(center: Point, p1: Point) -> "Rectangle":
@@ -52,7 +52,7 @@ class Rectangle(Polygon):
         sketch = p1.sketch
         l1 = Line(p1, p2)
 
-        width = l1.distance_to_point(opposed, abs=False)
+        width = l1.distance_to_point(opposed, absolute=False)
         # angle between x axis and [p1, p2]
         angle = math.atan2(l1.dy(), l1.dx())
 

@@ -1,5 +1,4 @@
 import math
-from foundation.sketch.sketch import Sketch
 from foundation.sketch.point import Point, PointWithTangent
 from foundation.types.node import Node
 
@@ -74,7 +73,7 @@ class TwoPointsSpline:
 
 
 class Spline(Node):
-    parent_types = [Sketch]
+    parent_types = ["Sketch"]
 
     def __init__(self, points_with_tangent: list[PointWithTangent]):
         assert len(points_with_tangent) >= 2
@@ -84,7 +83,7 @@ class Spline(Node):
 
         self.points_with_tangent = points_with_tangent
 
-    def get_points(self, n_points: int = None) -> list[Point]:
+    def get_points(self, n_points: int | None = None) -> list[Point]:
         """Get Point along the spline, group points by 2 and then use the ThreePointSpline class to find the points"""
         if n_points is None:
             n_points = len(self.points_with_tangent) * 20
