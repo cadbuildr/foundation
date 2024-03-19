@@ -1,6 +1,6 @@
 from foundation.types.node import Node
 
-default_colors = {
+default_colors: dict[str, list[float]] = {
     "red": [1, 0, 0],
     "green": [0, 1, 0],
     "blue": [0, 0, 1],
@@ -62,6 +62,7 @@ class Material(Node):
             )
         self.diffuse_color = default_colors[color_name]
         self.params["options"] = {"diffuse_color": self.diffuse_color}
+        # dict{str: dict{str: list[float]}}
 
     def attach_to_node(self, node_id):
         self.params["painted_node_ids"].append(node_id)

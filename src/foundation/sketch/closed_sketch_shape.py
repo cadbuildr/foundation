@@ -1,7 +1,6 @@
 from foundation.types.node import Node
 import math
 from foundation.sketch.base import SketchShape
-
 from foundation.sketch.line import Line
 from foundation.sketch.point import Point
 from foundation.types.parameters import (
@@ -10,6 +9,10 @@ from foundation.types.parameters import (
     cast_to_float_parameter,
     cast_to_int_parameter,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from foundation.sketch.sketch import Sketch
 
 
 class ClosedSketchShape(SketchShape):

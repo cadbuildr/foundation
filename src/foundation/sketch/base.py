@@ -2,6 +2,11 @@ from foundation.types.node_interface import NodeInterface
 from foundation.geometry.frame import Frame
 from foundation.geometry.plane import PlaneFromFrame
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from foundation.sketch.sketch import Sketch
+
 
 """ File with code to produce (2D) sketches on planes
 This is largely inspired by shapely and provides an interface to

@@ -9,9 +9,10 @@ from foundation.types.parameters import (
 from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 
-from typing import TYPE_CHECKING
 import numpy as np
 import math
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
