@@ -158,8 +158,8 @@ class EllipseArc(Node):
             center.rotate(angle, center),
             self.a,
             self.b,
-            self.s_angle + angle,
-            self.end_angle + angle,
+            self.s_angle.value + angle,
+            self.end_angle.value + angle,
         )
         return new_arc
 

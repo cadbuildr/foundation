@@ -186,7 +186,7 @@ class Ellipse(ClosedSketchShape, Node):
 
 # TODO make it a Node
 class Hexagon(Polygon):
-    def __init__(self, center: Point, radius: UnCastFloat):
+    def __init__(self, center: Point, radius: float):
         # TODO : make sure the center is in the sketch
         # TODO : make sure the radius is in the sketch
         lines = []
@@ -211,9 +211,7 @@ class Hexagon(Polygon):
         Polygon.__init__(self, self.sketch, lines)
 
     @staticmethod
-    def from_center_and_side_length(
-        center: Point, side_length: UnCastFloat
-    ) -> "Hexagon":
+    def from_center_and_side_length(center: Point, side_length: float) -> "Hexagon":
         radius = side_length / math.sqrt(3)
         # thanks copilot : https://www.wolframalpha.com/input/?i=side+length+of+hexagon+with+radius+1
         return Hexagon(center, radius)

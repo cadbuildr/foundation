@@ -73,7 +73,7 @@ class Point(SketchShape, Node):
 
     def translate(self, dx: float, dy: float) -> "Point":
         """Make a new point by translating this point by a given distance"""
-        return Point(self.sketch, self.x + dx, self.y + dy)
+        return Point(self.sketch, self.x.value + dx, self.y.value + dy)
 
     def distance_to_other_point(self, p2: "Point") -> float:
         return np.sqrt(
