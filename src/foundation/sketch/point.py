@@ -9,9 +9,10 @@ from foundation.types.parameters import (
 from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 
-from typing import TYPE_CHECKING
 import numpy as np
 import math
+
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
@@ -72,7 +73,7 @@ class Point(SketchShape, Node):
 
     def translate(self, dx: float, dy: float) -> "Point":
         """Make a new point by translating this point by a given distance"""
-        return Point(self.sketch, self.x + dx, self.y + dy)
+        return Point(self.sketch, self.x.value + dx, self.y.value + dy)
 
     def distance_to_other_point(self, p2: "Point") -> float:
         return np.sqrt(

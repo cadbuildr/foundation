@@ -23,13 +23,13 @@ class Node(object):
     )  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
 
-    def __init__(self, parents: list["Node"] = None):
+    def __init__(self, parents: list["Node"] | None = None):
         """At Init we register the new node to all provided parents"""
-        self.params = None
-        self.extra_params = {}
+        self.params = {}
+        # self.extra_params = {} # not used for now so i commented it out
         self.parents = parents
         # print(self.parents)
-        self.children = []  # TODO should probably be a dict
+        self.children: list["Node"] = []  # TODO should probably be a dict
         # node id used to identify component  (maybe should be a UUID to keep state
         self.id = next(self._ids)
         # accross multiple compilations ... )
@@ -155,7 +155,7 @@ class Orphan(Node):
 
     def attach_to_parent(self, parent: Node):
         """Attach the node to the parent"""
-        if parent not in self.parents:
+        if self.parents is not None and parent not in self.parents:
             # print("adding parent")
             self.parents.append(parent)
             parent.register_child(self)

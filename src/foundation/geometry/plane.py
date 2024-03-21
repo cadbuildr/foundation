@@ -62,39 +62,48 @@ class PlaneFactory:
     def __init__(self):
         self.counter = 0
 
-    def get_parallel_plane(
-        self, plane: PlaneFromFrame, distance: float, name: str = None
-    ) -> PlaneFromFrame:
+    def _get_name(self, name: str | None) -> str:
         if name is None:
             name = "plane_" + str(self.counter)
         self.counter += 1
-        return plane.get_parallel_plane(distance, name)
+        return name
+
+    def get_parallel_plane(
+        self, plane: PlaneFromFrame, distance: float, name: str | None = None
+    ) -> PlaneFromFrame:
+        return plane.get_parallel_plane(distance, self._get_name(name))
 
     def get_angle_plane_from_axis(
-        self, plane: PlaneFromFrame, axis: ndarray, angle: float, name: str = None
+        self,
+        plane: PlaneFromFrame,
+        axis: ndarray,
+        angle: float,
+        name: str | None = None,
     ) -> PlaneFromFrame:
         """return a plane rotated around the given axis by the given angle
         axis must be on the frame"""
 
-        if name is None:
-            name = "plane_" + str(self.counter)
-        self.counter += 1
-        return plane.get_angle_plane_from_axis(axis, angle, name)
+        return plane.get_angle_plane_from_axis(axis, angle, self._get_name(name))
 
-    def get_xy_plane_from_frame(self, frame: Frame, name: str = None) -> PlaneFromFrame:
-        self.counter += 1
+    def get_xy_plane_from_frame(
+        self, frame: Frame, name: str | None = None
+    ) -> PlaneFromFrame:
         # xy is the default plane from the frame ( no need for any rotation)
-        return PlaneFromFrame(frame, name)
+        return PlaneFromFrame(frame, self._get_name(name))
 
-    def get_xz_plane_from_frame(self, frame: Frame, name: str = None) -> PlaneFromFrame:
-        self.counter += 1
+    def get_xz_plane_from_frame(
+        self, frame: Frame, name: str | None = None
+    ) -> PlaneFromFrame:
+        name = self._get_name(name)
         rotated_frame = frame.get_rotated_frame_from_axis(
             frame.get_x_axis(), np.pi / 2, name
         )
         return PlaneFromFrame(rotated_frame, name)
 
-    def get_yz_plane_from_frame(self, frame: Frame, name: str = None) -> PlaneFromFrame:
-        self.counter += 1
+    def get_yz_plane_from_frame(
+        self, frame: Frame, name: str | None = None
+    ) -> PlaneFromFrame:
+        name = self._get_name(name)
         rotated_frame = frame.get_rotated_frame_from_axis(
             frame.get_y_axis(), np.pi / 2, name
         )

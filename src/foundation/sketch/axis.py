@@ -8,9 +8,14 @@ from foundation.sketch.line import Line
 
 
 class Axis(Node):
-    """a special line can be an axis #TODO is this general enough ?"""
+    """Represents a special line that can serve as an axis for transformations."""
 
     def __init__(self, line: Line):
+        """Initialize an Axis object.
+
+        Args:
+            line (Line): the line that will be the axis
+        """
         Node.__init__(self, parents=[line.sketch])
         self.register_child(line)
         self.sketch_frame = line.sketch.frame
@@ -18,14 +23,22 @@ class Axis(Node):
         self.params = {"n_line": line.id, "n_frame": self.sketch_frame.id}
 
     def get_axis_rotation(self) -> float:
-        # return angle of rotation compared to the y axis
+        """Calculate the rotation angle of the axis compared to the y axis.
+
+        Returns:
+            float: the rotation angle in radians
+        """
         p1, p2 = self.line.p1, self.line.p2
         x1, y1 = p1.x.value, p1.y.value
         x2, y2 = p2.x.value, p2.y.value
         return math.atan2(y2 - y1, x2 - x1)
 
     def get_axis_translation(self) -> float:
-        # return the distance from the line to the origin
+        """Calculate the distance from the origin to the axis.
+
+        Returns:
+            float: the distance from the origin to the axis
+        """
         p1, p2 = self.line.p1, self.line.p2
         x1, y1 = p1.x.value, p1.y.value
         x2, y2 = p2.x.value, p2.y.value
@@ -35,6 +48,11 @@ class Axis(Node):
         return num / line_length
 
     def get_axis_perpendicular_normed_vector(self) -> tuple[float, float]:
+        """Calculate the normalized perpendicular vector to the axis line.
+
+        Returns:
+            tuple[float, float]: the normalized perpendicular vector
+        """
         p1, p2 = self.line.p1, self.line.p2
         x1, y1 = p1.x.value, p1.y.value
         x2, y2 = p2.x.value, p2.y.value
@@ -44,8 +62,14 @@ class Axis(Node):
         return y / length, -x / length
 
     def transform_point(self, point: Point) -> Point:
-        """Default axis for lathe is the y axis, so we need to
-        transform the points to translate and rotate them"""
+        """Transform a point based on the axis.
+
+        Args:
+            point (Point): The point to transform.
+
+        Returns:
+            Point: The transformed point.
+        """
         if self.frame is None:
             self.get_new_frame()
 
@@ -54,6 +78,7 @@ class Axis(Node):
 
     # TODO check if the function is end for type this because self.frame is not defined in __init__
     def get_new_frame(self):
+        # TODO pydoc
         # TODO create a new frame with the axis as the origin
 
         # translation

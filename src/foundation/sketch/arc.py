@@ -35,7 +35,7 @@ def get_arc_center_from_3_points_coords(
 
 
 class Arc(Node):  # TODO add SketchShape
-    parent_types = [Sketch]
+    parent_types = ["Sketch"]
 
     def __init__(self, center: Point, p1: Point, p2: Point):
         Node.__init__(self, parents=[center.sketch])
@@ -116,7 +116,7 @@ class Arc(Node):  # TODO add SketchShape
 
 
 class EllipseArc(Node):
-    parent_types = [Sketch]
+    parent_types = ["Sketch"]
 
     def __init__(
         self,
@@ -149,24 +149,27 @@ class EllipseArc(Node):
             for angle in angles
         ]
 
-    def rotate(
-        self, angle: float, center: Point | None = None
-    ) -> "Arc":  # TODO  check why this is not an ellipse
+    # TODO test EllipseArc rotation and translation
+    def rotate(self, angle: float, center: Point | None = None) -> "EllipseArc":
         """Rotate the arc"""
         if center is None:
             center = self.center.frame.origin.point
-        new_arc = Arc(
-            center.rotate(angle), self.p1.rotate(angle), self.p2.rotate(angle)
+        new_arc = EllipseArc(
+            center.rotate(angle, center),
+            self.a,
+            self.b,
+            self.s_angle.value + angle,
+            self.end_angle.value + angle,
         )
         return new_arc
 
-    def translate(
-        self, dx: float, dy: float
-    ) -> "Arc":  # TODO  check why this is not an ellipse
+    def translate(self, dx: float, dy: float) -> "EllipseArc":
         """Translate the arc"""
-        new_arc = Arc(
+        new_arc = EllipseArc(
             self.center.translate(dx, dy),
-            self.p1.translate(dx, dy),
-            self.p2.translate(dx, dy),
+            self.a,
+            self.b,
+            self.s_angle,
+            self.end_angle,
         )
         return new_arc

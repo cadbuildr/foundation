@@ -164,5 +164,5 @@ class OriginFrame(Frame):
 
         # There is a bug here it should be the parents not the children
         for p in self.parents:
-            if type(p) in [Frame, OriginFrame]:
+            if isinstance(p, (Frame, OriginFrame)):
                 p.compute_params()

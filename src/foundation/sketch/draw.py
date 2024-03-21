@@ -18,7 +18,7 @@ class Draw:
         self.y = 0.0
         self.point_added = False
         self.point_idx = 0
-        self.points = []
+        self.points: list[Point] = []
 
     def move_to(self, x: float, y: float):
         """Move to absolute position"""

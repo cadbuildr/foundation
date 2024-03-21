@@ -23,9 +23,15 @@ class TFHelper:
     def get_tf(self) -> TransformMatrix:
         return self.tf
 
-    def translate(self, translation: ndarray, rotate: bool = False) -> "TFHelper":
+    def translate(
+        self, translation: ndarray | list[float], rotate: bool = False
+    ) -> "TFHelper":
         """Translation is a 3d vector (numpy array)"""
-        translation = np.array(translation, dtype="float")
+        if isinstance(translation, list):
+            translation = np.array(translation, dtype="float")
+        if translation.shape != (3,):
+            raise ValueError("translation should be a 3d vector")
+
         if rotate:
             self.rotate_and_translate(RotationMatrix.get_identity(), translation)
         else:
@@ -51,10 +57,9 @@ class TFHelper:
         return self
 
     def rotate_and_translate(
-        self, rotation_matrix: RotationMatrix, translation: ndarray
+        self, rotation_matrix: RotationMatrix, translation: list[float] | ndarray
     ) -> "TFHelper":
         """using a rotation_matrix and translation, update the tf"""
-        translation = np.array(translation, dtype="float")
         pq_transform = TransformMatrix.from_rotation_matrix_and_position(
             rotation_matrix, translation
         )

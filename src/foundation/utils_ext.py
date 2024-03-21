@@ -7,10 +7,14 @@ try:
     import websocket
 except ImportError:
     # mock the websocket module for environments where it is not available
-    class websocket:
+    from types import ModuleType
+
+    class MockWebSocket(ModuleType):
         @staticmethod
         def create_connection(*args, **kwargs):
             raise ImportError("websocket not available")
+
+    websocket = MockWebSocket("websocket")
 
 
 def showExt(component: Component) -> None:

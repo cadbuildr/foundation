@@ -37,9 +37,10 @@ class CompOrAssy(NodeInterface):
 
     def paint(self, color: str = "green"):
         """Paint the component"""
-        self.material = Material()
-        self.material.set_diffuse_color(color)
-        self.set_material(self.material)
+        self.material = Material()  # TODO maybe init to Material() in __init__?
+        if self.material is not None:
+            self.material.set_diffuse_color(color)
+            self.set_material(self.material)
 
     def xy(self):
         """Return the XY plane of the component"""
