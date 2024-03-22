@@ -57,19 +57,29 @@ class ComponentRoot(BaseRoot):
 
 # adding the list of components as children of the AssemblyRoot
 class AssemblyRootChildren(RootChildren):
-    components = List[ComponentRoot]
+    components = List[
+        ComponentRoot
+    ]  # TODO this is not great when assemblies contain sub assemblies
 
 
 class AssemblyRoot(BaseRoot):
+    children_class = AssemblyRootChildren
+
     def __init__(self, name: UnCastString | None = None):
         super().__init__(name, "assembly_")
+        self.children.set_components([])
 
     def add_component(self, component: ComponentRoot):
-        self.children.components.append(component)
+        self.children._children["components"].append(component)
 
 
 RootChildren.__annotations__["origin_frame"] = OriginFrame
 RootChildren.__annotations__["name"] = StringParameter
 RootChildren.__annotations__["operations"] = List[OperationTypes]
 RootChildren.__annotations__["material"] = Material
+
+AssemblyRootChildren.__annotations__["origin_frame"] = OriginFrame
+AssemblyRootChildren.__annotations__["name"] = StringParameter
+AssemblyRootChildren.__annotations__["operations"] = List[OperationTypes]
+AssemblyRootChildren.__annotations__["material"] = Material
 AssemblyRootChildren.__annotations__["components"] = List[ComponentRoot]
