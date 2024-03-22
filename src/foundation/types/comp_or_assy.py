@@ -94,4 +94,4 @@ class CompOrAssy(NodeInterface):
         recursive function.
         """
         # self.attach_operations()
-        return self.head.to_dag()
+        return self.head.to_dag(ids_already_seen=set())

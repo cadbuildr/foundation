@@ -82,8 +82,6 @@ class Node(object):
         result is a dictionary of dictionaries with keys the id of the node and the
         values the dictionary of the node (see to_dict function)
         """
-        if ids_already_seen is None:
-            ids_already_seen = set()
         res = {}
         # add yourself if not already seen
         if self.id not in ids_already_seen:

@@ -1,5 +1,6 @@
 from foundation.types.node import Node
 from foundation.types.node_children import NodeChildren
+from typing import Dict, Any
 
 default_colors: dict[str, list[float]] = {
     "red": [1, 0, 0],
@@ -35,11 +36,13 @@ default_colors: dict[str, list[float]] = {
 
 
 class MaterialChildren(NodeChildren):
-    pass
+    options: dict
 
 
 class Material(Node):
     # counter for material names
+    children_class = MaterialChildren
+
     def __init__(self):
         """Material Node"""
         super().__init__()
@@ -71,3 +74,6 @@ class Material(Node):
 
     def attach_to_node(self, node_id):
         self.params["painted_node_ids"].append(node_id)
+
+
+# MaterialChildren.__annotations__ = Dict[str, Any]

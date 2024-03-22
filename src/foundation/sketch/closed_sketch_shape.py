@@ -8,6 +8,8 @@ from foundation.types.parameters import (
     UnCastInt,
     cast_to_float_parameter,
     cast_to_int_parameter,
+    FloatParameter,
+    IntParameter,
 )
 from typing import TYPE_CHECKING
 from foundation.types.node_children import NodeChildren
@@ -106,8 +108,8 @@ PolygonChildren.__annotations__["lines"] = list[Line]
 
 class CircleChildren(NodeChildren):
     center: Point
-    radius: UnCastFloat
-    n_points: UnCastInt
+    radius: FloatParameter
+    n_points: IntParameter
 
 
 class Circle(ClosedSketchShape, Node):
@@ -163,8 +165,8 @@ class Circle(ClosedSketchShape, Node):
 
 
 CircleChildren.__annotations__["center"] = Point
-CircleChildren.__annotations__["radius"] = UnCastFloat
-CircleChildren.__annotations__["n_points"] = UnCastInt
+CircleChildren.__annotations__["radius"] = FloatParameter
+CircleChildren.__annotations__["n_points"] = IntParameter
 
 
 class EllipseChildren(NodeChildren):

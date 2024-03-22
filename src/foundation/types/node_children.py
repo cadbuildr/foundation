@@ -125,7 +125,7 @@ class NodeChildren(metaclass=NodeChildrenMeta):
         if ids_already_seen is None:
             ids_already_seen = set()
         res = {}
-        for c in self._children.values():
+        for _, c in self._children.items():
             if c is not None:
                 # check if c is not a list
                 if not isinstance(c, list):
@@ -145,10 +145,11 @@ class NodeChildren(metaclass=NodeChildrenMeta):
         res = {}
         for k, v in self._children.items():
             if v is not None:
-                try:
+                # check if a list
+                if isinstance(v, list):
+                    res[k] = [c.id for c in v]
+                else:
                     res[k] = v.id
-                except AttributeError:
-                    print(v)
         return res
 
 
