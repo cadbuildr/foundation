@@ -18,7 +18,7 @@ except ImportError:
 
 
 def showExt(component: Component) -> None:
-    dic = component.to_dict(serializable_nodes=serializable_nodes)
+    dic = component.to_dag()
 
     try:
         ws = websocket.create_connection("ws://127.0.0.1:3000")

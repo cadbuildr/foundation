@@ -111,6 +111,8 @@ class CircleChildren(NodeChildren):
 
 
 class Circle(ClosedSketchShape, Node):
+    children_class = CircleChildren
+
     def __init__(self, center: Point, radius: UnCastFloat, n_points: UnCastInt = 20):
         Node.__init__(self, [center.sketch])
         ClosedSketchShape.__init__(self, center.sketch)

@@ -1,5 +1,6 @@
 from itertools import count
 from .node_children import NodeChildren
+from foundation.types.serializable import serializable_nodes
 
 
 class Node(object):
@@ -73,39 +74,47 @@ class Node(object):
             res += c.rec_list_nodes(type_filter)
         return res
 
-    def to_dict(self, serializable_nodes):
-        # TODO remove serializable_nodes as a param as it can just be imported
-        """Serialize a Directed Acyclic Graph (DAG) into a dict with
-        (id_of_node:
-            {'type': type_of_node, 'deps': [list_of_ids_of_children]}  #TODO convert list of ids of children
-            to a dict that contains the parameter name of the children
-        recursive function.
+    def to_dag(
+        self, ids_already_seen: set = set(), only_keep_serializable_nodes: bool = True
+    ) -> dict:
         """
-        # print("GOING in : ", type(self), " my id is ", self.id)
+        Return the Direct Acyclig Graph (DAG) of this node and all it's children recursively
+        result is a dictionary of dictionaries with keys the id of the node and the
+        values the dictionary of the node (see to_dict function)
+        """
+        if ids_already_seen is None:
+            ids_already_seen = set()
+        res = {}
+        # add yourself if not already seen
+        if self.id not in ids_already_seen:
+            res[self.id] = self.to_dict(only_keep_serializable_nodes)
+            ids_already_seen.add(self.id)
+        # add all the children
+        res.update(
+            self.children.to_dag(
+                ids_already_seen=ids_already_seen,
+                only_keep_serializable_nodes=only_keep_serializable_nodes,
+            )
+        )
+        return res
 
-        if type(self).__name__ not in serializable_nodes.keys():
+    def to_dict(self, only_keep_serializable_nodes: bool = True) -> dict:
+        """Current Node as a dictionary"""
+        if (
+            only_keep_serializable_nodes
+            and type(self).__name__ not in serializable_nodes.keys()
+        ):
             print(serializable_nodes.keys())
-            raise TypeError(f"Node type {type(self).__name__} is not serializable")
+            raise TypeError(
+                f"""Node type {type(self).__name__} is not serializable, make sure 
+                            to add it to the serializable_nodes dict in the serializable.py file."""
+            )
         node_dict = {
             "type": serializable_nodes[type(self).__name__],
-            # 'params':  TODO add the parameters of the node, if any
-            "deps": [],
+            "deps": self.children.get_as_dict_of_ids(),
+            "params": self.params,
         }
-
-        if self.params is not None:
-            # TODO instead of using self.params,
-            # we should generate self.params from the children
-            # for this we need to have named children ( switch to dict instead of list)
-
-            node_dict["params"] = self.params
-        res = {}
-        res[self.id] = node_dict
-
-        # print("My children are ", self.children)
-        for n in self.children:
-            res.update(n.to_dict(serializable_nodes))
-            node_dict["deps"].append(n.id)
-        return res
+        return node_dict
 
     def get_children(self, type_filter: list[str]):
         """return the children of the component, eventually filtered"""

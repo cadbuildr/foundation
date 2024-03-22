@@ -96,20 +96,36 @@ class Point(SketchShape, Node):
         )
 
 
+PointChildren.__annotations__["x"] = FloatParameter
+PointChildren.__annotations__["y"] = FloatParameter
+PointChildren.__annotations__["anchor"] = BoolParameter
+PointChildren.__annotations__["name"] = StringParameter
+
+
+class PointWithTangentChildren(NodeChildren):
+    p: Point
+    angle: FloatParameter
+
+
 class PointWithTangent(SketchShape, Node):
+    children_class = PointWithTangentChildren
+
     def __init__(self, p: Point, angle: UnCastFloat):
-        self.p = p
-        self.angle = cast_to_float_parameter(angle)
         Node.__init__(self, [p.sketch])
         SketchShape.__init__(self, p.sketch)
-        self.angle.attach_to_parent(self)
+
+        self.children.set_p(p)
+        self.children.set_angle(cast_to_float_parameter(angle))
+
+        # shortcuts
+        self.p = self.children.p
+        self.angle = self.children.angle
+
         self.params = {
             "n_p": p.id,
             "n_angle": self.angle.id,
         }
 
 
-PointChildren.__annotations__["x"] = FloatParameter
-PointChildren.__annotations__["y"] = FloatParameter
-PointChildren.__annotations__["anchor"] = BoolParameter
-PointChildren.__annotations__["name"] = StringParameter
+PointWithTangentChildren.__annotations__["p"] = Point
+PointWithTangentChildren.__annotations__["angle"] = FloatParameter

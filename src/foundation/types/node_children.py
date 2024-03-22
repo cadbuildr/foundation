@@ -119,6 +119,38 @@ class NodeChildren(metaclass=NodeChildrenMeta):
     def __iter__(self):
         return iter(filter(None, self._children.values()))
 
+    def to_dag(
+        self, ids_already_seen: set = set(), only_keep_serializable_nodes: bool = True
+    ):
+        if ids_already_seen is None:
+            ids_already_seen = set()
+        res = {}
+        for c in self._children.values():
+            if c is not None:
+                # check if c is not a list
+                if not isinstance(c, list):
+                    c = [c]
+                for child in c:
+                    if child.id not in ids_already_seen:
+                        res.update(
+                            child.to_dag(
+                                ids_already_seen=ids_already_seen,
+                                only_keep_serializable_nodes=only_keep_serializable_nodes,
+                            )
+                        )
+                        ids_already_seen.add(child.id)
+        return res
+
+    def get_as_dict_of_ids(self):
+        res = {}
+        for k, v in self._children.items():
+            if v is not None:
+                try:
+                    res[k] = v.id
+                except AttributeError:
+                    print(v)
+        return res
+
 
 """ 
 IMPORTANT you will need to add this type of code after your node definition:
