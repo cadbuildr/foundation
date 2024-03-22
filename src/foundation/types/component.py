@@ -31,7 +31,7 @@ class Component(CompOrAssy):
         """Add an operation to the component
         @param op: Instance of one of the OperationTypes
         """
-        self.head.register_child(op)
+        self.head.add_operation(op)
 
     def add_operations(self, ops: list[OperationTypes]):
         """Add a list of operations to the component"""

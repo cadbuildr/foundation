@@ -1,4 +1,5 @@
 from itertools import count
+from .node_children import NodeChildren
 
 
 class Node(object):
@@ -22,6 +23,7 @@ class Node(object):
         []
     )  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
+    children_class = NodeChildren  # Default : overriden in child classes
 
     def __init__(self, parents: list["Node"] | None = None):
         """At Init we register the new node to all provided parents"""
@@ -29,13 +31,13 @@ class Node(object):
         # self.extra_params = {} # not used for now so i commented it out
         self.parents = parents
         # print(self.parents)
-        self.children: list["Node"] = []  # TODO should probably be a dict
+        self.children = self.children_class()
         # node id used to identify component  (maybe should be a UUID to keep state
         self.id = next(self._ids)
         # accross multiple compilations ... )
-        if self.parents is not None:
-            for p in self.parents:
-                p.register_child(self)
+        # if self.parents is not None:
+        #     for p in self.parents:
+        #         p.register_child(self)
 
     def check_parent_type(self):
         """If the Node has a parent, we check that the parent is of the correct type,
@@ -48,6 +50,7 @@ class Node(object):
 
     def register_child(self, child: "Node"):
         """Adds a child to the list"""
+        raise DeprecationWarning("Using Deprecated method register_child")
         if child not in self.children:
             # print("Registering child", child, " to ", self)
             self.children.append(child)
@@ -155,6 +158,7 @@ class Orphan(Node):
 
     def attach_to_parent(self, parent: Node):
         """Attach the node to the parent"""
+        raise DeprecationWarning("Using Deprecated method attach_to_parent")
         if self.parents is not None and parent not in self.parents:
             # print("adding parent")
             self.parents.append(parent)

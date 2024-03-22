@@ -73,6 +73,7 @@ class TwoPointsSpline:
 
 
 class Spline(Node):
+    # TODO REFACTOR
     parent_types = ["Sketch"]
 
     def __init__(self, points_with_tangent: list[PointWithTangent]):

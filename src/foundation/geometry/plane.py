@@ -1,5 +1,6 @@
 from foundation.types.node import Node
 from foundation.types.node_interface import NodeInterface
+from foundation.types.node_children import NodeChildren
 from foundation.geometry.frame import Frame
 import numpy as np
 from numpy import ndarray
@@ -12,13 +13,18 @@ class PlaneBase(NodeInterface):
         pass
 
 
+class PlaneChildren(NodeChildren):
+    frame: "Frame"
+
+
 class PlaneFromFrame(PlaneBase, Node):
     parent_types = []
+    children_class = PlaneChildren
 
     def __init__(self, parent: Node, frame: Frame, name: str):
         Node.__init__(self, [parent])
         PlaneBase.__init__(self)
-        self.register_child(frame)
+        self.children.set_frame(frame)
         self.frame = frame
         self.name = name
         self.params = {"name": name, "n_frame": frame.id}
@@ -111,3 +117,6 @@ class PlaneFactory:
 
     # TODO plan from a point and a normal ?
     # TODO counter not great -> what if multiple plane factory ?
+
+
+PlaneChildren.__annotations__["frame"] = Frame

@@ -45,7 +45,7 @@ class Assembly(CompOrAssy):
             )
 
         assert component.head.origin_frame.name != "origin"
-        self.head.register_child(component.head)
+        self.head.add_component(component.head)
         # component.head.parents.append(self.head)
         self.components.append(component)
         self.tf_list.append(tf)

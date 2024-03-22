@@ -1,5 +1,5 @@
 import math
-from foundation.sketch.line import Line
+from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Polygon
 from foundation.sketch.sketch import Sketch

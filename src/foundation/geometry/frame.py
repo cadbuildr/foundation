@@ -1,9 +1,14 @@
 from foundation.types.node import Node, Orphan
+from foundation.types.node_children import NodeChildren
 from foundation.types.node_interface import NodeInterface
 import numpy as np
 from numpy import ndarray
 from foundation.types.point_3d import Point3DWithOrientation
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
+
+
+class FrameChildren(NodeChildren):
+    top_frame: "Frame"  # Frame that is the parent of the current frame, if None it is the origin frame
 
 
 class Frame(Orphan):
@@ -13,6 +18,8 @@ class Frame(Orphan):
 
     """
 
+    children_class = FrameChildren
+
     def __init__(
         self,
         top_frame: "Frame",
@@ -21,17 +28,18 @@ class Frame(Orphan):
     ):
         Orphan.__init__(self)
         assert type(transform) == TransformMatrix
-        self.top_frame = top_frame
-        if self.top_frame is not None:
-            self.top_frame.parents.append(self)
+        if top_frame is not None:
+            self.children.set_top_frame(top_frame)
+            self.children.top_frame.parents.append(self)
         self.transform = transform
-        self.point_with_orientation = Point3DWithOrientation.from_transform(
-            self.transform
-        )
+        # self.point_with_orientation = Point3DWithOrientation.from_transform(
+        #     self.transform
+        # )
+        # shortcuts
+        self.top_frame = top_frame
         self.name = name
 
         if top_frame is not None:
-            self.register_child(top_frame)
             top_frame.compute_params()
         self.compute_params()
         self.name = name
@@ -134,11 +142,11 @@ class Frame(Orphan):
             "position": list(p),
             "quaternion": list(q),
             "name": self.name,
-            "top_frame_id": self.top_frame.id if self.top_frame is not None else None,
-            "deps": [c.id for c in self.children],
+            # "top_frame_id": self.top_frame.id if self.top_frame is not None else None,
+            # "deps": [c.id for c in self.children],
             ## could remove only for debug
-            "id": self.id,
-            "parent_name": self.top_frame.name if self.top_frame is not None else None,
+            # "id": self.id,
+            # "parent_name": self.top_frame.name if self.top_frame is not None else None,
         }
 
 
@@ -166,3 +174,6 @@ class OriginFrame(Frame):
         for p in self.parents:
             if isinstance(p, (Frame, OriginFrame)):
                 p.compute_params()
+
+
+FrameChildren.__annotations__["top_frame"] = Frame

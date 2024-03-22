@@ -1,7 +1,7 @@
 from foundation.types.node import Node
 import math
 from foundation.sketch.base import SketchShape
-from foundation.sketch.line import Line
+from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.types.parameters import (
     UnCastFloat,
@@ -10,6 +10,8 @@ from foundation.types.parameters import (
     cast_to_int_parameter,
 )
 from typing import TYPE_CHECKING
+from foundation.types.node_children import NodeChildren
+from foundation.sketch.primitives import SketchPrimitiveTypes
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
@@ -23,18 +25,23 @@ class ClosedSketchShape(SketchShape):
         raise NotImplementedError("Implement in children")
 
 
+class CustomClosedSketchShapeChildren(NodeChildren):
+    primitives: list[SketchPrimitiveTypes]
+
+
 class CustomClosedSketchShape(ClosedSketchShape, Node):
-    def __init__(self, list_of_prim: list[Node]):
-        self.list_of_prim = list_of_prim
-        ClosedSketchShape.__init__(self, list_of_prim[0].sketch)
-        Node.__init__(self, parents=[list_of_prim[0].sketch])
-        for l in list_of_prim:
-            self.register_child(l)
+    def __init__(self, primitives: list[SketchPrimitiveTypes]):
+        sketch = primitives[0].sketch
+        ClosedSketchShape.__init__(self, sketch)
+        Node.__init__(self, parents=[sketch])
+
+        self.children.set_primitives(primitives)
+        self.primitives = primitives
 
     def get_points(self) -> list[Point]:
         # combine all points from the primitives
         points = []
-        for prim in self.list_of_prim:
+        for prim in self.primitives:
             points += prim.get_points()
         return points
 
@@ -42,33 +49,41 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
         self, angle: float, center: Point | None = None
     ) -> "CustomClosedSketchShape":
         if center is None:
-            center = self.list_of_prim[0].get_frame().origin.point
-        list_of_prim = [p.rotate(angle, center) for p in self.list_of_prim]
+            center = self.primitives[0].sketch.origin
+        list_of_prim = [p.rotate(angle, center) for p in self.primitives]
         return CustomClosedSketchShape(list_of_prim)
 
     def translate(self, dx: float, dy: float) -> "CustomClosedSketchShape":
-        list_of_prim = [p.translate(dx, dy) for p in self.list_of_prim]
+        list_of_prim = [p.translate(dx, dy) for p in self.primitives]
         return CustomClosedSketchShape(list_of_prim)
+
+
+class PolygonChildren(NodeChildren):
+    lines: list[Line]
 
 
 class Polygon(ClosedSketchShape, Node):
     """type of closed shape made only of lines"""
 
+    children_class = PolygonChildren
+
     def __init__(self, sketch: "Sketch", lines: list[Line]):
         # Check all frames are the same ?
         ClosedSketchShape.__init__(self, lines[0].sketch)
         Node.__init__(self, parents=[sketch])
+
+        self.children.set_lines(lines)
+
         self.frame = sketch.frame
         self.lines = lines
-        for l in lines:
-            self.register_child(l)
         self.params = {"n_lines": [l.id for l in lines]}
 
         # TODO make sure each line finish where the other one starts
 
     def check_if_closed(self):
         """Check if the shape is closed"""
-        # TODO
+        # We don't reall care about this for now we don't use p2 of the
+        # last line we just make a polygon with all the p1s.
         pass
 
     def get_points(self) -> list[Point]:
@@ -77,7 +92,7 @@ class Polygon(ClosedSketchShape, Node):
 
     def rotate(self, angle: float, center: Point | None = None) -> "Polygon":
         if center is None:
-            center = self.lines[0].get_frame().origin
+            center = self.lines[0].sketch.origin
         lines = [l.rotate(angle, center) for l in self.lines]
         return Polygon(self.sketch, lines)
 
@@ -86,17 +101,30 @@ class Polygon(ClosedSketchShape, Node):
         return Polygon(self.sketch, lines)
 
 
+PolygonChildren.__annotations__["lines"] = list[Line]
+
+
+class CircleChildren(NodeChildren):
+    center: Point
+    radius: UnCastFloat
+    n_points: UnCastInt
+
+
 class Circle(ClosedSketchShape, Node):
     def __init__(self, center: Point, radius: UnCastFloat, n_points: UnCastInt = 20):
         Node.__init__(self, [center.sketch])
         ClosedSketchShape.__init__(self, center.sketch)
-        self.center = center
-        self.radius = cast_to_float_parameter(radius)
-        self.n_points = cast_to_int_parameter(n_points)
-        self.register_child(center)
-        self.register_child(self.radius)
-        self.register_child(self.n_points)
 
+        self.children.set_center(center)
+        self.children.set_radius(cast_to_float_parameter(radius))
+        self.children.set_n_points(cast_to_int_parameter(n_points))
+
+        # shortcuts
+        self.center = self.children.center
+        self.radius = self.children.radius
+        self.n_points = self.children.n_points
+
+        # TODO remove.
         self.params = {
             "n_center": center.id,
             "n_radius": self.radius.id,
@@ -111,18 +139,18 @@ class Circle(ClosedSketchShape, Node):
         """Get points along the circle"""
         return [
             Point(
+                sketch=self.center.sketch,
                 x=math.cos(2 * math.pi / self.n_points.value * i) * self.radius.value
                 + self.center.x.value,
                 y=math.sin(2 * math.pi / self.n_points.value * i) * self.radius.value
                 + self.center.y.value,
-                frame=self.center.parents[0],
             )
             for i in range(self.n_points.value)
         ]
 
     def rotate(self, angle: float, center: Point | None = None) -> "Circle":
         if center is None:
-            center = self.center.get_frame().origin.point
+            center = self.center.sketch.origin
 
         new_center = self.center.rotate(angle, center)
         return Circle(new_center, self.radius)
@@ -132,6 +160,18 @@ class Circle(ClosedSketchShape, Node):
         return Circle(new_center, self.radius)
 
 
+CircleChildren.__annotations__["center"] = Point
+CircleChildren.__annotations__["radius"] = UnCastFloat
+CircleChildren.__annotations__["n_points"] = UnCastInt
+
+
+class EllipseChildren(NodeChildren):
+    center: Point
+    a: UnCastFloat
+    b: UnCastFloat
+    n_points: UnCastInt
+
+
 class Ellipse(ClosedSketchShape, Node):
     def __init__(
         self, center: Point, a: UnCastFloat, b: UnCastFloat, n_points: UnCastInt = 20
@@ -139,15 +179,17 @@ class Ellipse(ClosedSketchShape, Node):
         Node.__init__(self, [center.sketch])
         ClosedSketchShape.__init__(self, center.sketch)
 
-        self.a = cast_to_float_parameter(a)
-        self.b = cast_to_float_parameter(b)
-        self.center = center
-        self.n_points = cast_to_int_parameter(n_points)
+        self.children.set_center(center)
+        self.children.set_a(cast_to_float_parameter(a))
+        self.children.set_b(cast_to_float_parameter(b))
+        self.children.set_n_points(cast_to_int_parameter(n_points))
 
-        self.register_child(center)
-        self.register_child(self.a)
-        self.register_child(self.b)
-        self.register_child(self.n_points)
+        # shortcuts
+        self.center = self.children.center
+        self.a = self.children.a
+        self.b = self.children.b
+        self.n_points = self.children.n_points
+
         self.params = {
             "n_center": center.id,
             "n_a": self.a.id,
@@ -163,11 +205,11 @@ class Ellipse(ClosedSketchShape, Node):
         """Get Point along the eclipse"""
         return [
             Point(
+                sketch=self.center.sketch,
                 x=math.cos(2 * math.pi / self.n_points.value * i) * self.a.value
                 + self.center.x.value,
                 y=math.sin(2 * math.pi / self.n_points.value * i) * self.b.value
                 + self.center.y.value,
-                frame=self.center.parents[0],
             )
             for i in range(self.n_points.value)
         ]
@@ -184,11 +226,8 @@ class Ellipse(ClosedSketchShape, Node):
         return Ellipse(new_center, self.a, self.b)
 
 
-# TODO make it a Node
 class Hexagon(Polygon):
     def __init__(self, center: Point, radius: float):
-        # TODO : make sure the center is in the sketch
-        # TODO : make sure the radius is in the sketch
         lines = []
         points = []
         self.sketch = center.sketch

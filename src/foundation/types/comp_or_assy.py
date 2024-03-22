@@ -31,8 +31,8 @@ class CompOrAssy(NodeInterface):
 
     def set_material(self, material: Material):
         """Set the material of the component"""
-        self.head.register_child(material)
-        material.attach_to_node(self.id)
+        self.head.children.set_material(material)
+        # material.attach_to_node(self.id)
         # TODO  Could make this redundent by using the parent from the material
 
     def paint(self, color: str = "green"):

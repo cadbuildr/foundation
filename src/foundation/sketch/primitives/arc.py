@@ -1,9 +1,10 @@
 import math
-from foundation.sketch.sketch import Sketch, Point
-from foundation.sketch.line import Line
+from foundation.sketch.point import Point
+from foundation.sketch.primitives.line import Line
 from foundation.types.node import Node
 import numpy as np
 from foundation.types.parameters import UnCastFloat, cast_to_float_parameter
+from foundation.types.node_children import NodeChildren
 
 
 def get_arc_center_from_3_points_coords(
@@ -34,18 +35,28 @@ def get_arc_center_from_3_points_coords(
     return (x0, y0)
 
 
+class ArcChildren(NodeChildren):
+    center: Point
+    p1: Point
+    p2: Point
+
+
 class Arc(Node):  # TODO add SketchShape
     parent_types = ["Sketch"]
+    children_class = ArcChildren
 
     def __init__(self, center: Point, p1: Point, p2: Point):
         Node.__init__(self, parents=[center.sketch])
-        self.sketch = center.sketch
-        self.center = center
-        self.p1 = p1
-        self.p2 = p2
-        self.register_child(self.center)
-        self.register_child(self.p1)
-        self.register_child(self.p2)
+
+        self.children.set_center(center)
+        self.children.set_p1(p1)
+        self.children.set_p2(p2)
+
+        # shortcuts
+        self.sketch = self.children.center.sketch
+        self.center = self.children.center
+        self.p1 = self.children.p1
+        self.p2 = self.children.p2
 
     def calculate_radius(self) -> float:
         """Calculate the radius of the arc"""
@@ -71,9 +82,9 @@ class Arc(Node):  # TODO add SketchShape
         ]
         return [
             Point(
+                sketch=self.sketch,
                 x=math.cos(angle) * radius + self.center.x.value,
                 y=math.sin(angle) * radius + self.center.y.value,
-                frame=self.center.parents[0],
             )
             for angle in angles
         ]
@@ -107,12 +118,17 @@ class Arc(Node):  # TODO add SketchShape
         x0, y0 = get_arc_center_from_3_points_coords(
             p1.x.value, p1.y.value, p2.x.value, p2.y.value, p3.x.value, p3.y.value
         )
-        center = Point(x=x0, y=y0, frame=p1.parents[0])
+        center = Point(sketch=p1.sketch, x=x0, y=y0)
         return Arc(center, p1, p3)
 
     @staticmethod
     def from_point_with_tangent_and_point(tangent: Line, p2: Point):
         pass  # TODO
+
+
+ArcChildren.__annotations__["center"] = Point
+ArcChildren.__annotations__["p1"] = Point
+ArcChildren.__annotations__["p2"] = Point
 
 
 class EllipseArc(Node):
@@ -142,9 +158,9 @@ class EllipseArc(Node):
         ]
         return [
             Point(
+                sketch=self.center.sketch,
                 x=math.cos(angle) * self.a.value + self.center.x.value,
                 y=math.sin(angle) * self.b.value + self.center.y.value,
-                frame=self.center.parents[0],
             )
             for angle in angles
         ]
@@ -153,7 +169,7 @@ class EllipseArc(Node):
     def rotate(self, angle: float, center: Point | None = None) -> "EllipseArc":
         """Rotate the arc"""
         if center is None:
-            center = self.center.frame.origin.point
+            center = self.center.sketch.origin
         new_arc = EllipseArc(
             center.rotate(angle, center),
             self.a,

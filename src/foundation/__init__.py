@@ -3,7 +3,7 @@ from foundation.types.assembly import Assembly
 from foundation.operations.extrude import Extrusion, Hole
 from foundation.operations.lathe import Lathe
 from foundation.sketch.sketch import Sketch, SketchOrigin
-from foundation.sketch.line import Line
+from foundation.sketch.primitives.line import Line
 from foundation.sketch.axis import Axis
 from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Circle, Ellipse, Polygon, Hexagon

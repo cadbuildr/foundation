@@ -1,5 +1,11 @@
 from foundation.types.node import Orphan
 from foundation.types.node_interface import NodeInterface
+from foundation.types.node_children import NodeChildren
+
+
+# Parameters don't have children.
+class ParameterChildren(NodeChildren):
+    pass
 
 
 class Parameter(NodeInterface):

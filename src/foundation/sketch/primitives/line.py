@@ -1,9 +1,11 @@
 from foundation.types.node import Node, Orphan
 from foundation.sketch.base import SketchShape
 from foundation.sketch.point import Point
+from foundation.types.node_children import NodeChildren
 
 import numpy as np
 import math
+import typing
 
 
 def triangle_area(p1: Point, p2: Point, p3: Point, absolute: bool = True) -> float:
@@ -23,6 +25,11 @@ def triangle_area(p1: Point, p2: Point, p3: Point, absolute: bool = True) -> flo
         return area
 
 
+class LineChildren(NodeChildren):
+    p1: Point
+    p2: Point
+
+
 class Line(SketchShape, Orphan):
     """Class for a 2D line in a sketch
     Could have many parents (like polygons ...)
@@ -30,6 +37,7 @@ class Line(SketchShape, Orphan):
     """
 
     parent_types = ["Sketch"]
+    children_class = LineChildren
 
     def __init__(self, p1: Point, p2: Point):
         # geometry.Line.__init__(self, p1, p2)
@@ -37,11 +45,15 @@ class Line(SketchShape, Orphan):
         if p1.sketch != p2.sketch:
             raise ValueError("Points are not on the same sketch")
         SketchShape.__init__(self, p1.sketch)
-        self.register_child(p1)
-        # should modify point parent to be part of line ? what if multple line ?
-        self.register_child(p2)
-        self.p1 = p1
-        self.p2 = p2
+
+        self.children.set_p1(p1)
+        self.children.set_p2(p2)
+
+        # shortcuts
+        self.p1 = self.children.p1
+        self.p2 = self.children.p2
+
+        # TODO remove.
         self.params = {
             "n_p1": p1.id,
             "n_p2": p2.id,
@@ -87,7 +99,7 @@ class Line(SketchShape, Orphan):
             triangle_area(p1, self.p1, self.p2, absolute=absolute) * 2.0 / self.length()
         )
 
-    def line_equation(self) -> float:
+    def line_equation(self) -> typing.Callable[[float, float], float]:
         """return equation left side as ax + by + c = 0
         one solution is a = dy, b = -dx, c = y1x2-x1y2
 
@@ -103,9 +115,7 @@ class Line(SketchShape, Orphan):
 
         return equation
 
-    def closest_point_on_line(
-        self, p0: Point
-    ) -> tuple[float, float]:  # TODO check why return tuple ?
+    def closest_point_on_line(self, p0: Point) -> tuple[float, float]:
         """
         :param p0: Point
         project point on line,
@@ -116,4 +126,4 @@ class Line(SketchShape, Orphan):
         # vector p1 to p0
         v = np.array([p0.x.value - self.p1.x.value, p0.y.value - self.p1.y.value])
         p_proj = np.dot(u, v) * u + np.array([self.p1.x.value, self.p1.y.value])
-        return tuple(p_proj)
+        return p_proj[0], p_proj[1]

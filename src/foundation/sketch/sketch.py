@@ -2,6 +2,12 @@ from foundation.types.node import Node
 from foundation.sketch.point import Point
 from foundation.sketch.draw import Draw
 from foundation.geometry.plane import PlaneFromFrame
+from foundation.types.node_children import NodeChildren
+
+
+class SketchChildren(NodeChildren):
+    plane: PlaneFromFrame
+    origin: Point
 
 
 class Sketch(Node):
@@ -13,15 +19,19 @@ class Sketch(Node):
     - a sketch origin(Point, with 0,0 coordinates) as a child
     """
 
+    children_class = SketchChildren
+
     # TODO check if plane is a PlaneFromFrame
     def __init__(self, plane: PlaneFromFrame):
         super().__init__()
-        self.register_child(plane)
-        self.plane = plane
+
+        self.children.set_plane(plane)
+        self.children.set_origin(SketchOrigin(self))
+
+        # shortcuts
+        self.plane = self.children.plane
+        self.origin = self.children.origin
         self.frame = self.plane.frame
-        # create sketch origin and adds it as a child
-        sketch_origin = SketchOrigin(self)
-        self.origin = sketch_origin
         # print("XXXChildren of sketch  are ", self.children)
         self.params = {
             "n_plane": self.plane.id,
@@ -33,3 +43,7 @@ class Sketch(Node):
 class SketchOrigin(Point):
     def __init__(self, sketch: Sketch):
         super().__init__(sketch, 0.0, 0.0)
+
+
+SketchChildren.__annotations__["plane"] = PlaneFromFrame
+SketchChildren.__annotations__["origin"] = Point

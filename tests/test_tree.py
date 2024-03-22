@@ -13,7 +13,7 @@ class Cube:
         square = Square.from_center_and_side(s.origin, self.size)
         e = Extrusion(square, self.size)
         cube.add_operation(e)
-        cube.paint("blue")
+        cube.paint("green")
         return cube
 
 

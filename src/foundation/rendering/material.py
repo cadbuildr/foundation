@@ -1,4 +1,5 @@
 from foundation.types.node import Node
+from foundation.types.node_children import NodeChildren
 
 default_colors: dict[str, list[float]] = {
     "red": [1, 0, 0],
@@ -31,6 +32,10 @@ default_colors: dict[str, list[float]] = {
     "beige": [0.96, 0.96, 0.86],
     "plywood": [0.73, 0.54, 0.38],
 }
+
+
+class MaterialChildren(NodeChildren):
+    pass
 
 
 class Material(Node):

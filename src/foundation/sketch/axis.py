@@ -1,14 +1,22 @@
 import math
 from foundation.geometry.tf_helper import get_rotation_matrix
-from itertools import count
 
 from foundation.types.node import Node
-from foundation.sketch.sketch import Sketch, Point
-from foundation.sketch.line import Line
+from foundation.sketch.sketch import Point
+from foundation.sketch.primitives.line import Line
+from foundation.geometry.frame import Frame
+from foundation.types.node_children import NodeChildren
+
+
+class AxisChildren(NodeChildren):
+    line: Line
+    frame: Frame
 
 
 class Axis(Node):
     """Represents a special line that can serve as an axis for transformations."""
+
+    children_class = AxisChildren
 
     def __init__(self, line: Line):
         """Initialize an Axis object.
@@ -17,10 +25,13 @@ class Axis(Node):
             line (Line): the line that will be the axis
         """
         Node.__init__(self, parents=[line.sketch])
-        self.register_child(line)
-        self.sketch_frame = line.sketch.frame
-        self.register_child(self.sketch_frame)
-        self.params = {"n_line": line.id, "n_frame": self.sketch_frame.id}
+        self.children.set_line(line)
+        self.children.set_frame(line.sketch.frame)
+
+        self.frame = self.children.frame
+        self.line = self.children.line
+
+        self.params = {"n_line": line.id, "n_frame": self.frame.id}
 
     def get_axis_rotation(self) -> float:
         """Calculate the rotation angle of the axis compared to the y axis.
@@ -101,3 +112,7 @@ class Axis(Node):
         self.reversed_tf = self.frame.transform.inverse()
         # rotation
         return frame
+
+
+AxisChildren.__annotations__["line"] = Line
+AxisChildren.__annotations__["frame"] = Frame

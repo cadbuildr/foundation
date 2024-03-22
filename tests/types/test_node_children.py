@@ -6,7 +6,7 @@ class Node:
     children_class = NodeChildren  # Default; override in subclasses
 
     def __init__(self):
-        self.children = self.children_class(self)
+        self.children = self.children_class()
 
 
 # Dummy node classes for testing
@@ -105,3 +105,176 @@ def test_setter_methods_correctly_set_child_nodes():
     assert (
         node_b1.children._children["myFirstB"] == node_b2
     ), "NodeB2 should be set as myFirstB child of NodeB1"
+
+
+def test_getattr_accesses_child_nodes_correctly():
+    node_a = NodeA()
+    node_b = NodeB()
+
+    # Set child nodes using the dynamically created setter methods
+    node_a.children.set_myB(node_b)
+
+    # Test __getattr__ method
+    try:
+        accessed_child = node_a.children.myB
+        assert accessed_child is node_b, "Accessed child node should be node_b"
+    except AttributeError:
+        pytest.fail("Child nodes should be accessible as attributes")
+
+
+def test_iter_yields_child_nodes_correctly():
+    node_a = NodeA()
+    node_b1 = NodeB()
+    node_b2 = NodeB()
+
+    # Set child nodes
+    node_a.children.set_myB(node_b1)
+
+    node_b1.children.set_myA(node_a)
+    node_b1.children.set_myFirstB(node_b2)
+
+    # Collect all children from node_b1 using __iter__
+    collected_children = list(node_b1.children)
+
+    # Verify that all child nodes are yielded correctly
+    assert node_a in collected_children, "NodeA should be yielded by __iter__"
+    assert node_b2 in collected_children, "NodeB2 should be yielded by __iter__"
+    assert len(collected_children) == 2, "There should be exactly 2 child nodes yielded"
+
+
+from typing import Union, List
+
+
+class ShapeDummy(Node):
+    pass
+
+
+class CircleDummy(ShapeDummy):
+    pass
+
+
+class SquareDummy(ShapeDummy):
+    pass
+
+
+class CustomShapeDummy(ShapeDummy):
+    pass
+
+
+class ParameterDummy:
+    pass
+
+
+class FloatParameterDummy(ParameterDummy):
+    pass
+
+
+class BoolParameterDummy(ParameterDummy):
+    pass
+
+
+# Extending NodeChildren for testing Union types
+class UnionTestChildren(NodeChildren):
+    shape: Union[CircleDummy, SquareDummy]
+
+
+# Extending NodeChildren for testing List types
+class ListTestChildren(NodeChildren):
+    shapes: List[SquareDummy]
+
+
+class UnionTestNode(Node):
+    children_class = UnionTestChildren
+
+
+class ListTestNode(Node):
+    children_class = ListTestChildren
+
+
+UnionTestChildren.__annotations__["shape"] = Union[CircleDummy, SquareDummy]
+ListTestChildren.__annotations__["shapes"] = List[SquareDummy]
+
+
+def test_union_type_handling():
+    union_node = UnionTestNode()
+
+    # Testing valid Union types
+    try:
+        union_node.children.set_shape(CircleDummy())  # This should work
+        union_node.children.set_shape(SquareDummy())  # This should also work
+    except TypeError as e:
+        pytest.fail(f"Union type handling failed: {e}")
+
+    # Testing invalid Union type
+    with pytest.raises(TypeError):
+        union_node.children.set_shape(CustomShapeDummy())  # This should fail
+
+
+class OtherUnionTypeChildren(NodeChildren):
+    shape: CircleDummy | SquareDummy
+
+
+class OtherUnionTypeNode(Node):
+    children_class = OtherUnionTypeChildren
+
+
+def test_other_union_type_handling():
+    other_union_node = OtherUnionTypeNode()
+
+    # Testing valid Union types
+    try:
+        other_union_node.children.set_shape(CircleDummy())  # This should work
+        other_union_node.children.set_shape(SquareDummy())  # This should also work
+    except TypeError as e:
+        pytest.fail(f"Union type handling failed: {e}")
+
+    # Testing invalid Union type
+    with pytest.raises(TypeError):
+        other_union_node.children.set_shape(CustomShapeDummy())  # This should fail
+
+
+def test_list_type_handling():
+    list_node = ListTestNode()
+
+    # Testing valid List content
+    try:
+        list_node.children.set_shapes(
+            [SquareDummy(), SquareDummy()]
+        )  # This should work
+    except TypeError as e:
+        pytest.fail(f"List type handling failed: {e}")
+
+    # Testing invalid List with different types
+    with pytest.raises(TypeError):
+        list_node.children.set_shapes(
+            [CircleDummy(), SquareDummy()]
+        )  # This should fail
+
+
+class ListOfUnionChildren(NodeChildren):
+    shapes: List[Union[CircleDummy, SquareDummy]]
+
+
+class ListOfUnionNode(Node):
+    children_class = ListOfUnionChildren
+
+
+ListOfUnionChildren.__annotations__["shapes"] = List[Union[CircleDummy, SquareDummy]]
+
+
+def test_list_of_union_type_handling():
+    list_of_union_node = ListOfUnionNode()
+
+    # Testing valid List content
+    try:
+        list_of_union_node.children.set_shapes(
+            [CircleDummy(), SquareDummy()]
+        )  # This should work
+    except TypeError as e:
+        pytest.fail(f"List of Union type handling failed: {e}")
+
+    # Testing invalid List with different types
+    with pytest.raises(TypeError):
+        list_of_union_node.children.set_shapes(
+            [CircleDummy(), CustomShapeDummy()]
+        )  # This should fail

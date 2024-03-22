@@ -1,5 +1,5 @@
 from foundation.sketch.point import Point
-from foundation.sketch.line import Line
+from foundation.sketch.primitives.line import Line
 from foundation.sketch.closed_sketch_shape import Polygon
 
 from typing import TYPE_CHECKING

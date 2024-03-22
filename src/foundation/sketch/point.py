@@ -5,17 +5,28 @@ from foundation.types.parameters import (
     cast_to_float_parameter,
     cast_to_bool_parameter,
     cast_to_string_parameter,
+    FloatParameter,
+    BoolParameter,
+    StringParameter,
 )
 from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 
 import numpy as np
 import math
+from foundation.types.node_children import NodeChildren
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
+
+
+class PointChildren(NodeChildren):
+    x: FloatParameter
+    y: FloatParameter
+    anchor: BoolParameter
+    name: StringParameter
 
 
 class Point(SketchShape, Node):
@@ -24,6 +35,7 @@ class Point(SketchShape, Node):
     """
 
     parent_type = ["Sketch"]
+    children_class = PointChildren
 
     def __init__(
         self,
@@ -33,19 +45,22 @@ class Point(SketchShape, Node):
         anchor: UnCastBool = False,
         name: UnCastString | None = None,
     ):
-        self.x = cast_to_float_parameter(x)
-        self.y = cast_to_float_parameter(y)
-        self.anchor = cast_to_bool_parameter(anchor)
-
         Node.__init__(self, [sketch])
         SketchShape.__init__(self, sketch)
-        self.x.attach_to_parent(self)
-        self.y.attach_to_parent(self)
-        self.anchor.attach_to_parent(self)
+
+        self.children.set_x(cast_to_float_parameter(x))
+        self.children.set_y(cast_to_float_parameter(y))
+        self.children.set_anchor(cast_to_bool_parameter(anchor))
         if name is None:
             name = "p_" + str(self.id)
-        self.name = cast_to_string_parameter(name)
-        self.name.attach_to_parent(self)
+        self.children.set_name(cast_to_string_parameter(name))
+
+        # shortcuts
+        self.x = self.children.x
+        self.y = self.children.y
+        self.anchor = self.children.anchor
+        self.name = self.children.name
+        self.sketch = sketch
 
         self.params = {
             # n_ because they are nodes.
@@ -59,7 +74,7 @@ class Point(SketchShape, Node):
         """Make a new point by rotating this point around a center point
         angle in radians"""
         if center is None:
-            center = self.frame.origin.point
+            center = self.sketch.origin.point
 
         dx = self.x.value - center.x.value
         dy = self.y.value - center.y.value
@@ -92,3 +107,9 @@ class PointWithTangent(SketchShape, Node):
             "n_p": p.id,
             "n_angle": self.angle.id,
         }
+
+
+PointChildren.__annotations__["x"] = FloatParameter
+PointChildren.__annotations__["y"] = FloatParameter
+PointChildren.__annotations__["anchor"] = BoolParameter
+PointChildren.__annotations__["name"] = StringParameter
