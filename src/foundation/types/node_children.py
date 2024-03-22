@@ -153,7 +153,7 @@ class NodeChildren(metaclass=NodeChildrenMeta):
         return res
 
 
-""" 
+"""
 IMPORTANT you will need to add this type of code after your node definition:
 
 # Ensure proper reference for circular type hints at the end of the file
