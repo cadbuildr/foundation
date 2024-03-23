@@ -181,7 +181,7 @@ class SK:
 
         def get_sketch_1():
             # Operation 1 - Extrusion
-            s = Sketch(self.sk.origin_planes[0])
+            s = Sketch(self.sk.xy())
             points = [
                 Point(s, W / 2, 0),
                 Point(s, W / 2, G),
@@ -200,13 +200,13 @@ class SK:
             return polygon
 
         def get_shaft_hole():
-            s = Sketch(self.sk.origin_planes[0])
+            s = Sketch(self.sk.xy())
             center = Point(s, 0, h)
             e2 = Hole(center, self.params["shaft"] / 2, L)
             return e2
 
         def get_side_holes():
-            s = Sketch(self.sk.origin_planes[1])
+            s = Sketch(self.sk.xz())
             c1 = Point(s, B / 2, L / 2)
             c2 = Point(s, -B / 2, L / 2)
             holes = [
@@ -216,12 +216,12 @@ class SK:
             return holes
 
         def get_cut():
-            s = Sketch(self.sk.origin_planes[0])
+            s = Sketch(self.sk.xy())
             r = Rectangle.from_2_points(Point(s, -0.5, F), Point(s, 0.5, h))
             return r
 
         def get_screw_hole():
-            s = Sketch(self.sk.origin_planes[2])
+            s = Sketch(self.sk.yz())
             # no data on the height of hole.
             center = Point(s, -L / 2, F - self.params["LB"])
             e2 = Hole(center, self.params["LB"] / 2, P / 2)

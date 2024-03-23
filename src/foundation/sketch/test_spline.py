@@ -7,7 +7,7 @@ from foundation.sketch.point import PointWithTangent  # TODO move to serizalizab
 
 def utils_start():
     obj = start_component()
-    plane1 = obj.origin_planes[0]
+    plane1 = obj.xy()
     s = Sketch(plane1)
     return s
 

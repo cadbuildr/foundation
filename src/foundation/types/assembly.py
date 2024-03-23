@@ -1,13 +1,11 @@
 from foundation.types.component import Component
-import numpy as np
 from numpy import ndarray
 
 from foundation.geometry.transform3d import TransformMatrix
 from itertools import count
-from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.types.roots import AssemblyRoot
-from typing import Union
+from typing import Union, cast
 
 
 class Assembly(CompOrAssy):
@@ -47,7 +45,7 @@ class Assembly(CompOrAssy):
         )
 
         assert component.head.get_frame().name != "origin"
-        self.head.add_component(component.head)
+        cast(AssemblyRoot, self.head).add_component(component.head)
         # component.head.parents.append(self.head)
         self.components.append(component)
         self.tf_list.append(tf)

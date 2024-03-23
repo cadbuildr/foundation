@@ -4,7 +4,7 @@ import numpy as np
 
 def get_pipe():
     pipe = start_component()
-    s = Sketch(pipe.origin_planes[0])
+    s = Sketch(pipe.xy())
     p1 = Point(s, 0, 0)
     # outer extrusion
     circle = Circle(p1, 1.5)
@@ -22,7 +22,7 @@ def get_pipe_with_holes():
     # add holes
     pf = PlaneFactory()
 
-    plane1 = pipe.origin_planes[0]
+    plane1 = pipe.xy()
     plane2 = pf.get_parallel_plane(plane1, 2)
     plane3 = pf.get_angle_plane_from_axis(plane2, plane2.get_x_axis(), np.pi / 2)
     s = Sketch(plane3)

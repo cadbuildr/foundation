@@ -5,9 +5,10 @@ from foundation.types.parameters import (
     StringParameter,
 )
 from foundation.geometry.frame import Frame
+from foundation.geometry.plane import PlaneFromFrame
 from foundation.types.node_children import NodeChildren
 from foundation.operations import OperationTypes
-from typing import List
+from typing import List, Union
 from foundation.rendering.material import Material
 from foundation.geometry.transform3d import TransformMatrix
 
@@ -17,6 +18,7 @@ class RootChildren(NodeChildren):
     name = StringParameter
     operations = List[OperationTypes]
     material = Material
+    origin_planes = List[PlaneFromFrame]
 
 
 class BaseRoot(Node):
@@ -39,6 +41,7 @@ class BaseRoot(Node):
         self.name = self.children._children[
             "name"
         ]  # There is weird bug with self.chidren.name
+        self.material = self.children.material
 
         self.params = {}
 
@@ -65,6 +68,9 @@ class BaseRoot(Node):
     def get_frame(self) -> Frame:
         return self._frame
 
+    def get_origin_planes(self) -> List[PlaneFromFrame]:
+        return self.children._children["origin_planes"]
+
 
 class ComponentRoot(BaseRoot):
     def __init__(self, name: UnCastString | None = None):
@@ -85,7 +91,7 @@ class AssemblyRoot(BaseRoot):
         super().__init__(name, "assembly_")
         self.children.set_components([])
 
-    def add_component(self, component: ComponentRoot):
+    def add_component(self, component: Union[ComponentRoot, "AssemblyRoot"]):
         self.children._children["components"].append(component)
 
 
@@ -93,9 +99,11 @@ RootChildren.__annotations__["frame"] = Frame
 RootChildren.__annotations__["name"] = StringParameter
 RootChildren.__annotations__["operations"] = List[OperationTypes]
 RootChildren.__annotations__["material"] = Material
+RootChildren.__annotations__["origin_planes"] = List[PlaneFromFrame]
 
 AssemblyRootChildren.__annotations__["frame"] = Frame
 AssemblyRootChildren.__annotations__["name"] = StringParameter
 AssemblyRootChildren.__annotations__["operations"] = List[OperationTypes]
 AssemblyRootChildren.__annotations__["material"] = Material
 AssemblyRootChildren.__annotations__["components"] = List[ComponentRoot]
+AssemblyRootChildren.__annotations__["origin_planes"] = List[PlaneFromFrame]

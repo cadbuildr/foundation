@@ -42,7 +42,7 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
 
     def get_points(self) -> list[Point]:
         # combine all points from the primitives
-        points = []
+        points: list = []
         for prim in self.primitives:
             points += prim.get_points()
         return points

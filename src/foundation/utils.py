@@ -19,11 +19,11 @@ def start_component() -> Component:
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
     yz = o.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
 
-    pxy = PlaneFromFrame(component.head, o, component.id + "_pxy")
-    pxz = PlaneFromFrame(component.head, xz, component.id + "_pxz")
-    pyz = PlaneFromFrame(component.head, yz, component.id + "_pyz")
+    pxy = PlaneFromFrame(o, component.id + "_pxy")
+    pxz = PlaneFromFrame(xz, component.id + "_pxz")
+    pyz = PlaneFromFrame(yz, component.id + "_pyz")
 
-    component.set_origin_planes([pxy, pxz, pyz])
+    component.head.children.set_origin_planes([pxy, pxz, pyz])
     return component
 
 
@@ -36,11 +36,11 @@ def start_assembly() -> Assembly:
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
     yz = o.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
 
-    pxy = PlaneFromFrame(assembly.head, o, assembly.id + "_pxy")
-    pxz = PlaneFromFrame(assembly.head, xz, assembly.id + "_pxz")
-    pyz = PlaneFromFrame(assembly.head, yz, assembly.id + "_pyz")
+    pxy = PlaneFromFrame(o, assembly.id + "_pxy")
+    pxz = PlaneFromFrame(xz, assembly.id + "_pxz")
+    pyz = PlaneFromFrame(yz, assembly.id + "_pyz")
 
-    assembly.set_origin_planes([pxy, pxz, pyz])
+    assembly.head.children.set_origin_planes([pxy, pxz, pyz])
 
     return assembly
 

@@ -13,16 +13,11 @@ class CompOrAssy(NodeInterface):
 
     def __init__(self, root: ComponentRoot | AssemblyRoot):
         super().__init__()
-        self.material = None
         self.tfh = (
             TFHelper()
         )  # Components or Assemblies have a tf helper to manage their transform
         self.head = root  # TODO change head to root
         self.pf = PlaneFactory()
-
-    def set_origin_planes(self, planes):
-        """Set the origin planes of the component"""
-        self.origin_planes = planes
 
     def list_nodes(self, types):
         """Convert recursive tree architecure of nodes into list of nodes"""
@@ -34,22 +29,25 @@ class CompOrAssy(NodeInterface):
 
     def paint(self, color: str = "green"):
         """Paint the component"""
-        self.material = Material()  # TODO maybe init to Material() in __init__?
-        if self.material is not None:
-            self.material.set_diffuse_color(color)
-            self.set_material(self.material)
+        material = self.head.children._children[
+            "material"
+        ]  # TODO maybe init to Material() in __init__?
+        if material is None:
+            material = Material()
+        material.set_diffuse_color(color)
+        self.head.children.set_material(material)
 
     def xy(self):
         """Return the XY plane of the component"""
-        return self.origin_planes[0]
+        return self.head.get_origin_planes()[0]
 
     def yz(self):
         """Return the YZ plane of the component"""
-        return self.origin_planes[1]
+        return self.head.get_origin_planes()[1]
 
     def xz(self):
         """Return the XZ plane of the component"""
-        return self.origin_planes[2]
+        return self.head.get_origin_planes()[2]
 
     # tf helper methods
     def reset_tf(self, tf=None):

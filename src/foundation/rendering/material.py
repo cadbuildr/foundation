@@ -2,7 +2,7 @@ from foundation.types.node import Node
 from foundation.types.node_children import NodeChildren
 from typing import Dict, Any
 
-default_colors: dict[str, list[float]] = {
+default_colors: dict = {
     "red": [1, 0, 0],
     "green": [0, 1, 0],
     "blue": [0, 0, 1],

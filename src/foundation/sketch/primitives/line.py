@@ -123,3 +123,6 @@ class Line(SketchElement, Node):
         v = np.array([p0.x.value - self.p1.x.value, p0.y.value - self.p1.y.value])
         p_proj = np.dot(u, v) * u + np.array([self.p1.x.value, self.p1.y.value])
         return p_proj[0], p_proj[1]
+
+    def get_points(self):
+        return [self.p1, self.p2]

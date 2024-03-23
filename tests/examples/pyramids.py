@@ -9,7 +9,7 @@ class Cube:
     def get_part(self):
         cube = start_component()
         # Create a Sketch from XY Plane
-        s = Sketch(cube.origin_planes[0])
+        s = Sketch(cube.xy())
         square = Square.from_center_and_side(s.origin, self.size)
         e = Extrusion(square, self.size)
         cube.add_operation(e)
