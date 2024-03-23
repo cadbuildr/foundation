@@ -15,3 +15,8 @@ repos:
     hooks:
       - id: mypy
   #       args: [--strict, --ignore-missing-imports]
+  - repo: https://github.com/hadialqattan/pycln
+    rev: v2.4.0
+    hooks:
+      - id: pycln
+        files: 'src/.*\.py$'

@@ -1,6 +1,5 @@
 from foundation.types.node import Node
 from foundation.types.node_children import NodeChildren
-from typing import Dict, Any
 
 default_colors: dict = {
     "red": [1, 0, 0],

@@ -1,5 +1,4 @@
 from foundation.types.component import Component
-from foundation.types.serializable import serializable_nodes
 
 
 try:

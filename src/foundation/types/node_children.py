@@ -1,5 +1,5 @@
 from types import MethodType
-from typing import get_origin, get_args, Union, List
+from typing import get_origin, get_args, Union
 
 
 def is_union_type(tp):

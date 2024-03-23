@@ -9,7 +9,6 @@ from foundation.types.parameters import (
     cast_to_string_parameter,
     UnCastString,
 )
-from typing import Union, Optional
 
 
 class FrameChildren(NodeChildren):
