@@ -4,7 +4,7 @@ from foundation import *
 def get_butterfly_cone():
     butterfly_cone = start_component()
     # Operation 1
-    s = Sketch(butterfly_cone.origin_planes[0])
+    s = Sketch(butterfly_cone.xy())
     p1 = Point(s, 1, 0)
     p2 = Point(s, 5, 0)
     p4 = Point(s, 5, 10)

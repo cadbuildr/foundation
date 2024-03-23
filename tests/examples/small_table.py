@@ -5,7 +5,7 @@ from foundation import *
 
 def get_small_table():
     small_table = start_component()
-    plane1 = small_table.origin_planes[0]
+    plane1 = small_table.xy()
     s = Sketch(plane1)
     p = Point(s, 0, 0)
     square_construct = Square.from_center_and_side(p, 30)

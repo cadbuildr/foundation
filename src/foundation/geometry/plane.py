@@ -1,27 +1,28 @@
 from foundation.types.node import Node
 from foundation.types.node_interface import NodeInterface
+from foundation.types.node_children import NodeChildren
 from foundation.geometry.frame import Frame
 import numpy as np
 from numpy import ndarray
+from foundation.types.parameters import StringParameter, cast_to_string_parameter
 
 
-class PlaneBase(NodeInterface):
-    """A geometrical 3D plane with an orientation ( ie a Frame)"""
-
-    def __init__(self):
-        pass
+class PlaneChildren(NodeChildren):
+    frame: "Frame"
+    name: StringParameter
 
 
-class PlaneFromFrame(PlaneBase, Node):
+class PlaneFromFrame(Node):
     parent_types = []
+    children_class = PlaneChildren
 
-    def __init__(self, parent: Node, frame: Frame, name: str):
-        Node.__init__(self, [parent])
-        PlaneBase.__init__(self)
-        self.register_child(frame)
+    def __init__(self, frame: Frame, name: str):
+        Node.__init__(self)
+        self.children.set_frame(frame)
+        self.children.set_name(cast_to_string_parameter(name))
         self.frame = frame
         self.name = name
-        self.params = {"name": name, "n_frame": frame.id}
+        self.params = {}
 
     def get_x_axis(self, local: bool = True) -> np.ndarray:
         """return a vector orthogonal to the plane ->
@@ -47,7 +48,7 @@ class PlaneFromFrame(PlaneBase, Node):
         translated_frame = self.frame.get_translated_frame(
             name="f" + name, translation=normal * distance
         )
-        return PlaneFromFrame(self, translated_frame, name)
+        return PlaneFromFrame(translated_frame, name)
 
     def get_angle_plane_from_axis(
         self, axis: ndarray, angle: float, name: str
@@ -55,7 +56,7 @@ class PlaneFromFrame(PlaneBase, Node):
         """return the angle between the plane and the given axis"""
         # check_axis_is_on_plane(axis, plane) TODO
         rotated_frame = self.frame.get_rotated_frame_from_axis(axis, angle, "f" + name)
-        return PlaneFromFrame(self, rotated_frame, name)
+        return PlaneFromFrame(rotated_frame, name)
 
 
 class PlaneFactory:
@@ -111,3 +112,7 @@ class PlaneFactory:
 
     # TODO plan from a point and a normal ?
     # TODO counter not great -> what if multiple plane factory ?
+
+
+PlaneChildren.__annotations__["frame"] = Frame
+PlaneChildren.__annotations__["name"] = StringParameter

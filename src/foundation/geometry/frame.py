@@ -1,37 +1,46 @@
-from foundation.types.node import Node, Orphan
+from foundation.types.node import Node
+from foundation.types.node_children import NodeChildren
 from foundation.types.node_interface import NodeInterface
 import numpy as np
 from numpy import ndarray
-from foundation.types.point_3d import Point3DWithOrientation
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
+from foundation.types.parameters import (
+    StringParameter,
+    cast_to_string_parameter,
+    UnCastString,
+)
 
 
-class Frame(Orphan):
+class FrameChildren(NodeChildren):
+    top_frame: "Frame"  # Frame that is the parent of the current frame, if None it is the origin frame
+    name: StringParameter
+
+
+class Frame(Node):
     """a FrameInterface
     describes a 3D frame (position and orientation) in space.
-    The head node of any assembly or comonent is a FrameInterface( see OriginFrame)
-
     """
+
+    children_class = FrameChildren
 
     def __init__(
         self,
-        top_frame: "Frame",
+        top_frame: "Frame",  # Union[Frame, None
         name: str,
         transform: TransformMatrix,
     ):
-        Orphan.__init__(self)
+        Node.__init__(self)
         assert type(transform) == TransformMatrix
-        self.top_frame = top_frame
-        if self.top_frame is not None:
-            self.top_frame.parents.append(self)
+        if top_frame is not None:
+            self.children.set_top_frame(top_frame)
+        self.children.set_name(cast_to_string_parameter(name))
         self.transform = transform
-        self.point_with_orientation = Point3DWithOrientation.from_transform(
-            self.transform
-        )
+
+        # shortcuts
+        self.top_frame = top_frame
         self.name = name
 
         if top_frame is not None:
-            self.register_child(top_frame)
             top_frame.compute_params()
         self.compute_params()
         self.name = name
@@ -78,18 +87,6 @@ class Frame(Orphan):
         """return the transform of the frame (from the parent frame)"""
         return self.transform
 
-    def get_transform_and_top_origin_frame(self) -> tuple["Frame", TransformMatrix]:
-        """recursively looks at top frame to see if there is an
-        origin frame. If origin frame is found, returns the transform to
-        the frame (composition of transforms)"""
-
-        final_tf = TransformMatrix(np.eye(4, dtype="float"))
-        frame = self
-        while type(frame) != OriginFrame:
-            final_tf = frame.transform.concat(final_tf)
-            frame = self.top_frame
-        return frame, final_tf
-
     def get_position_and_quaternions(self) -> dict[str, dict[str, float]]:
         """return the position of the frame (from the parent frame)"""
         # position is first 3 value, quaternion is the last 4
@@ -133,36 +130,44 @@ class Frame(Orphan):
         self.params = {
             "position": list(p),
             "quaternion": list(q),
-            "name": self.name,
-            "top_frame_id": self.top_frame.id if self.top_frame is not None else None,
-            "deps": [c.id for c in self.children],
-            ## could remove only for debug
-            "id": self.id,
-            "parent_name": self.top_frame.name if self.top_frame is not None else None,
         }
 
+    def change_top_frame(self, new_top_frame: "Frame", new_name: UnCastString, new_tf):
+        self.children.set_top_frame(new_top_frame)
+        self.children.set_name(cast_to_string_parameter(new_name))
 
-class OriginFrame(Frame):
-    """The origin Frame has no parent"""
+        self.transform = new_tf
+        # shortcuts update
+        self.top_frame = self.children._children["top_frame"]
+        self.name = self.children._children["name"]
 
-    def __init__(self):
-        super().__init__(
-            top_frame=None, name="origin", transform=TransformMatrix.get_identity()
-        )
-
-    def to_default_frame(
-        self, top_frame: "Frame", component_id, tf
-    ):  # TODO define type for component_id and tf
-        """When adding a part to an assembly its originframe will be converted to a
-        default frame"""
-        top_frame.parents.append(self)
-        self.top_frame = top_frame
-        self.name = self.name + f"_{component_id}"
-
-        self.transform = tf
         self.compute_params()
 
-        # There is a bug here it should be the parents not the children
-        for p in self.parents:
-            if isinstance(p, (Frame, OriginFrame)):
-                p.compute_params()
+    @staticmethod
+    def make_origin_frame():
+        return Frame(None, "origin", TransformMatrix.get_identity())
+
+
+# class OriginFrame(Frame):
+#     """The origin Frame has no parent"""
+
+#     def __init__(self):
+#         super().__init__(
+#             top_frame=None, name="origin", transform=TransformMatrix.get_identity()
+#         )
+
+#     def to_default_frame(
+#         self, top_frame: "Frame", component_id, tf
+#     ):  # TODO define type for component_id and tf
+#         """When adding a part to an assembly its frame will be converted to a
+#         default frame"""
+#         top_frame.parents.append(self)
+#         self.top_frame = top_frame
+#         self.name = self.name + f"_{component_id}"
+
+#         self.transform = tf
+#         self.compute_params()
+
+
+FrameChildren.__annotations__["top_frame"] = Frame
+FrameChildren.__annotations__["name"] = StringParameter

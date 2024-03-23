@@ -13,17 +13,11 @@ class CompOrAssy(NodeInterface):
 
     def __init__(self, root: ComponentRoot | AssemblyRoot):
         super().__init__()
-        self.construction_elements = {}
-        self.material = None
         self.tfh = (
             TFHelper()
         )  # Components or Assemblies have a tf helper to manage their transform
         self.head = root  # TODO change head to root
         self.pf = PlaneFactory()
-
-    def set_origin_planes(self, planes):
-        """Set the origin planes of the component"""
-        self.origin_planes = planes
 
     def list_nodes(self, types):
         """Convert recursive tree architecure of nodes into list of nodes"""
@@ -31,28 +25,29 @@ class CompOrAssy(NodeInterface):
 
     def set_material(self, material: Material):
         """Set the material of the component"""
-        self.head.register_child(material)
-        material.attach_to_node(self.id)
-        # TODO  Could make this redundent by using the parent from the material
+        self.head.children.set_material(material)
 
     def paint(self, color: str = "green"):
         """Paint the component"""
-        self.material = Material()  # TODO maybe init to Material() in __init__?
-        if self.material is not None:
-            self.material.set_diffuse_color(color)
-            self.set_material(self.material)
+        material = self.head.children._children[
+            "material"
+        ]  # TODO maybe init to Material() in __init__?
+        if material is None:
+            material = Material()
+        material.set_diffuse_color(color)
+        self.head.children.set_material(material)
 
     def xy(self):
         """Return the XY plane of the component"""
-        return self.origin_planes[0]
+        return self.head.get_origin_planes()[0]
 
     def yz(self):
         """Return the YZ plane of the component"""
-        return self.origin_planes[1]
+        return self.head.get_origin_planes()[1]
 
     def xz(self):
         """Return the XZ plane of the component"""
-        return self.origin_planes[2]
+        return self.head.get_origin_planes()[2]
 
     # tf helper methods
     def reset_tf(self, tf=None):
@@ -88,10 +83,10 @@ class CompOrAssy(NodeInterface):
         """Return the transform of the component"""
         return self.tfh.get_tf()
 
-    def to_dict(self, serializable_nodes: dict[str, int]) -> dict:
+    def to_dag(self) -> dict:
         """Serialize a Directed Acyclic Graph (DAG) into a dictionary
-        (key: {type, params, deps})
+        (id : {type, params, deps})
         recursive function.
         """
-        self.attach_operations()
-        return self.head.to_dict(serializable_nodes)
+        # self.attach_operations()
+        return self.head.to_dag(ids_already_seen=set())

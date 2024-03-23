@@ -1,6 +1,8 @@
 import math
 from foundation.sketch.point import Point, PointWithTangent
 from foundation.types.node import Node
+from typing import List
+from foundation.types.node_children import NodeChildren
 
 
 def solve_at3_bt2_ct_d(
@@ -66,22 +68,38 @@ class TwoPointsSpline:
         points = []
         for i in range(n_points):
             t = i / n_points
-            x = x_coeffs[0] * t**3 + x_coeffs[1] * t**2 + x_coeffs[2] * t + x_coeffs[3]
-            y = y_coeffs[0] * t**3 + y_coeffs[1] * t**2 + y_coeffs[2] * t + y_coeffs[3]
+            x = (
+                x_coeffs[0] * t**3
+                + x_coeffs[1] * t**2
+                + x_coeffs[2] * t
+                + x_coeffs[3]
+            )
+            y = (
+                y_coeffs[0] * t**3
+                + y_coeffs[1] * t**2
+                + y_coeffs[2] * t
+                + y_coeffs[3]
+            )
             points.append(Point(self.p1.sketch, x, y))
         return points
 
 
+class SplineChildren(NodeChildren):
+    p_with_tangents: List[PointWithTangent]
+
+
 class Spline(Node):
     parent_types = ["Sketch"]
+    children_class = SplineChildren
 
     def __init__(self, points_with_tangent: list[PointWithTangent]):
         assert len(points_with_tangent) >= 2
         Node.__init__(self, [points_with_tangent[0].p.sketch])
-        for p in points_with_tangent:
-            self.register_child(p)
 
-        self.points_with_tangent = points_with_tangent
+        self.children.set_p_with_tangents(points_with_tangent)
+
+        # shortcuts
+        self.points_with_tangent = self.children.p_with_tangents
 
     def get_points(self, n_points: int | None = None) -> list[Point]:
         """Get Point along the spline, group points by 2 and then use the ThreePointSpline class to find the points"""
@@ -97,3 +115,6 @@ class Spline(Node):
             )
 
         return points
+
+
+SplineChildren.__annotations__["p_with_tangents"] = List[PointWithTangent]

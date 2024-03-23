@@ -11,7 +11,7 @@ def get_cylinder():
 
     cylinder = start_component()
     # Operation 1
-    s = Sketch(cylinder.origin_planes[0])
+    s = Sketch(cylinder.xy())
     p1 = Point(s, 0, 0)
     circle = Circle(p1, 1)
     # Operation 2

@@ -5,7 +5,7 @@ from foundation.sketch.closed_sketch_shape import (
     CustomClosedSketchShape,
 )
 from foundation.sketch.rectangle import Square, Rectangle
-from foundation.sketch.arc import Arc, EllipseArc
+from foundation.sketch.primitives.arc import Arc, EllipseArc
 from foundation.sketch.point import Point
 import numpy as np
 
@@ -20,7 +20,6 @@ sketch_components = [
     EllipseArc,
     CustomClosedSketchShape,
 ]
-
 
 
 class RectangularPattern:

@@ -1,4 +1,6 @@
 from itertools import count
+from .node_children import NodeChildren
+from foundation.types.serializable import serializable_nodes
 
 
 class Node(object):
@@ -12,42 +14,41 @@ class Node(object):
     - Parameter (leaf of the tree)
     - Point
 
-    a List of parents to the Node are provided, if it is empty, it means the Node is the OriginFrame.
+    a List of parents to the Node are provided, if it is empty, it means the Node is the Frame ("origin").
 
     A Node can also have parameters attached to it that will be used when converting to a dict.
 
     """
 
-    parent_types: list[str] = (
-        []
-    )  # can be reimplemented in child classes to enforce a parent type to the Node
+    parent_types: list[
+        str
+    ] = []  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
+    children_class = NodeChildren  # Default : overriden in child classes
 
     def __init__(self, parents: list["Node"] | None = None):
         """At Init we register the new node to all provided parents"""
-        self.params = {}
+        self.params: dict = {}
         # self.extra_params = {} # not used for now so i commented it out
         self.parents = parents
         # print(self.parents)
-        self.children: list["Node"] = []  # TODO should probably be a dict
-        # node id used to identify component  (maybe should be a UUID to keep state
+        self.children = self.children_class()
+        # node id used to identify component  (maybe should be a UUID to keep state)
         self.id = next(self._ids)
-        # accross multiple compilations ... )
-        if self.parents is not None:
-            for p in self.parents:
-                p.register_child(self)
 
     def check_parent_type(self):
+        raise DeprecationWarning("Using Deprecated method check_parent_type")
         """If the Node has a parent, we check that the parent is of the correct type,
-        If not it can only be OriginFrame ( the only root node )"""
+        If not it can only be Frame (origin) ( the only root node )"""
         if len(self.parents) != 0:
             for pt, parent in zip(self.parent_types, self.parents):
                 assert pt == type(parent).__name__
         else:
-            assert type(self).__name__ == "OriginFrame"
+            assert type(self).__name__ == "Frame"
 
     def register_child(self, child: "Node"):
         """Adds a child to the list"""
+        raise DeprecationWarning("Using Deprecated method register_child")
         if child not in self.children:
             # print("Registering child", child, " to ", self)
             self.children.append(child)
@@ -70,39 +71,45 @@ class Node(object):
             res += c.rec_list_nodes(type_filter)
         return res
 
-    def to_dict(self, serializable_nodes):
-        # TODO remove serializable_nodes as a param as it can just be imported
-        """Serialize a Directed Acyclic Graph (DAG) into a dict with
-        (id_of_node:
-            {'type': type_of_node, 'deps': [list_of_ids_of_children]}  #TODO convert list of ids of children
-            to a dict that contains the parameter name of the children
-        recursive function.
+    def to_dag(
+        self, ids_already_seen: set = set(), only_keep_serializable_nodes: bool = True
+    ) -> dict:
         """
-        # print("GOING in : ", type(self), " my id is ", self.id)
+        Return the Direct Acyclig Graph (DAG) of this node and all it's children recursively
+        result is a dictionary of dictionaries with keys the id of the node and the
+        values the dictionary of the node (see to_dict function)
+        """
+        res = {}
+        # add yourself if not already seen
+        if self.id not in ids_already_seen:
+            res[self.id] = self.to_dict(only_keep_serializable_nodes)
+            ids_already_seen.add(self.id)
+        # add all the children
+        res.update(
+            self.children.to_dag(
+                ids_already_seen=ids_already_seen,
+                only_keep_serializable_nodes=only_keep_serializable_nodes,
+            )
+        )
+        return res
 
-        if type(self).__name__ not in serializable_nodes.keys():
+    def to_dict(self, only_keep_serializable_nodes: bool = True) -> dict:
+        """Current Node as a dictionary"""
+        if (
+            only_keep_serializable_nodes
+            and type(self).__name__ not in serializable_nodes.keys()
+        ):
             print(serializable_nodes.keys())
-            raise TypeError(f"Node type {type(self).__name__} is not serializable")
+            raise TypeError(
+                f"""Node type {type(self).__name__} is not serializable, make sure
+                            to add it to the serializable_nodes dict in the serializable.py file."""
+            )
         node_dict = {
             "type": serializable_nodes[type(self).__name__],
-            # 'params':  TODO add the parameters of the node, if any
-            "deps": [],
+            "deps": self.children.get_as_dict_of_ids(),
+            "params": self.params,
         }
-
-        if self.params is not None:
-            # TODO instead of using self.params,
-            # we should generate self.params from the children
-            # for this we need to have named children ( switch to dict instead of list)
-
-            node_dict["params"] = self.params
-        res = {}
-        res[self.id] = node_dict
-
-        # print("My children are ", self.children)
-        for n in self.children:
-            res.update(n.to_dict(serializable_nodes))
-            node_dict["deps"].append(n.id)
-        return res
+        return node_dict
 
     def get_children(self, type_filter: list[str]):
         """return the children of the component, eventually filtered"""
@@ -134,28 +141,3 @@ class Node(object):
         Resets the _ids counter to 0.
         """
         cls._ids = count(0)
-
-
-class Orphan(Node):
-    """
-    Some nodes are always attached to the same type of parent
-    ( for instance a sketch always has a plane as parent ).
-    But for some nodes there could be many different types of parents that
-    could be valid. For instance a parameter could be reused accross multiple
-    parent nodes.
-     For these nodes we don't explicitely write the type of the
-     parents in the class definition.
-
-     Parents can be added dynamically to the node.
-    """
-
-    def __init__(self):
-        super().__init__(parents=[])
-        # No parents are defined in init
-
-    def attach_to_parent(self, parent: Node):
-        """Attach the node to the parent"""
-        if self.parents is not None and parent not in self.parents:
-            # print("adding parent")
-            self.parents.append(parent)
-            parent.register_child(self)

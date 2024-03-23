@@ -4,7 +4,7 @@ from foundation import *
 def get_cube():
     cube = start_component()
     # Operation 1
-    s = Sketch(cube.origin_planes[0])
+    s = Sketch(cube.xy())
     p1 = Point(s, 0, 0)
     p2 = Point(s, 1, 0)
     p3 = Point(s, 1, 1)

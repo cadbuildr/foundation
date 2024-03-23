@@ -3,7 +3,7 @@ from foundation import *
 
 def get_double_cylinder():
     double_extrusion = start_component()
-    plane1 = double_extrusion.origin_planes[0]
+    plane1 = double_extrusion.xy()
     s = Sketch(plane1)
     p1 = Point(s, 0, 0)
     circle = Circle(p1, 1)

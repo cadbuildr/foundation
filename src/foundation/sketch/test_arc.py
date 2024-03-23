@@ -1,4 +1,4 @@
-from foundation.sketch.arc import get_arc_center_from_3_points_coords
+from foundation.sketch.primitives.arc import get_arc_center_from_3_points_coords
 import pytest
 
 
