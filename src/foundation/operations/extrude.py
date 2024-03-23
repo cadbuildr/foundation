@@ -3,7 +3,6 @@ from foundation.types.node import Node
 
 from foundation.sketch.base import SketchShape
 from foundation.sketch.closed_sketch_shape import Circle, ClosedSketchShape
-from foundation.geometry.frame import OriginFrame
 from foundation.types.node_children import NodeChildren
 from foundation.sketch.sketch import Sketch
 
@@ -28,7 +27,6 @@ class ExtrusionChildren(NodeChildren):
 
 
 class Extrusion(Operation, Node):
-    parent_types = ["OriginFrame"]
     children_class = ExtrusionChildren
 
     def __init__(

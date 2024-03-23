@@ -1,8 +1,6 @@
 from itertools import count
-from foundation.geometry.plane import PlaneFromFrame
 from foundation.sketch.sketch import Sketch
 from foundation.types.comp_or_assy import CompOrAssy
-from foundation.geometry.frame import OriginFrame
 from foundation.types.roots import ComponentRoot
 from foundation.operations import OperationTypes
 

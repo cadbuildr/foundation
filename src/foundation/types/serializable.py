@@ -8,7 +8,6 @@ serializable_nodes: dict[str, int] = {
     "Point": 4,
     "PlaneFromFrame": 5,
     "Frame": 6,
-    "OriginFrame": 7,
     "Line": 8,
     "FloatParameter": 9,
     "IntParameter": 10,

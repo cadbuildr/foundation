@@ -1,4 +1,4 @@
-from foundation.types.node import Node, Orphan
+from foundation.types.node import Node
 from foundation.sketch.base import SketchShape
 from foundation.sketch.point import Point
 from foundation.types.node_children import NodeChildren
@@ -30,7 +30,7 @@ class LineChildren(NodeChildren):
     p2: Point
 
 
-class Line(SketchShape, Orphan):
+class Line(SketchShape, Node):
     """Class for a 2D line in a sketch
     Could have many parents (like polygons ...)
     but needs a sketch for a parent as well.

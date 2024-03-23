@@ -15,7 +15,7 @@ def start_component() -> Component:
     """
     component = Component()
     # Add the 2 other frames
-    o = component.head.origin_frame
+    o = component.head.get_frame()
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
     yz = o.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
 
@@ -32,7 +32,7 @@ def start_assembly() -> Assembly:
     Start an assembly with an origin frame and 3 planes
     """
     assembly = Assembly()
-    o = assembly.head.origin_frame
+    o = assembly.head.get_frame()
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
     yz = o.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
 

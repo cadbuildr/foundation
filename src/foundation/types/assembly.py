@@ -7,6 +7,7 @@ from itertools import count
 from foundation.rendering.material import Material
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.types.roots import AssemblyRoot
+from typing import Union
 
 
 class Assembly(CompOrAssy):
@@ -26,11 +27,13 @@ class Assembly(CompOrAssy):
         self.id = name
 
     # TODO rename to add_part or add_assy (both are possible)
-    def add_component(self, component: Component, tf: TransformMatrix | None = None):
+    def add_component(
+        self, component: Union[Component, "Assembly"], tf: TransformMatrix | None = None
+    ):
         """Add a component to the assembly
         We first figure out the transform from the assembly root to the component root
-        We convert the OriginFrame of the component to be a default Frame and then register the
-        component root as a child of the assembly root.
+        We change the Frame of the ComponentRoot and then register the
+        ComponentRoot as a child of the assembly root.
         """
         if tf is None:
             tf = component.get_tf()
@@ -39,9 +42,11 @@ class Assembly(CompOrAssy):
         # Modifying component directly ? Might not be the best.
         if tf is None:
             tf = TransformMatrix.get_identity()
-        component.head.make_origin_frame_default_frame(component.id, tf)
+        component.head.make_origin_frame_default_frame(
+            id=component.id, new_tf=tf, new_top_frame=self.head.get_frame()
+        )
 
-        assert component.head.origin_frame.name != "origin"
+        assert component.head.get_frame().name != "origin"
         self.head.add_component(component.head)
         # component.head.parents.append(self.head)
         self.components.append(component)

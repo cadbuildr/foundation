@@ -1,4 +1,4 @@
-from foundation.types.node import Orphan
+from foundation.types.node import Node
 from foundation.types.node_interface import NodeInterface
 from foundation.types.node_children import NodeChildren
 
@@ -24,39 +24,39 @@ class Parameter(NodeInterface):
         return f"{self.__class__.__name__}({self.value})"
 
 
-class FloatParameter(Parameter, Orphan):
+class FloatParameter(Parameter, Node):
     """Store a float value as a parameter"""
 
     def __init__(self, value: float):
         Parameter.__init__(self, value)
-        Orphan.__init__(self)
+        Node.__init__(self)
         self.params = {"value": value}
 
 
-class IntParameter(Parameter, Orphan):
+class IntParameter(Parameter, Node):
     """Store an int value as a parameter"""
 
     def __init__(self, value: int):
         Parameter.__init__(self, value)
-        Orphan.__init__(self)
+        Node.__init__(self)
         self.params = {"value": value}
 
 
-class BoolParameter(Parameter, Orphan):
+class BoolParameter(Parameter, Node):
     """Store a boolean value as a parameter"""
 
     def __init__(self, value: bool):
         Parameter.__init__(self, value)
-        Orphan.__init__(self)
+        Node.__init__(self)
         self.params = {"value": value}
 
 
-class StringParameter(Parameter, Orphan):
+class StringParameter(Parameter, Node):
     """Store a string value as a parameter"""
 
     def __init__(self, value: str):
         Parameter.__init__(self, value)
-        Orphan.__init__(self)
+        Node.__init__(self)
         self.params = {"value": value}
 
 

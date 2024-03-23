@@ -1,50 +1,66 @@
-from foundation.types.node import Orphan
+from foundation.types.node import Node
 from foundation.types.parameters import (
     UnCastFloat,
     cast_to_float_parameter,
+    FloatParameter,
 )
 from foundation.geometry.transform3d import TransformMatrix
+from foundation.types.node_children import NodeChildren
 
 
-class Point3D(Orphan):
-    """A 3D point in space. Can be attached to many types of Parents -> Orphan"""
+class Point3DChildren(NodeChildren):
+    x: FloatParameter
+    y: FloatParameter
+    z: FloatParameter
+
+
+class Point3D(Node):
+    """A 3D point in space"""
+
+    children_class = Point3DChildren
 
     def __init__(self, x: UnCastFloat, y: UnCastFloat, z: UnCastFloat):
-        self.x = cast_to_float_parameter(x)
-        self.y = cast_to_float_parameter(y)
-        self.z = cast_to_float_parameter(z)
-        Orphan.__init__(self)
-        self.x.attach_to_parent(self)
-        self.y.attach_to_parent(self)
-        self.z.attach_to_parent(self)
-        self.params = {
-            "n_x": self.x.id,
-            "n_y": self.y.id,
-            "n_z": self.z.id,
-        }
+        Node.__init__(self)
+
+        self.children.set_x(cast_to_float_parameter(x))
+        self.children.set_y(cast_to_float_parameter(y))
+        self.children.set_z(cast_to_float_parameter(z))
+
+        # shortcuts
+        self.x = self.children.x
+        self.y = self.children.y
+        self.z = self.children.z0
+
+        self.params = {}
 
 
-class Point3DWithOrientation(Orphan):
+class Point3DWithOrientationChildren(NodeChildren):
+    roll: FloatParameter
+    pitch: FloatParameter
+    yaw: FloatParameter
+    point: Point3D
+
+
+class Point3DWithOrientation(Node):
     """A 3D points with orientation ( roll, pitch, yaw)"""
 
     def __init__(
         self, p: Point3D, roll: UnCastFloat, pitch: UnCastFloat, yaw: UnCastFloat
     ):
-        self.roll = cast_to_float_parameter(roll)
-        self.pitch = cast_to_float_parameter(pitch)
-        self.yaw = cast_to_float_parameter(yaw)
-        Orphan.__init__(self)
-        self.roll.attach_to_parent(self)
-        self.pitch.attach_to_parent(self)
-        self.yaw.attach_to_parent(self)
-        self.point = p
-        self.point.attach_to_parent(self)
-        self.params = {
-            "n_roll": self.roll.id,
-            "n_pitch": self.pitch.id,
-            "n_yaw": self.yaw.id,
-            "n_point": self.point.id,
-        }
+
+        Node.__init__(self)
+
+        self.children.set_roll(cast_to_float_parameter(roll))
+        self.children.set_pitch(cast_to_float_parameter(pitch))
+        self.children.set_yaw(cast_to_float_parameter(yaw))
+        self.children.set_point(p)
+
+        # shortcuts
+        self.roll = self.children.roll
+        self.pitch = self.children.pitch
+        self.yaw = self.children.yaw
+        self.point = self.children.point
+        self.params = {}
         self.name = "v_" + str(self.id)
 
     @staticmethod
@@ -55,3 +71,13 @@ class Point3DWithOrientation(Orphan):
 
         p = Point3D(xyz[0], xyz[1], xyz[2])
         return Point3DWithOrientation(p, roll, pitch, yaw)
+
+
+Point3DChildren.__annotations__["x"] = FloatParameter
+Point3DChildren.__annotations__["y"] = FloatParameter
+Point3DChildren.__annotations__["z"] = FloatParameter
+
+Point3DWithOrientationChildren.__annotations__["roll"] = FloatParameter
+Point3DWithOrientationChildren.__annotations__["pitch"] = FloatParameter
+Point3DWithOrientationChildren.__annotations__["yaw"] = FloatParameter
+Point3DWithOrientationChildren.__annotations__["point"] = Point3D

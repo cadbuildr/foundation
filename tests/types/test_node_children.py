@@ -1,5 +1,6 @@
 import pytest
 from foundation.types.node_children import NodeChildren
+from typing import Optional
 
 
 class Node:
@@ -278,3 +279,25 @@ def test_list_of_union_type_handling():
         list_of_union_node.children.set_shapes(
             [CircleDummy(), CustomShapeDummy()]
         )  # This should fail
+
+
+class OptionalTypeChildren(NodeChildren):
+    shape: Optional[CircleDummy]
+
+
+class OptionalTypeNode(Node):
+    children_class = OptionalTypeChildren
+
+
+OptionalTypeChildren.__annotations__["shape"] = Optional[CircleDummy]
+
+
+def test_optional_type_handling():
+    optional_node = OptionalTypeNode()
+
+    optional_node.children.set_shape(CircleDummy())  # This should work
+    optional_node.children.set_shape(None)  # This should also work
+
+    # Testing invalid Optional type
+    with pytest.raises(TypeError):
+        optional_node.children.set_shape(SquareDummy())  # This should fail

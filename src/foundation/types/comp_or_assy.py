@@ -13,7 +13,6 @@ class CompOrAssy(NodeInterface):
 
     def __init__(self, root: ComponentRoot | AssemblyRoot):
         super().__init__()
-        self.construction_elements = {}
         self.material = None
         self.tfh = (
             TFHelper()
@@ -32,8 +31,6 @@ class CompOrAssy(NodeInterface):
     def set_material(self, material: Material):
         """Set the material of the component"""
         self.head.children.set_material(material)
-        # material.attach_to_node(self.id)
-        # TODO  Could make this redundent by using the parent from the material
 
     def paint(self, color: str = "green"):
         """Paint the component"""

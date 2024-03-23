@@ -4,11 +4,12 @@ from foundation.types.parameters import (
     cast_to_string_parameter,
     StringParameter,
 )
-from foundation.geometry.frame import OriginFrame, Frame
+from foundation.geometry.frame import Frame
 from foundation.types.node_children import NodeChildren
 from foundation.operations import OperationTypes
 from typing import List
 from foundation.rendering.material import Material
+from foundation.geometry.transform3d import TransformMatrix
 
 
 class RootChildren(NodeChildren):
@@ -27,23 +28,19 @@ class BaseRoot(Node):
         super().__init__()
 
         # by default the frame is the origin frame
-        self.children.set_frame(OriginFrame())
+        self.children.set_frame(Frame.make_origin_frame())
         if name is None:
             name = prefix + str(self.id)
         self.children.set_name(cast_to_string_parameter(name))
         self.children.set_operations([])
 
         # shortcuts
-        # TODO deprecate origin_frame to frame
-        self.origin_frame = self.children.frame
+        self._frame = self.children.frame
         self.name = self.children._children[
             "name"
         ]  # There is weird bug with self.chidren.name
 
-        self.params = {
-            # "n_name": self.name.id,
-            # "n_frame": self.origin_frame.id,
-        }
+        self.params = {}
 
     def add_operation(self, operation: OperationTypes):
         # Note this fails for some reason :
@@ -51,9 +48,22 @@ class BaseRoot(Node):
         # self.children.operations.append(operation)
         self.children._children["operations"].append(operation)
 
-    def make_origin_frame_default_frame(self, id, tf):
-        if self.origin_frame.name == "origin":
-            self.origin_frame.to_default_frame(self.origin_frame, id, tf)
+    def make_origin_frame_default_frame(
+        self, id: str, new_tf: TransformMatrix, new_top_frame: Frame
+    ):
+        # Note this will only work once, so the the part/assembly can only be added once to a top assembly
+        if self._frame.name == "origin":
+            new_name = self.name.value + f"_{id}"
+            # will be something like origin_i or origin_part_i
+            self._frame.change_top_frame(
+                new_top_frame=new_top_frame, new_name=new_name, new_tf=new_tf
+            )
+        else:
+            print("Frame name is " + self._frame.name + " should be origin")
+            assert False, "This should not happen"
+
+    def get_frame(self) -> Frame:
+        return self._frame
 
 
 class ComponentRoot(BaseRoot):

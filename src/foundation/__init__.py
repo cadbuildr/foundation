@@ -9,7 +9,7 @@ from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Circle, Ellipse, Polygon, Hexagon
 from foundation.sketch.rectangle import Rectangle, Square
 from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
-from foundation.geometry.frame import OriginFrame, Frame
+from foundation.geometry.frame import Frame
 from foundation.types.parameters import (
     FloatParameter,
     IntParameter,

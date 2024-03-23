@@ -14,7 +14,7 @@ class Node(object):
     - Parameter (leaf of the tree)
     - Point
 
-    a List of parents to the Node are provided, if it is empty, it means the Node is the OriginFrame.
+    a List of parents to the Node are provided, if it is empty, it means the Node is the Frame ("origin").
 
     A Node can also have parameters attached to it that will be used when converting to a dict.
 
@@ -33,21 +33,18 @@ class Node(object):
         self.parents = parents
         # print(self.parents)
         self.children = self.children_class()
-        # node id used to identify component  (maybe should be a UUID to keep state
+        # node id used to identify component  (maybe should be a UUID to keep state)
         self.id = next(self._ids)
-        # accross multiple compilations ... )
-        # if self.parents is not None:
-        #     for p in self.parents:
-        #         p.register_child(self)
 
     def check_parent_type(self):
+        raise DeprecationWarning("Using Deprecated method check_parent_type")
         """If the Node has a parent, we check that the parent is of the correct type,
-        If not it can only be OriginFrame ( the only root node )"""
+        If not it can only be Frame (origin) ( the only root node )"""
         if len(self.parents) != 0:
             for pt, parent in zip(self.parent_types, self.parents):
                 assert pt == type(parent).__name__
         else:
-            assert type(self).__name__ == "OriginFrame"
+            assert type(self).__name__ == "Frame"
 
     def register_child(self, child: "Node"):
         """Adds a child to the list"""
@@ -144,29 +141,3 @@ class Node(object):
         Resets the _ids counter to 0.
         """
         cls._ids = count(0)
-
-
-class Orphan(Node):
-    """
-    Some nodes are always attached to the same type of parent
-    ( for instance a sketch always has a plane as parent ).
-    But for some nodes there could be many different types of parents that
-    could be valid. For instance a parameter could be reused accross multiple
-    parent nodes.
-     For these nodes we don't explicitely write the type of the
-     parents in the class definition.
-
-     Parents can be added dynamically to the node.
-    """
-
-    def __init__(self):
-        super().__init__(parents=[])
-        # No parents are defined in init
-
-    def attach_to_parent(self, parent: Node):
-        """Attach the node to the parent"""
-        raise DeprecationWarning("Using Deprecated method attach_to_parent")
-        if self.parents is not None and parent not in self.parents:
-            # print("adding parent")
-            self.parents.append(parent)
-            parent.register_child(self)
