@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
 
 
-class SketchShape(NodeInterface):
+class SketchElement(NodeInterface):
     def __init__(self, sketch: "Sketch"):
         super().__init__()
         self.sketch = sketch
@@ -21,7 +21,7 @@ class SketchShape(NodeInterface):
         return self.sketch.plane.frame
 
 
-class SketchPrimitives(SketchShape):
+class SketchPrimitives(SketchElement):
     """A NodeInterface for element that combined together can form a
     closed shape, for instance :
     - lines,

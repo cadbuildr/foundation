@@ -1,6 +1,6 @@
 from foundation.operations.base import Operation
 from foundation.types.node import Node
-from foundation.sketch.base import SketchShape
+from foundation.sketch.base import SketchElement
 from foundation.sketch.axis import Axis
 from foundation.geometry.frame import Frame
 from foundation.types.parameters import (
@@ -44,7 +44,7 @@ class Lathe(Operation, Node):
         self.params = {}
 
     def get_frame(self) -> Frame:
-        # parent 0 is sketchShape
+        # parent 0 is SketchElement
         return self.shape.get_frame()
 
 

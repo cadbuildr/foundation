@@ -1,6 +1,6 @@
 from foundation.types.node import Node
 import math
-from foundation.sketch.base import SketchShape
+from foundation.sketch.base import SketchElement
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.types.parameters import (
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
 
 
-class ClosedSketchShape(SketchShape):
+class ClosedSketchShape(SketchElement):
     """a closed shape is a shape that has a closed contour"""
 
     def get_points(self) -> list[Point]:

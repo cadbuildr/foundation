@@ -41,7 +41,7 @@ class ArcChildren(NodeChildren):
     p2: Point
 
 
-class Arc(Node):  # TODO add SketchShape
+class Arc(Node):  # TODO add SketchElement
     parent_types = ["Sketch"]
     children_class = ArcChildren
 

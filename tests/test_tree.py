@@ -1,5 +1,6 @@
 # %%
 from foundation import *
+import random
 
 
 class Cube:
@@ -13,7 +14,9 @@ class Cube:
         square = Square.from_center_and_side(s.origin, self.size)
         e = Extrusion(square, self.size)
         cube.add_operation(e)
-        cube.paint("blue")
+        # random color in red, green, blue, yellow, purple, cyan
+        color_choices = ["red", "green", "blue", "yellow", "purple", "cyan"]
+        cube.paint(color_choices[random.randint(0, len(color_choices) - 1)])
         return cube
 
 
@@ -30,11 +33,11 @@ class MonoCubeAssy:
         return self.assy
 
 
-# This code will load the cube and display it
-showExt(MonoCubeAssy().get_assy())
+# # This code will load the cube and display it
+# showExt(MonoCubeAssy().get_assy())
 
 
-# %%
+# # %%
 
 
 class Pyramid:
@@ -71,7 +74,7 @@ class Pyramid:
             return self.assy
 
 
-showExt(Pyramid(depth=2).get_assy())
+showExt(Pyramid(depth=5).get_assy())
 
 # %%
 from foundation import *
@@ -162,4 +165,8 @@ class LegoBrick:
 if __name__ == "__main__":
     showExt(LegoBrick().get_part())
 
+# %%
+
+cube = Cube().get_part()
+cube.to_dag()
 # %%

@@ -10,7 +10,7 @@ from foundation.types.parameters import (
     StringParameter,
 )
 from foundation.types.node import Node
-from foundation.sketch.base import SketchShape
+from foundation.sketch.base import SketchElement
 
 import numpy as np
 import math
@@ -29,7 +29,7 @@ class PointChildren(NodeChildren):
     name: StringParameter
 
 
-class Point(SketchShape, Node):
+class Point(SketchElement, Node):
     """A 2D Point in a sketch
     Could have many parents but needs a sketch as a parent.
     """
@@ -46,7 +46,7 @@ class Point(SketchShape, Node):
         name: UnCastString | None = None,
     ):
         Node.__init__(self, [sketch])
-        SketchShape.__init__(self, sketch)
+        SketchElement.__init__(self, sketch)
 
         self.children.set_x(cast_to_float_parameter(x))
         self.children.set_y(cast_to_float_parameter(y))
@@ -101,12 +101,12 @@ class PointWithTangentChildren(NodeChildren):
     angle: FloatParameter
 
 
-class PointWithTangent(SketchShape, Node):
+class PointWithTangent(SketchElement, Node):
     children_class = PointWithTangentChildren
 
     def __init__(self, p: Point, angle: UnCastFloat):
         Node.__init__(self, [p.sketch])
-        SketchShape.__init__(self, p.sketch)
+        SketchElement.__init__(self, p.sketch)
 
         self.children.set_p(p)
         self.children.set_angle(cast_to_float_parameter(angle))

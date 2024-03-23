@@ -1,7 +1,7 @@
 from foundation.operations.base import Operation
 from foundation.types.node import Node
 
-from foundation.sketch.base import SketchShape
+from foundation.sketch.base import SketchElement
 from foundation.sketch.closed_sketch_shape import Circle, ClosedSketchShape
 from foundation.types.node_children import NodeChildren
 from foundation.sketch.sketch import Sketch
@@ -60,7 +60,7 @@ class Extrusion(Operation, Node):
         }
 
     def get_frame(self):
-        # parent 0 is sketchShape
+        # parent 0 is SketchElement
         return self.sketch.frame
 
 
