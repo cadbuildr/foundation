@@ -78,7 +78,7 @@ class Polygon(ClosedSketchShape, Node):
 
         self.frame = sketch.frame
         self.lines = lines
-        self.params = {"n_lines": [l.id for l in lines]}
+        self.params = {}
 
         # TODO make sure each line finish where the other one starts
 
@@ -128,12 +128,7 @@ class Circle(ClosedSketchShape, Node):
         self.radius = self.children.radius
         self.n_points = self.children.n_points
 
-        # TODO remove.
-        self.params = {
-            "n_center": center.id,
-            "n_radius": self.radius.id,
-            "n_points": self.n_points.id,
-        }
+        self.params = {}
 
     def get_center(self) -> Point:
         """Get the first of each line"""
@@ -194,12 +189,7 @@ class Ellipse(ClosedSketchShape, Node):
         self.b = self.children.b
         self.n_points = self.children.n_points
 
-        self.params = {
-            "n_center": center.id,
-            "n_a": self.a.id,
-            "n_b": self.b.id,
-            "n_points": self.n_points.id,
-        }
+        self.params = {}
 
     # TODO check what is c1 and c2 bc not defined in __init__
     def get_focal_points(self):

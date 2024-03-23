@@ -62,13 +62,7 @@ class Point(SketchShape, Node):
         self.name = self.children.name
         self.sketch = sketch
 
-        self.params = {
-            # n_ because they are nodes.
-            "n_x": self.x.id,
-            "n_y": self.y.id,
-            "n_anchor": self.anchor.id,
-            "n_name": self.name.id,
-        }
+        self.params = {}
 
     def rotate(self, angle: float, center=None) -> "Point":
         """Make a new point by rotating this point around a center point
@@ -121,10 +115,7 @@ class PointWithTangent(SketchShape, Node):
         self.p = self.children.p
         self.angle = self.children.angle
 
-        self.params = {
-            "n_p": p.id,
-            "n_angle": self.angle.id,
-        }
+        self.params = {}
 
 
 PointWithTangentChildren.__annotations__["p"] = Point

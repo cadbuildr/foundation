@@ -41,12 +41,7 @@ class Lathe(Operation, Node):
         self.shape = self.children.shape
         self.cut = self.children.cut
 
-        self.params = {
-            "n_shape": shape.id,
-            "n_axis": axis.id,
-            "n_cut": self.cut.id,
-            "n_sketch": shape.sketch.id,
-        }
+        self.params = {}
 
     def get_frame(self) -> Frame:
         # parent 0 is sketchShape

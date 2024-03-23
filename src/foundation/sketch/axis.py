@@ -31,7 +31,7 @@ class Axis(Node):
         self.frame = self.children.frame
         self.line = self.children.line
 
-        self.params = {"n_line": line.id, "n_frame": self.frame.id}
+        self.params = {}
 
     def get_axis_rotation(self) -> float:
         """Calculate the rotation angle of the axis compared to the y axis.

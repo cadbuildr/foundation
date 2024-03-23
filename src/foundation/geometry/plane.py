@@ -4,6 +4,7 @@ from foundation.types.node_children import NodeChildren
 from foundation.geometry.frame import Frame
 import numpy as np
 from numpy import ndarray
+from foundation.types.parameters import StringParameter, cast_to_string_parameter
 
 
 class PlaneBase(NodeInterface):
@@ -15,6 +16,7 @@ class PlaneBase(NodeInterface):
 
 class PlaneChildren(NodeChildren):
     frame: "Frame"
+    name: StringParameter
 
 
 class PlaneFromFrame(PlaneBase, Node):
@@ -25,9 +27,10 @@ class PlaneFromFrame(PlaneBase, Node):
         Node.__init__(self, [parent])
         PlaneBase.__init__(self)
         self.children.set_frame(frame)
+        self.children.set_name(cast_to_string_parameter(name))
         self.frame = frame
         self.name = name
-        self.params = {"name": name, "n_frame": frame.id}
+        self.params = {}
 
     def get_x_axis(self, local: bool = True) -> np.ndarray:
         """return a vector orthogonal to the plane ->
@@ -120,3 +123,4 @@ class PlaneFactory:
 
 
 PlaneChildren.__annotations__["frame"] = Frame
+PlaneChildren.__annotations__["name"] = StringParameter

@@ -33,10 +33,7 @@ class Sketch(Node):
         self.origin = self.children.origin
         self.frame = self.plane.frame
         # print("XXXChildren of sketch  are ", self.children)
-        self.params = {
-            "n_plane": self.plane.id,
-            "n_origin": self.origin.id,
-        }
+        self.params = {}
         self.pencil = Draw(self)
 
 

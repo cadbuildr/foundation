@@ -5,10 +5,12 @@ import numpy as np
 from numpy import ndarray
 from foundation.types.point_3d import Point3DWithOrientation
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
+from foundation.types.parameters import StringParameter, cast_to_string_parameter
 
 
 class FrameChildren(NodeChildren):
     top_frame: "Frame"  # Frame that is the parent of the current frame, if None it is the origin frame
+    name: StringParameter
 
 
 class Frame(Orphan):
@@ -30,11 +32,11 @@ class Frame(Orphan):
         assert type(transform) == TransformMatrix
         if top_frame is not None:
             self.children.set_top_frame(top_frame)
+            # is this useful?
             self.children.top_frame.parents.append(self)
+        self.children.set_name(cast_to_string_parameter(name))
         self.transform = transform
-        # self.point_with_orientation = Point3DWithOrientation.from_transform(
-        #     self.transform
-        # )
+
         # shortcuts
         self.top_frame = top_frame
         self.name = name
@@ -141,12 +143,6 @@ class Frame(Orphan):
         self.params = {
             "position": list(p),
             "quaternion": list(q),
-            "name": self.name,
-            # "top_frame_id": self.top_frame.id if self.top_frame is not None else None,
-            # "deps": [c.id for c in self.children],
-            ## could remove only for debug
-            # "id": self.id,
-            # "parent_name": self.top_frame.name if self.top_frame is not None else None,
         }
 
 
@@ -177,3 +173,4 @@ class OriginFrame(Frame):
 
 
 FrameChildren.__annotations__["top_frame"] = Frame
+FrameChildren.__annotations__["name"] = StringParameter

@@ -53,11 +53,7 @@ class Line(SketchShape, Orphan):
         self.p1 = self.children.p1
         self.p2 = self.children.p2
 
-        # TODO remove.
-        self.params = {
-            "n_p1": p1.id,
-            "n_p2": p2.id,
-        }
+        self.params = {}
 
     def rotate(self, angle: float, center: Point | None = None) -> "Line":
         if center is None:

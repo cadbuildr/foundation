@@ -4,7 +4,7 @@ from foundation.types.parameters import (
     cast_to_string_parameter,
     StringParameter,
 )
-from foundation.geometry.frame import OriginFrame
+from foundation.geometry.frame import OriginFrame, Frame
 from foundation.types.node_children import NodeChildren
 from foundation.operations import OperationTypes
 from typing import List
@@ -12,7 +12,7 @@ from foundation.rendering.material import Material
 
 
 class RootChildren(NodeChildren):
-    origin_frame: OriginFrame
+    frame: Frame
     name = StringParameter
     operations = List[OperationTypes]
     material = Material
@@ -26,21 +26,23 @@ class BaseRoot(Node):
     def __init__(self, name: UnCastString | None = None, prefix: str = ""):
         super().__init__()
 
-        self.children.set_origin_frame(OriginFrame())
+        # by default the frame is the origin frame
+        self.children.set_frame(OriginFrame())
         if name is None:
             name = prefix + str(self.id)
         self.children.set_name(cast_to_string_parameter(name))
         self.children.set_operations([])
 
         # shortcuts
-        self.origin_frame = self.children.origin_frame
+        # TODO deprecate origin_frame to frame
+        self.origin_frame = self.children.frame
         self.name = self.children._children[
             "name"
         ]  # There is weird bug with self.chidren.name
 
         self.params = {
-            "n_name": self.name.id,
-            "n_frame": self.origin_frame.id,
+            # "n_name": self.name.id,
+            # "n_frame": self.origin_frame.id,
         }
 
     def add_operation(self, operation: OperationTypes):
@@ -48,6 +50,10 @@ class BaseRoot(Node):
         # TODO (find bug)
         # self.children.operations.append(operation)
         self.children._children["operations"].append(operation)
+
+    def make_origin_frame_default_frame(self, id, tf):
+        if self.origin_frame.name == "origin":
+            self.origin_frame.to_default_frame(self.origin_frame, id, tf)
 
 
 class ComponentRoot(BaseRoot):
@@ -73,12 +79,12 @@ class AssemblyRoot(BaseRoot):
         self.children._children["components"].append(component)
 
 
-RootChildren.__annotations__["origin_frame"] = OriginFrame
+RootChildren.__annotations__["frame"] = Frame
 RootChildren.__annotations__["name"] = StringParameter
 RootChildren.__annotations__["operations"] = List[OperationTypes]
 RootChildren.__annotations__["material"] = Material
 
-AssemblyRootChildren.__annotations__["origin_frame"] = OriginFrame
+AssemblyRootChildren.__annotations__["frame"] = Frame
 AssemblyRootChildren.__annotations__["name"] = StringParameter
 AssemblyRootChildren.__annotations__["operations"] = List[OperationTypes]
 AssemblyRootChildren.__annotations__["material"] = Material

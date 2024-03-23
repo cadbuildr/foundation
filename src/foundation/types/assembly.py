@@ -39,10 +39,7 @@ class Assembly(CompOrAssy):
         # Modifying component directly ? Might not be the best.
         if tf is None:
             tf = TransformMatrix.get_identity()
-        if component.head.origin_frame.name == "origin":
-            component.head.origin_frame.to_default_frame(
-                self.head.origin_frame, component.id, tf
-            )
+        component.head.make_origin_frame_default_frame(component.id, tf)
 
         assert component.head.origin_frame.name != "origin"
         self.head.add_component(component.head)
