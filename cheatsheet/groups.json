@@ -1,0 +1,25 @@
+{
+  "Constructions Elements": ["Frame", "Plane"],
+  "TransformationUtilities": ["Axis", "TFHelper", "RotationMatrix", "TransformationMatrix"],
+  "Geometry Classes in a 2D Sketch": [
+    "Arc",
+    "EllipseArc",
+    "Polygon",
+    "Circle",
+    "Ellipse",
+    "Hexagon",
+    "Rectangle",
+    "Square",
+    "Point",
+    "Line",
+    "PointWithTangent",
+    "Spline",
+    "TwoPointsSpline"
+  ],
+  "Drawing Utilities": ["Draw"],
+  "Pattern Classes": ["RectangularPattern", "CircularPattern"],
+  "Operation Geometry Classes": ["Extrusion", "GridXY", "Lathe"],
+  "Material Class": ["Material"],
+  "Sketch Class": ["Sketch"],
+  "Spline Classes": ["TwoPointsSpline", "Spline"]
+}

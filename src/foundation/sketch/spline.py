@@ -68,18 +68,8 @@ class TwoPointsSpline:
         points = []
         for i in range(n_points):
             t = i / n_points
-            x = (
-                x_coeffs[0] * t**3
-                + x_coeffs[1] * t**2
-                + x_coeffs[2] * t
-                + x_coeffs[3]
-            )
-            y = (
-                y_coeffs[0] * t**3
-                + y_coeffs[1] * t**2
-                + y_coeffs[2] * t
-                + y_coeffs[3]
-            )
+            x = x_coeffs[0] * t**3 + x_coeffs[1] * t**2 + x_coeffs[2] * t + x_coeffs[3]
+            y = y_coeffs[0] * t**3 + y_coeffs[1] * t**2 + y_coeffs[2] * t + y_coeffs[3]
             points.append(Point(self.p1.sketch, x, y))
         return points
 
@@ -89,6 +79,8 @@ class SplineChildren(NodeChildren):
 
 
 class Spline(Node):
+    """A spline is a curve defined by a series of points with tangents"""
+
     parent_types = ["Sketch"]
     children_class = SplineChildren
 
