@@ -4,22 +4,30 @@ from foundation.types.node_children import NodeChildren
 from foundation.geometry.frame import Frame
 import numpy as np
 from numpy import ndarray
-from foundation.types.parameters import StringParameter, cast_to_string_parameter
+from foundation.types.parameters import (
+    StringParameter,
+    BoolParameter,
+    cast_to_string_parameter,
+    cast_to_bool_parameter,
+    UnCastBool,
+)
 
 
 class PlaneChildren(NodeChildren):
     frame: "Frame"
     name: StringParameter
+    display: BoolParameter
 
 
 class PlaneFromFrame(Node):
     parent_types = []
     children_class = PlaneChildren
 
-    def __init__(self, frame: Frame, name: str):
+    def __init__(self, frame: Frame, name: str, display: UnCastBool = False):
         Node.__init__(self)
         self.children.set_frame(frame)
         self.children.set_name(cast_to_string_parameter(name))
+        self.children.set_display(cast_to_bool_parameter(display))
         self.frame = frame
         self.name = name
         self.params = {}

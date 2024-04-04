@@ -6,14 +6,18 @@ from numpy import ndarray
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
 from foundation.types.parameters import (
     StringParameter,
+    BoolParameter,
     cast_to_string_parameter,
+    cast_to_bool_parameter,
     UnCastString,
+    UnCastBool,
 )
 
 
 class FrameChildren(NodeChildren):
     top_frame: "Frame"  # Frame that is the parent of the current frame, if None it is the origin frame
     name: StringParameter
+    display: BoolParameter
 
 
 class Frame(Node):
@@ -28,12 +32,14 @@ class Frame(Node):
         top_frame: "Frame",  # Union[Frame, None
         name: str,
         transform: TransformMatrix,
+        display: UnCastBool = False,
     ):
         Node.__init__(self)
         assert type(transform) == TransformMatrix
         if top_frame is not None:
             self.children.set_top_frame(top_frame)
         self.children.set_name(cast_to_string_parameter(name))
+        self.children.set_display(cast_to_bool_parameter(display))
         self.transform = transform
 
         # shortcuts

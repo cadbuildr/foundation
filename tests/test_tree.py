@@ -33,11 +33,11 @@ class MonoCubeAssy:
         return self.assy
 
 
-# # This code will load the cube and display it
-# showExt(MonoCubeAssy().get_assy())
+# This code will load the cube and display it
+showExt(MonoCubeAssy().get_assy())
 
 
-# # %%
+# %%
 
 
 class Pyramid:
