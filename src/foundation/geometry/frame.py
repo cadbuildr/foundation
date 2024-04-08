@@ -104,13 +104,13 @@ class Frame(Node):
     def get_translated_frame(self, name: str, translation: ndarray) -> "Frame":
         """Translation is a 3d vector (numpy array)"""
         top_tf = self.get_transform()
-        tf = TransformMatrix.get_from_position(translation).concat(top_tf)
+        tf = TransformMatrix.get_from_position(translation)
         return Frame(self, name, tf)
 
     def get_rotated_frame(self, name: str, rot_mat: RotationMatrix) -> "Frame":
         """Rotation is a 3x3 matrix (numpy array)"""
         top_tf = self.get_transform()
-        tf = TransformMatrix.get_from_rotation_matrix(rot_mat).concat(top_tf)
+        tf = TransformMatrix.get_from_rotation_matrix(rot_mat)
         return Frame(self, name, tf)
 
     def get_rotate_then_translate_frame(
@@ -152,27 +152,6 @@ class Frame(Node):
     @staticmethod
     def make_origin_frame():
         return Frame(None, "origin", TransformMatrix.get_identity())
-
-
-# class OriginFrame(Frame):
-#     """The origin Frame has no parent"""
-
-#     def __init__(self):
-#         super().__init__(
-#             top_frame=None, name="origin", transform=TransformMatrix.get_identity()
-#         )
-
-#     def to_default_frame(
-#         self, top_frame: "Frame", component_id, tf
-#     ):  # TODO define type for component_id and tf
-#         """When adding a part to an assembly its frame will be converted to a
-#         default frame"""
-#         top_frame.parents.append(self)
-#         self.top_frame = top_frame
-#         self.name = self.name + f"_{component_id}"
-
-#         self.transform = tf
-#         self.compute_params()
 
 
 FrameChildren.__annotations__["top_frame"] = Frame
