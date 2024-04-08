@@ -72,14 +72,14 @@ class Rectangle(Polygon):
 
     @staticmethod
     def from_center_and_sides(
-        center: Point, lenght: float, width: float
+        center: Point, length: float, width: float
     ) -> "Rectangle":
         """Create a rectangle from a center point and its lenght and width"""
         sketch = center.sketch
-        p1 = Point(sketch, center.x.value - lenght / 2, center.y.value - width / 2)
-        p4 = Point(sketch, center.x.value - lenght / 2, center.y.value + width / 2)
-        p3 = Point(sketch, center.x.value + lenght / 2, center.y.value + width / 2)
-        p2 = Point(sketch, center.x.value + lenght / 2, center.y.value - width / 2)
+        p1 = Point(sketch, center.x.value - length / 2, center.y.value - width / 2)
+        p4 = Point(sketch, center.x.value - length / 2, center.y.value + width / 2)
+        p3 = Point(sketch, center.x.value + length / 2, center.y.value + width / 2)
+        p2 = Point(sketch, center.x.value + length / 2, center.y.value - width / 2)
 
         return Rectangle(sketch, p1, p2, p3, p4)
 

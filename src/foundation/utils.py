@@ -13,17 +13,18 @@ def start_component() -> Component:
     Start a component with an origin frame and 3 planes
 
     """
+    # TODO remove the extra planes if they are not necessary and create on call.
     component = Component()
     # Add the 2 other frames
     o = component.head.get_frame()
-    xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
     yz = o.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
+    xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
 
     pxy = PlaneFromFrame(o, component.id + "_pxy")
-    pxz = PlaneFromFrame(xz, component.id + "_pxz")
     pyz = PlaneFromFrame(yz, component.id + "_pyz")
+    pxz = PlaneFromFrame(xz, component.id + "_pxz")
 
-    component.head.children.set_origin_planes([pxy, pxz, pyz])
+    component.head.children.set_origin_planes([pxy, pyz, pxz])
     return component
 
 
@@ -31,16 +32,17 @@ def start_assembly() -> Assembly:
     """
     Start an assembly with an origin frame and 3 planes
     """
+    # TODO remove the extra planes if they are not necessary and create on call.
     assembly = Assembly()
     o = assembly.head.get_frame()
-    xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
     yz = o.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
+    xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
 
     pxy = PlaneFromFrame(o, assembly.id + "_pxy")
-    pxz = PlaneFromFrame(xz, assembly.id + "_pxz")
     pyz = PlaneFromFrame(yz, assembly.id + "_pyz")
+    pxz = PlaneFromFrame(xz, assembly.id + "_pxz")
 
-    assembly.head.children.set_origin_planes([pxy, pxz, pyz])
+    assembly.head.children.set_origin_planes([pxy, pyz, pxz])
 
     return assembly
 

@@ -109,43 +109,27 @@ PolygonChildren.__annotations__["lines"] = list[Line]
 class CircleChildren(NodeChildren):
     center: Point
     radius: FloatParameter
-    n_points: IntParameter
 
 
 class Circle(ClosedSketchShape, Node):
     children_class = CircleChildren
 
-    def __init__(self, center: Point, radius: UnCastFloat, n_points: UnCastInt = 20):
+    def __init__(self, center: Point, radius: UnCastFloat):
         Node.__init__(self, [center.sketch])
         ClosedSketchShape.__init__(self, center.sketch)
 
         self.children.set_center(center)
         self.children.set_radius(cast_to_float_parameter(radius))
-        self.children.set_n_points(cast_to_int_parameter(n_points))
 
         # shortcuts
         self.center = self.children.center
         self.radius = self.children.radius
-        self.n_points = self.children.n_points
 
         self.params = {}
 
     def get_center(self) -> Point:
         """Get the first of each line"""
         return self.center
-
-    def get_points(self) -> list[Point]:
-        """Get points along the circle"""
-        return [
-            Point(
-                sketch=self.center.sketch,
-                x=math.cos(2 * math.pi / self.n_points.value * i) * self.radius.value
-                + self.center.x.value,
-                y=math.sin(2 * math.pi / self.n_points.value * i) * self.radius.value
-                + self.center.y.value,
-            )
-            for i in range(self.n_points.value)
-        ]
 
     def rotate(self, angle: float, center: Point | None = None) -> "Circle":
         if center is None:
@@ -161,52 +145,35 @@ class Circle(ClosedSketchShape, Node):
 
 CircleChildren.__annotations__["center"] = Point
 CircleChildren.__annotations__["radius"] = FloatParameter
-CircleChildren.__annotations__["n_points"] = IntParameter
 
 
 class EllipseChildren(NodeChildren):
     center: Point
     a: UnCastFloat
     b: UnCastFloat
-    n_points: UnCastInt
 
 
 class Ellipse(ClosedSketchShape, Node):
-    def __init__(
-        self, center: Point, a: UnCastFloat, b: UnCastFloat, n_points: UnCastInt = 20
-    ):
+    children_class = EllipseChildren
+
+    def __init__(self, center: Point, a: UnCastFloat, b: UnCastFloat):
         Node.__init__(self, [center.sketch])
         ClosedSketchShape.__init__(self, center.sketch)
 
         self.children.set_center(center)
         self.children.set_a(cast_to_float_parameter(a))
         self.children.set_b(cast_to_float_parameter(b))
-        self.children.set_n_points(cast_to_int_parameter(n_points))
 
         # shortcuts
         self.center = self.children.center
         self.a = self.children.a
         self.b = self.children.b
-        self.n_points = self.children.n_points
 
         self.params = {}
 
     # TODO check what is c1 and c2 bc not defined in __init__
     def get_focal_points(self):
         return self.c1, self.c2
-
-    def get_points(self) -> list[Point]:
-        """Get Point along the eclipse"""
-        return [
-            Point(
-                sketch=self.center.sketch,
-                x=math.cos(2 * math.pi / self.n_points.value * i) * self.a.value
-                + self.center.x.value,
-                y=math.sin(2 * math.pi / self.n_points.value * i) * self.b.value
-                + self.center.y.value,
-            )
-            for i in range(self.n_points.value)
-        ]
 
     def rotate(self, angle: float, center: Point | None = None) -> "Ellipse":
         if center is None:
@@ -218,6 +185,11 @@ class Ellipse(ClosedSketchShape, Node):
     def translate(self, dx: float, dy: float) -> "Ellipse":
         new_center = self.center.translate(dx, dy)
         return Ellipse(new_center, self.a, self.b)
+
+
+EllipseChildren.__annotations__["center"] = Point
+EllipseChildren.__annotations__["a"] = FloatParameter
+EllipseChildren.__annotations__["b"] = FloatParameter
 
 
 class Hexagon(Polygon):

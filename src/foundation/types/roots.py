@@ -35,6 +35,7 @@ class BaseRoot(Node):
             name = prefix + str(self.id)
         self.children.set_name(cast_to_string_parameter(name))
         self.children.set_operations([])
+        self.children.set_origin_planes([])
 
         # shortcuts
         self._frame = self.children.frame
@@ -51,12 +52,15 @@ class BaseRoot(Node):
         # self.children.operations.append(operation)
         self.children._children["operations"].append(operation)
 
+    def add_origin_plane(self, plane: PlaneFromFrame):
+        self.children._children["origin_planes"].append(plane)
+
     def make_origin_frame_default_frame(
         self, id: str, new_tf: TransformMatrix, new_top_frame: Frame
     ):
         # Note this will only work once, so the the part/assembly can only be added once to a top assembly
         if self._frame.name == "origin":
-            new_name = self.name.value + f"_{id}"
+            new_name = f"{id}_origin"
             # will be something like origin_i or origin_part_i
             self._frame.change_top_frame(
                 new_top_frame=new_top_frame, new_name=new_name, new_tf=new_tf
