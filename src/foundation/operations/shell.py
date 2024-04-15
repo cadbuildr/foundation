@@ -1,0 +1,40 @@
+from foundation.operations.base import Operation
+from foundation.types.node import Node
+from foundation.types.node_children import NodeChildren
+from foundation.operations import Extrusion, Lathe
+from foundation.types.parameters import UnCastFloat, FloatParameter
+from foundation.finders.base import FaceFinder
+
+
+class ShellChildren(NodeChildren):
+    solid: Extrusion | Lathe
+    thickness: UnCastFloat
+    face_finder: FaceFinder
+
+
+class Shell(Operation, Node):
+    children_class = ShellChildren
+
+    def __init__(
+        self,
+        solid: Extrusion | Lathe,
+        thickness: UnCastFloat = 1.0,
+        face_finder: FaceFinder | None = None,
+    ):
+        Operation.__init__(self)
+        Node.__init__(self, parents=[])
+        self.children.set_thickness(thickness)
+        self.children.set_solid(solid)
+        if face_finder is not None:
+            self.children.set_face_finder(face_finder)
+
+        self.thickness = self.children.thickness
+        self.solid = self.children.solid
+        self.face_finder = self.children.face_finder
+
+        self.params = {}
+
+
+ShellChildren.__annotations__["solid"] = Extrusion | Lathe
+ShellChildren.__annotations__["thickness"] = FloatParameter
+ShellChildren.__annotations__["face_finder"] = FaceFinder
