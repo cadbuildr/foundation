@@ -12,6 +12,7 @@ from foundation.types.parameters import (
     UnCastString,
     UnCastBool,
 )
+from typing import Union
 
 
 class FrameChildren(NodeChildren):
@@ -29,7 +30,7 @@ class Frame(Node):
 
     def __init__(
         self,
-        top_frame: "Frame" | None,
+        top_frame: Union["Frame", None],
         name: str,
         transform: TransformMatrix,
         display: UnCastBool = False,
