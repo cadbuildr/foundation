@@ -150,8 +150,8 @@ class Frame(Node):
         self.compute_params()
 
     @staticmethod
-    def make_origin_frame():
-        return Frame(None, "origin", TransformMatrix.get_identity())
+    def make_origin_frame(display: UnCastBool = False) -> "Frame":
+        return Frame(None, "origin", TransformMatrix.get_identity(), display)
 
 
 FrameChildren.__annotations__["top_frame"] = Frame
