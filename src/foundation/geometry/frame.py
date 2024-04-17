@@ -29,7 +29,7 @@ class Frame(Node):
 
     def __init__(
         self,
-        top_frame: "Frame",  # Union[Frame, None
+        top_frame: "Frame" | None,
         name: str,
         transform: TransformMatrix,
         display: UnCastBool = False,
