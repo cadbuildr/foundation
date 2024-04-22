@@ -1,8 +1,11 @@
 from foundation.types.component import Component
 from foundation.types.assembly import Assembly
+from foundation.types.serializable import serializable_nodes
 from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
 import numpy as np
 import sys
+
+DAG_VERSION_FORMAT = "1.0"
 
 
 # TODO clean this code to remove copy paste
@@ -64,6 +67,24 @@ def check_dict(d) -> None:
             if isinstance(v, float):
                 if np.isnan(v):
                     print(k, v)
+
+
+def format_dag(dag: dict):
+    """Format the DAG to include extra information :
+    - the serializable nodes
+    - format version
+    - root node id
+
+    @param dag: the DAG to format ( see to_dag functions.)
+    """
+    # first of the key :
+
+    return {
+        "version": DAG_VERSION_FORMAT,
+        "rootNodeId": next(iter(dag.keys())),
+        "DAG": dag,
+        "serializableNodes": serializable_nodes,
+    }
 
 
 def show(component: Component) -> None:

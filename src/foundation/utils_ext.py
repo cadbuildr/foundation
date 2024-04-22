@@ -1,5 +1,5 @@
 from foundation.types.component import Component
-
+from foundation.utils import format_dag
 
 try:
     import json
@@ -18,6 +18,7 @@ except ImportError:
 
 def showExt(component: Component) -> None:
     dic = component.to_dag()
+    dic = format_dag(dic)
 
     try:
         ws = websocket.create_connection("ws://127.0.0.1:3000")
