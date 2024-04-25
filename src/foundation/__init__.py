@@ -2,6 +2,10 @@ from foundation.types.component import Component
 from foundation.types.assembly import Assembly
 from foundation.operations.extrude import Extrusion, Hole
 from foundation.operations.lathe import Lathe
+from foundation.operations.fillet import Fillet
+from foundation.operations.chamfer import Chamfer
+from foundation.operations.loft import Loft
+from foundation.operations.shell import Shell
 from foundation.sketch.sketch import Sketch, SketchOrigin
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.axis import Axis

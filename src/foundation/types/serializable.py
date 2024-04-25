@@ -26,4 +26,8 @@ serializable_nodes: dict[str, int] = {
     "Lathe": 23,
     "Axis": 24,
     "Hexagon": 25,
+    "Fillet": 26,
+    "Chamfer": 27,
+    "Loft": 28,
+    "Shell": 29,
 }

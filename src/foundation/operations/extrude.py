@@ -51,13 +51,7 @@ class Extrusion(Operation, Node):
         self.end = self.children.end
         self.cut = self.children.cut
 
-        self.params = {
-            # "n_shape": shape.id,
-            # "n_start": self.start.id,
-            # "n_end": self.end.id,
-            # "n_cut": self.cut.id,
-            # "n_sketch": shape.sketch.id,
-        }
+        self.params = {}
 
     def get_frame(self):
         # parent 0 is SketchElement
