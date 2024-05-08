@@ -54,6 +54,7 @@ class Line(SketchElement, Node):
         self.p2 = self.children.p2
 
         self.params = {}
+        p1.sketch.add_element(self)
 
     def rotate(self, angle: float, center: Point | None = None) -> "Line":
         if center is None:

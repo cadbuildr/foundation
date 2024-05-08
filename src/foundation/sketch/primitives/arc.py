@@ -57,6 +57,8 @@ class Arc(Node):  # TODO add SketchElement
         self.center = self.children.center
         self.p1 = self.children.p1
         self.p2 = self.children.p2
+        # adding to sketch
+        self.sketch.add_element(self)
 
     def calculate_radius(self) -> float:
         """Calculate the radius of the arc"""
@@ -149,6 +151,8 @@ class EllipseArc(Node):
         self.s_angle = cast_to_float_parameter(angle1)
         self.end_angle = cast_to_float_parameter(angle2)
         self.sketch = center.sketch
+        # adding to sketch
+        self.sketch.add_element(self)
 
     def get_points(self, n_points: int = 20) -> list[Point]:
         """Get Point along the eclipse"""

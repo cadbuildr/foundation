@@ -62,6 +62,9 @@ class Point(SketchElement, Node):
         self.name = self.children.name
         self.sketch = sketch
 
+        # add to sketch
+        sketch.add_element(self)
+
         self.params = {}
 
     def rotate(self, angle: float, center=None) -> "Point":
@@ -114,6 +117,9 @@ class PointWithTangent(SketchElement, Node):
         # shortcuts
         self.p = self.children.p
         self.angle = self.children.angle
+
+        # add to sketch
+        p.sketch.add_element(self)
 
         self.params = {}
 
