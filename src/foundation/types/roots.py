@@ -41,7 +41,7 @@ class BaseRoot(Node):
         self._frame = self.children.frame
         self.name = self.children._children[
             "name"
-        ]  # There is weird bug with self.chidren.name
+        ]  # There is weird bug with self.children.name
         self.material = self.children.material
 
         self.params = {}
