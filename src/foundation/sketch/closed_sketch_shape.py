@@ -61,11 +61,11 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
         if center is None:
             center = self.primitives[0].sketch.origin
         list_of_prim = [p.rotate(angle, center) for p in self.primitives]
-        return CustomClosedSketchShape(list_of_prim)
+        return CustomClosedSketchShape(self.sketch, list_of_prim)
 
     def translate(self, dx: float, dy: float) -> "CustomClosedSketchShape":
         list_of_prim = [p.translate(dx, dy) for p in self.primitives]
-        return CustomClosedSketchShape(list_of_prim)
+        return CustomClosedSketchShape(self.sketch, list_of_prim)
 
 
 CustomClosedSketchShapeChildren.__annotations__["primitives"] = list[
