@@ -96,6 +96,9 @@ class Arc(Node):  # TODO add SketchElement
         )
         return new_arc
 
+    def get_points(self):
+        return [self.p1, self.p2, self.p3]
+
     @staticmethod
     def from_two_points_and_radius(p1: Point, p2: Point, radius: float) -> "Arc":
         """
