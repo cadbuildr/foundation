@@ -109,16 +109,20 @@ class Arc(Node):  # TODO add SketchElement
             p1.sketch, (p1.x.value + p2.x.value) / 2, (p1.y.value + p2.y.value) / 2
         )
 
-        distance = math.sqrt((midpoint.x - p1.x) ** 2 + (midpoint.y - p1.y) ** 2)
+        distance = math.sqrt(
+            (midpoint.x.value - p1.x.value) ** 2 + (midpoint.y.value - p1.y.value) ** 2
+        )
 
         if distance > radius:
             raise ValueError("Points are too far from the midpoint")
 
         p3 = Point(
-            p1.sketch, midpoint.x + math.sqrt(radius**2 - distance**2), midpoint.y
+            p1.sketch,
+            midpoint.x.value + math.sqrt(radius**2 - distance**2),
+            midpoint.y.value,
         )
 
-        return Arc(p1, p2, p3)
+        return Arc(p1, p3, p2)
 
     @staticmethod
     def from_point_with_tangent_and_point(tangent: Line, p2: Point):
