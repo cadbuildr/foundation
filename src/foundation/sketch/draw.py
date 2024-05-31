@@ -97,10 +97,10 @@ class Draw:
         #     lines.append(Line(self.points[i], self.points[i + 1]))
         if self.points[0] != self.points[-1]:
             lines.append(Line(self.points[-1], self.points[0]))
-        print(lines)
         return Polygon(self.sketch, lines)
 
     def get_closed_shape(self) -> CustomClosedSketchShape:
+        """Return a closed shape using the primitives and closes it with a line if needed."""
         primitives = []
         for primitive in self.primitives:
             primitives.append(primitive)
