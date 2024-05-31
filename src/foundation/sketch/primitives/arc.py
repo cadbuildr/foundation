@@ -114,9 +114,13 @@ class Arc(Node):  # TODO add SketchElement
         if distance == 0:
             raise ValueError("The distance between the points is zero")
 
-        if distance > 2 * radius:
+        if distance > 2 * math.fabs(radius):
             raise ValueError(
-                "The distance between points is greater than the diameter of the circle"
+                "The distance between points is greater than the diameter of the circle",
+                "distance: ",
+                distance,
+                "radius: ",
+                radius,
             )
 
         # Calculate the direction perpendicular to the line segment
@@ -129,10 +133,12 @@ class Arc(Node):  # TODO add SketchElement
         # The distance from p1 to the midpoint is half the distance between the points
         # hence the distance from the midpoint to the center is sqrt(radius^2 - (distance/2)^2)
 
-        d = radius - math.sqrt(radius**2 - (distance / 2) ** 2)
+        d = math.fabs(radius) - math.sqrt(radius**2 - (distance / 2) ** 2)
+
+        sign = math.copysign(1, radius)
 
         # Determine the third point (assuming the arc is on the left side of the line)
-        p3 = midpoint.translate(-d * dx, -d * dy)
+        p3 = midpoint.translate(-d * dx * sign, -d * dy * sign)
 
         return Arc(p1, p3, p2)
 
