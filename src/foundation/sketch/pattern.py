@@ -41,7 +41,7 @@ class RectangularPattern:
         for i in range(self.n_rows):
             row = []
             for j in range(self.n_cols):
-                row.append(sketch_component.tranlate(self.width * j, self.height * i))
+                row.append(sketch_component.translate(self.width * j, self.height * i))
             output.append(row)
         return output
 

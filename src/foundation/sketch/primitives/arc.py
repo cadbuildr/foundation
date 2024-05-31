@@ -36,101 +36,114 @@ def get_arc_center_from_3_points_coords(
 
 
 class ArcChildren(NodeChildren):
-    center: Point
     p1: Point
     p2: Point
+    p3: Point
 
 
 class Arc(Node):  # TODO add SketchElement
     parent_types = ["Sketch"]
     children_class = ArcChildren
 
-    def __init__(self, center: Point, p1: Point, p2: Point):
-        Node.__init__(self, parents=[center.sketch])
+    def __init__(self, p1: Point, p2: Point, p3: Point):
+        Node.__init__(self, parents=[p1.sketch])
 
-        self.children.set_center(center)
+        # TODO check if points are aligned and raise an error
+
         self.children.set_p1(p1)
         self.children.set_p2(p2)
+        self.children.set_p3(p3)
 
         # shortcuts
-        self.sketch = self.children.center.sketch
-        self.center = self.children.center
+        self.sketch = self.children.p1.sketch
         self.p1 = self.children.p1
         self.p2 = self.children.p2
+        self.p3 = self.children.p3
         # adding to sketch
         self.sketch.add_element(self)
 
-    def calculate_radius(self) -> float:
+        # TODO update once we have a center calculation
+        """ def calculate_radius(self) -> float: """
         """Calculate the radius of the arc"""
-        return math.sqrt(
+        """ return math.sqrt(
             (self.p1.x.value - self.center.x.value) ** 2
             + (self.p1.y.value - self.center.y.value) ** 2
-        )
+        ) """
 
-    def calculate_start_and_end_angles(self) -> tuple[float, float]:
+        """ def calculate_start_and_end_angles(self) -> tuple[float, float]: """
         """Calculate the start and end angles of the arc"""
-        return math.atan2(
+        """ return math.atan2(
             self.p1.y.value - self.center.y.value, self.p1.x.value - self.center.x.value
         ), math.atan2(
             self.p2.y.value - self.center.y.value, self.p2.x.value - self.center.x.value
-        )
+        ) """
 
-    def get_points(self, n_points: int = 20) -> list[Point]:
-        """Get Point along the eclipse"""
-        s_angle, end_angle = self.calculate_start_and_end_angles()
-        radius = self.calculate_radius()
-        angles = [
-            s_angle + (end_angle - s_angle) * i / n_points for i in range(n_points)
-        ]
-        return [
-            Point(
-                sketch=self.sketch,
-                x=math.cos(angle) * radius + self.center.x.value,
-                y=math.sin(angle) * radius + self.center.y.value,
-            )
-            for angle in angles
-        ]
-
-    def rotate(self, angle: float, center: Point | None = None) -> "Arc":
+    def rotate(self, angle: float, center: Point) -> "Arc":
         """Rotate the arc"""
-        if center is None:
-            center = self.center.frame.origin.point
         new_arc = Arc(
-            center.rotate(angle), self.p1.rotate(angle), self.p2.rotate(angle)
+            self.p1.rotate(angle, center),
+            self.p2.rotate(angle, center),
+            self.p3.rotate(angle, center),
         )
         return new_arc
 
     def translate(self, dx: float, dy: float) -> "Arc":
         """Translate the arc"""
         new_arc = Arc(
-            self.center.translate(dx, dy),
             self.p1.translate(dx, dy),
             self.p2.translate(dx, dy),
+            self.p3.translate(dx, dy),
         )
         return new_arc
 
+    def get_points(self):
+        return [self.p1, self.p2, self.p3]
+
     @staticmethod
-    def from_three_points(p1: Point, p2: Point, p3: Point) -> "Arc":
-        """Create an arc that starts at p1, then p2 then ends at p3
-        Uses matrix formula :
-         https://math.stackexchange.com/questions/213658/get-the-equation-of-a-circle-when-given-3-points/1144546#1144546
-
+    def from_two_points_and_radius(p1: Point, p2: Point, radius: float) -> "Arc":
         """
+        Create an arc from two points and a radius.
+        The arc is on the left side of the line from p1 to p2.
+        """
+        # Calculate midpoint
+        midpoint = Point.midpoint(p1, p2)
 
-        x0, y0 = get_arc_center_from_3_points_coords(
-            p1.x.value, p1.y.value, p2.x.value, p2.y.value, p3.x.value, p3.y.value
-        )
-        center = Point(sketch=p1.sketch, x=x0, y=y0)
-        return Arc(center, p1, p3)
+        # Calculate distance between the points
+        distance = Point.distance_between_points(p1, p2)
+
+        if distance == 0:
+            raise ValueError("The distance between the points is zero")
+
+        if distance > 2 * radius:
+            raise ValueError(
+                "The distance between points is greater than the diameter of the circle"
+            )
+
+        # Calculate the direction perpendicular to the line segment
+        dx = (p2.y.value - p1.y.value) / distance
+        dy = -(p2.x.value - p1.x.value) / distance
+
+        # Calculate the center of the circle
+        # (p1, midpoint, center) is a right triangle
+        # The distance from p1 to the center is the radius
+        # The distance from p1 to the midpoint is half the distance between the points
+        # hence the distance from the midpoint to the center is sqrt(radius^2 - (distance/2)^2)
+
+        d = radius - math.sqrt(radius**2 - (distance / 2) ** 2)
+
+        # Determine the third point (assuming the arc is on the left side of the line)
+        p3 = midpoint.translate(-d * dx, -d * dy)
+
+        return Arc(p1, p3, p2)
 
     @staticmethod
     def from_point_with_tangent_and_point(tangent: Line, p2: Point):
         pass  # TODO
 
 
-ArcChildren.__annotations__["center"] = Point
 ArcChildren.__annotations__["p1"] = Point
 ArcChildren.__annotations__["p2"] = Point
+ArcChildren.__annotations__["p3"] = Point
 
 
 class EllipseArc(Node):

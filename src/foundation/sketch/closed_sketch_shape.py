@@ -32,13 +32,19 @@ class CustomClosedSketchShapeChildren(NodeChildren):
 
 
 class CustomClosedSketchShape(ClosedSketchShape, Node):
-    def __init__(self, primitives: list[SketchPrimitiveTypes]):
-        sketch = primitives[0].sketch
+
+    children_class = CustomClosedSketchShapeChildren
+
+    def __init__(self, sketch: "Sketch", primitives: list[SketchPrimitiveTypes]):
         ClosedSketchShape.__init__(self, sketch)
         Node.__init__(self, parents=[sketch])
 
         self.children.set_primitives(primitives)
+
         self.primitives = primitives
+        self.frame = sketch.frame
+        self.params = {}
+
         # add to sketch
         sketch.add_element(self)
 
@@ -55,11 +61,16 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
         if center is None:
             center = self.primitives[0].sketch.origin
         list_of_prim = [p.rotate(angle, center) for p in self.primitives]
-        return CustomClosedSketchShape(list_of_prim)
+        return CustomClosedSketchShape(self.sketch, list_of_prim)
 
     def translate(self, dx: float, dy: float) -> "CustomClosedSketchShape":
         list_of_prim = [p.translate(dx, dy) for p in self.primitives]
-        return CustomClosedSketchShape(list_of_prim)
+        return CustomClosedSketchShape(self.sketch, list_of_prim)
+
+
+CustomClosedSketchShapeChildren.__annotations__["primitives"] = list[
+    SketchPrimitiveTypes
+]
 
 
 class PolygonChildren(NodeChildren):
@@ -78,8 +89,8 @@ class Polygon(ClosedSketchShape, Node):
 
         self.children.set_lines(lines)
 
-        self.frame = sketch.frame
         self.lines = lines
+        self.frame = sketch.frame
         self.params = {}
 
         # add to sketch
@@ -89,7 +100,7 @@ class Polygon(ClosedSketchShape, Node):
 
     def check_if_closed(self):
         """Check if the shape is closed"""
-        # We don't reall care about this for now we don't use p2 of the
+        # We don't really care about this for now we don't use p2 of the
         # last line we just make a polygon with all the p1s.
         pass
 
