@@ -3,11 +3,38 @@ from foundation.sketch.point import Point
 from foundation.sketch.draw import Draw
 from foundation.geometry.plane import PlaneFromFrame
 from foundation.types.node_children import NodeChildren
+from typing import List
+
+
+from foundation.sketch.closed_sketch_shape import (
+    ClosedSketchShape,
+    CustomClosedSketchShape,
+    Polygon,
+)
+from foundation.sketch.point import Point, PointWithTangent
+from foundation.sketch.rectangle import Rectangle
+from foundation.sketch.primitives.line import Line
+
+from foundation.sketch.primitives.arc import Arc, EllipseArc
+
+
+SketchElementTypes = (
+    ClosedSketchShape
+    | Line
+    | Arc
+    | EllipseArc
+    | Rectangle
+    | Polygon
+    | CustomClosedSketchShape
+    | Point
+    | PointWithTangent
+)
 
 
 class SketchChildren(NodeChildren):
     plane: PlaneFromFrame
     origin: Point
+    elements = List[SketchElementTypes]
 
 
 class Sketch(Node):
@@ -26,6 +53,7 @@ class Sketch(Node):
         super().__init__()
 
         self.children.set_plane(plane)
+        self.children.set_elements([])
         self.children.set_origin(SketchOrigin(self))
 
         # shortcuts
@@ -36,6 +64,9 @@ class Sketch(Node):
         self.params = {}
         self.pencil = Draw(self)
 
+    def add_element(self, element: SketchElementTypes):
+        self.children._children["elements"].append(element)
+
 
 class SketchOrigin(Point):
     def __init__(self, sketch: Sketch):
@@ -44,3 +75,4 @@ class SketchOrigin(Point):
 
 SketchChildren.__annotations__["plane"] = PlaneFromFrame
 SketchChildren.__annotations__["origin"] = Point
+SketchChildren.__annotations__["elements"] = List[SketchElementTypes]

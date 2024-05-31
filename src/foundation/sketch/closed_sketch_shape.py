@@ -39,6 +39,8 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
 
         self.children.set_primitives(primitives)
         self.primitives = primitives
+        # add to sketch
+        sketch.add_element(self)
 
     def get_points(self) -> list[Point]:
         # combine all points from the primitives
@@ -71,7 +73,7 @@ class Polygon(ClosedSketchShape, Node):
 
     def __init__(self, sketch: "Sketch", lines: list[Line]):
         # Check all frames are the same ?
-        ClosedSketchShape.__init__(self, lines[0].sketch)
+        ClosedSketchShape.__init__(self, sketch)
         Node.__init__(self, parents=[sketch])
 
         self.children.set_lines(lines)
@@ -79,6 +81,9 @@ class Polygon(ClosedSketchShape, Node):
         self.frame = sketch.frame
         self.lines = lines
         self.params = {}
+
+        # add to sketch
+        sketch.add_element(self)
 
         # TODO make sure each line finish where the other one starts
 
@@ -125,6 +130,9 @@ class Circle(ClosedSketchShape, Node):
         self.center = self.children.center
         self.radius = self.children.radius
 
+        # add to sketch
+        center.sketch.add_element(self)
+
         self.params = {}
 
     def get_center(self) -> Point:
@@ -168,6 +176,9 @@ class Ellipse(ClosedSketchShape, Node):
         self.center = self.children.center
         self.a = self.children.a
         self.b = self.children.b
+
+        # add to sketch
+        center.sketch.add_element(self)
 
         self.params = {}
 

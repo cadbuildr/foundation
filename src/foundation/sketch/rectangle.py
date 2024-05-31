@@ -2,11 +2,15 @@ import math
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Polygon
-from foundation.sketch.sketch import Sketch
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from foundation.sketch.sketch import Sketch
 
 
 class Rectangle(Polygon):
-    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
+    def __init__(self, sketch: "Sketch", p1: Point, p2: Point, p3: Point, p4: Point):
         lines = [Line(p1, p2), Line(p2, p3), Line(p3, p4), Line(p4, p1)]
         Polygon.__init__(self, sketch, lines)
 
@@ -87,7 +91,7 @@ class Rectangle(Polygon):
 class Square(Rectangle):
     """A square is a polygon with 4 lines"""
 
-    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
+    def __init__(self, sketch: "Sketch", p1: Point, p2: Point, p3: Point, p4: Point):
         lines = [Line(p1, p2), Line(p2, p3), Line(p3, p4), Line(p4, p1)]
         Polygon.__init__(self, sketch, lines)
 
