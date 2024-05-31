@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 class PointChildren(NodeChildren):
     x: FloatParameter
     y: FloatParameter
-    anchor: BoolParameter
     name: StringParameter
 
 
@@ -42,7 +41,6 @@ class Point(SketchElement, Node):
         sketch: "Sketch",
         x: UnCastFloat,
         y: UnCastFloat,
-        anchor: UnCastBool = False,
         name: UnCastString | None = None,
     ):
         Node.__init__(self, [sketch])
@@ -50,7 +48,6 @@ class Point(SketchElement, Node):
 
         self.children.set_x(cast_to_float_parameter(x))
         self.children.set_y(cast_to_float_parameter(y))
-        self.children.set_anchor(cast_to_bool_parameter(anchor))
         if name is None:
             name = "p_" + str(self.id)
         self.children.set_name(cast_to_string_parameter(name))
@@ -58,7 +55,6 @@ class Point(SketchElement, Node):
         # shortcuts
         self.x = self.children.x
         self.y = self.children.y
-        self.anchor = self.children.anchor
         self.name = self.children.name
         self.sketch = sketch
 
@@ -88,14 +84,33 @@ class Point(SketchElement, Node):
         return Point(self.sketch, self.x.value + dx, self.y.value + dy)
 
     def distance_to_other_point(self, p2: "Point") -> float:
-        return np.sqrt(
-            (self.x.value - p2.x.value) ** 2 + (self.y.value - p2.y.value) ** 2
+        """Return the distance to another point"""
+        return Point.distance_between_points(self, p2)
+
+    ## Shorcuts
+    @staticmethod
+    def midpoint(p1: "Point", p2: "Point") -> "Point":
+        return Point(
+            p1.sketch,
+            (p1.x.value + p2.x.value) / 2,
+            (p1.y.value + p2.y.value) / 2,
         )
+
+    @staticmethod
+    def distance_between_points(p1: "Point", p2: "Point") -> float:
+        return np.sqrt((p1.x.value - p2.x.value) ** 2 + (p1.y.value - p2.y.value) ** 2)
+
+    def __eq__(self, other):
+        if not isinstance(other, Point):
+            return False
+        return self.x.value == other.x.value and self.y.value == other.y.value
+
+    def __str__(self):
+        return f"Point(name={self.name}, x={self.x.value}, y={self.y.value})"
 
 
 PointChildren.__annotations__["x"] = FloatParameter
 PointChildren.__annotations__["y"] = FloatParameter
-PointChildren.__annotations__["anchor"] = BoolParameter
 PointChildren.__annotations__["name"] = StringParameter
 
 

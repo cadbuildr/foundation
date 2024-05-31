@@ -102,25 +102,37 @@ class Arc(Node):  # TODO add SketchElement
     @staticmethod
     def from_two_points_and_radius(p1: Point, p2: Point, radius: float) -> "Arc":
         """
-        Create an arc from two points and a radius
+        Create an arc from two points and a radius.
+        The arc is on the left side of the line from p1 to p2.
         """
-        # TODO test this function
-        midpoint = Point(
-            p1.sketch, (p1.x.value + p2.x.value) / 2, (p1.y.value + p2.y.value) / 2
-        )
+        # Calculate midpoint
+        midpoint = Point.midpoint(p1, p2)
 
-        distance = math.sqrt(
-            (midpoint.x.value - p1.x.value) ** 2 + (midpoint.y.value - p1.y.value) ** 2
-        )
+        # Calculate distance between the points
+        distance = Point.distance_between_points(p1, p2)
 
-        if distance > radius:
-            raise ValueError("Points are too far from the midpoint")
+        if distance == 0:
+            raise ValueError("The distance between the points is zero")
 
-        p3 = Point(
-            p1.sketch,
-            midpoint.x.value + math.sqrt(radius**2 - distance**2),
-            midpoint.y.value,
-        )
+        if distance > 2 * radius:
+            raise ValueError(
+                "The distance between points is greater than the diameter of the circle"
+            )
+
+        # Calculate the direction perpendicular to the line segment
+        dx = (p2.y.value - p1.y.value) / distance
+        dy = -(p2.x.value - p1.x.value) / distance
+
+        # Calculate the center of the circle
+        # (p1, midpoint, center) is a right triangle
+        # The distance from p1 to the center is the radius
+        # The distance from p1 to the midpoint is half the distance between the points
+        # hence the distance from the midpoint to the center is sqrt(radius^2 - (distance/2)^2)
+
+        d = radius - math.sqrt(radius**2 - (distance / 2) ** 2)
+
+        # Determine the third point (assuming the arc is on the left side of the line)
+        p3 = midpoint.translate(-d * dx, -d * dy)
 
         return Arc(p1, p3, p2)
 
