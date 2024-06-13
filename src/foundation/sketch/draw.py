@@ -78,6 +78,18 @@ class Draw:
         self.primitives.append(Line(self.points[-2], self.points[-1]))
         return
 
+    def arc(self, dx: float, dy: float, radius: float):
+        if not self.point_added:
+            self.add_point()
+        self.x += dx
+        self.y += dy
+        self.add_point()
+        self.point_added = True
+        self.primitives.append(
+            Arc.from_two_points_and_radius(self.points[-2], self.points[-1], radius)
+        )
+        return
+
     def back_one_point(self):
         self.point_idx -= 1
         if self.point_idx < 0:
