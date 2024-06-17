@@ -104,3 +104,51 @@ def show_with_params(comp_class, params):
 
 def show_from_params(params):
     pass
+
+
+def has_cycle(dag: dict) -> bool:
+    """
+    Check if a directed acyclic graph (DAG) has a cycle.
+
+    @param dag: The directed acyclic graph (DAG) represented as a dictionary.
+    """
+    # Create a set to track the visited nodes
+    visited = set()
+    # Create a set to track the nodes currently in the recursion stack
+    rec_stack = set()
+
+    # Define a helper function for DFS
+    def dfs(node):
+        # If the node is already in the recursion stack, we found a cycle
+        if node in rec_stack:
+            return True
+        # If the node is already visited, skip it
+        if node in visited:
+            return False
+
+        # Mark the node as visited and add it to the recursion stack
+        visited.add(node)
+        rec_stack.add(node)
+
+        # Recur for all the dependencies (children) of the node
+        if "deps" in dag[node]:
+            for child in dag[node]["deps"].values():
+                # If the child is a list, iterate over each element
+                if isinstance(child, list):
+                    for item in child:
+                        if dfs(item):
+                            return True
+                else:
+                    if dfs(child):
+                        return True
+
+        # Remove the node from the recursion stack
+        rec_stack.remove(node)
+        return False
+
+    # Iterate through all nodes in the graph
+    for node in dag:
+        if dfs(node):
+            return True
+
+    return False

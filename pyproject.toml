@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "foundation"
-version = "0.0.0.7"
+version = "0.0.0.8"
 description = "Python core package for builder"
 authors = ["Clement Jambou"]
 
@@ -16,6 +16,7 @@ pytransform3d = "==1.13.0"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.3"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

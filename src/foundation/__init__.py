@@ -31,6 +31,7 @@ from foundation.sketch.sketch import Sketch
 from foundation.types.node import Node
 from foundation.utils_ext import showExt
 from foundation.utils import show
+from foundation.types.point_3d import Point3D
 
 
 def reset_ids():
