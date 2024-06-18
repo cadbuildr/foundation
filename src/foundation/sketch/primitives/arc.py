@@ -146,6 +146,12 @@ class Arc(Node):  # TODO add SketchElement
     def from_point_with_tangent_and_point(tangent: Line, p2: Point):
         pass  # TODO
 
+    def __str__(self) -> str:
+        return f"Arc({self.p1}, {self.p2}, {self.p3})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 ArcChildren.__annotations__["p1"] = Point
 ArcChildren.__annotations__["p2"] = Point

@@ -13,6 +13,23 @@ if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
 
 
+def mirror_point(point: Point, axis_start: Point, axis_end: Point):
+    """Mirrors a point across the axis defined by axis_start and axis_end."""
+    dx = axis_end.x.value - axis_start.x.value
+    dy = axis_end.y.value - axis_start.y.value
+    a = (dx**2 - dy**2) / (dx**2 + dy**2)
+    b = 2 * dx * dy / (dx**2 + dy**2)
+    x = point.x.value
+    y = point.y.value
+    x_new = (
+        a * (x - axis_start.x.value) + b * (y - axis_start.y.value) + axis_start.x.value
+    )
+    y_new = (
+        b * (x - axis_start.x.value) - a * (y - axis_start.y.value) + axis_start.y.value
+    )
+    return Point(point.sketch, x_new, y_new)
+
+
 class Draw:
     """small utils to make it easier to
     draw points and lines in a sketch"""
@@ -119,3 +136,34 @@ class Draw:
         if self.points[0] != self.points[-1]:
             primitives.append(Line(self.points[-1], self.points[0]))
         return CustomClosedSketchShape(self.sketch, primitives)
+
+    def close(self) -> CustomClosedSketchShape:
+        return self.get_closed_shape()
+
+    def close_with_mirror(self) -> CustomClosedSketchShape:
+        """Mirror the primitives to close the shape symmetrically based on axis from first to last point."""
+        if len(self.points) < 2:
+            raise ValueError("At least two points are required to perform mirroring.")
+
+        # Determine the axis of symmetry
+        start_point = self.points[0]
+        end_point = self.points[-1]
+
+        mirrored_primitives: list[SketchPrimitiveTypes] = []
+
+        for primitive in self.primitives:
+            if isinstance(primitive, Line):
+                start = mirror_point(primitive.p1, start_point, end_point)
+                end = mirror_point(primitive.p2, start_point, end_point)
+                mirrored_primitives.append(Line(end, start))
+            elif isinstance(primitive, Arc):
+                mp1 = mirror_point(primitive.p1, start_point, end_point)
+                mp2 = mirror_point(primitive.p2, start_point, end_point)
+                mp3 = mirror_point(primitive.p3, start_point, end_point)
+                mirrored_primitives.append(Arc(mp3, mp2, mp1))
+            else:
+                raise ValueError("Unsupported primitive type for mirroring.")
+
+        all_primitives = self.primitives + mirrored_primitives[::-1]
+
+        return CustomClosedSketchShape(self.sketch, all_primitives)

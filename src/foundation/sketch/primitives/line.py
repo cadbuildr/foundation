@@ -127,3 +127,12 @@ class Line(SketchElement, Node):
 
     def get_points(self):
         return [self.p1, self.p2]
+
+    def mirror(self):
+        return Line(self.p2, self.p1)
+
+    def __str__(self) -> str:
+        return f"Line({self.p1}, {self.p2})"
+
+    def __repr__(self) -> str:
+        return f"Line({self.p1}, {self.p2})"
