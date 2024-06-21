@@ -167,3 +167,15 @@ class Draw:
         all_primitives = self.primitives + mirrored_primitives[::-1]
 
         return CustomClosedSketchShape(self.sketch, all_primitives)
+
+    def tangent_arc(self, dx: float, dy: float, radius: float):
+        """Draw an arc tangentially to the last primitive, relative move."""
+        self.tangent_arc_to(self.x + dx, self.y + dy, radius)
+
+    def tangent_arc_to(self, x: float, y: float, radius: float):
+        """Draw an arc tangentially to the last primitive, ending at (x, y)."""
+        if not self.point_added:
+            self.add_point()
+        p1 = self.points[-1]
+        p2 = Point(self.sketch, x, y)
+        dx, dy = self.primitives[-1].tangent()
