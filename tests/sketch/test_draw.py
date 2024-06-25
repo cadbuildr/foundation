@@ -9,7 +9,6 @@ import numpy as np
 
 
 class TestMirrorPoint(unittest.TestCase):
-
     def setUp(self):
         self.part = start_component()
         self.sketch = Sketch(self.part.xy())
@@ -40,7 +39,6 @@ class TestMirrorPoint(unittest.TestCase):
 
 
 class TestDraw(unittest.TestCase):
-
     def setUp(self):
         self.part = start_component()
         self.sketch = Sketch(self.part.xy())
@@ -70,7 +68,6 @@ class TestDraw(unittest.TestCase):
 
 
 class TestDrawRoundedCornerThenLineTo(unittest.TestCase):
-
     def setUp(self):
         self.part = start_component()
         self.sketch = Sketch(self.part.xy())

@@ -4,7 +4,6 @@ import numpy as np
 
 
 class TestLine(unittest.TestCase):
-
     def setUp(self):
         part = start_component()
         self.sketch = Sketch(part.xy())
