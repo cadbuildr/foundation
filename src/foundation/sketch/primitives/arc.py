@@ -99,6 +99,16 @@ class Arc(Node):  # TODO add SketchElement
     def get_points(self):
         return [self.p1, self.p2, self.p3]
 
+    def is_counterclockwise(self) -> bool:
+        """Check if the arc is counterclockwise based on the order of the points"""
+        p1, p2, p3 = self.p1, self.p2, self.p3
+
+        # Calculate the cross product of vectors (p2 - p1) and (p3 - p2)
+        cross_product = (p2.x.value - p1.x.value) * (p3.y.value - p2.y.value) - (
+            p2.y.value - p1.y.value
+        ) * (p3.x.value - p2.x.value)
+        return cross_product > 0
+
     @staticmethod
     def from_two_points_and_radius(p1: Point, p2: Point, radius: float) -> "Arc":
         """
@@ -147,8 +157,18 @@ class Arc(Node):  # TODO add SketchElement
         center = self.get_center()
         dx = self.p3.x.value - center.x.value
         dy = self.p3.y.value - center.y.value
-        tangent_x = -dy  # Rotate the radius vector 90 degrees clockwise
-        tangent_y = dx
+        # Calculate the tangent vector
+        if self.is_counterclockwise():
+            tangent_x = -dy  # Rotate the radius vector 90 degrees counterclockwise
+            tangent_y = dx
+        else:
+            tangent_x = dy  # Rotate the radius vector 90 degrees clockwise
+            tangent_y = -dx
+
+        # normalize
+        tangent_norm = np.linalg.norm([tangent_x, tangent_y])
+        tangent_x /= tangent_norm
+        tangent_y /= tangent_norm
         return tangent_x, tangent_y
 
     @staticmethod

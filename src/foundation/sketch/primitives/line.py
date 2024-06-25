@@ -128,14 +128,11 @@ class Line(SketchElement, Node):
     def get_points(self) -> typing.List[Point]:
         return [self.p1, self.p2]
 
-    def mirror(self) -> "Line":
-        return Line(self.p2, self.p1)
-
-    def tangent(self) -> typing.Tuple[float, float]:
-        """Calculate the tangent vector of the last line primitive."""
-        dx = self.p2.x.value - self.p1.x.value
-        dy = self.p2.y.value - self.p1.y.value
-        return dx, dy  # Same direction vector
+    def tangent(self) -> np.ndarray:
+        """Calculate the tangent unit vector of the last line primitive."""
+        u = np.array([self.dx(), self.dy()])
+        u = u / np.linalg.norm(u)
+        return u
 
     def __str__(self) -> str:
         return f"Line({self.p1}, {self.p2})"
@@ -146,5 +143,25 @@ class Line(SketchElement, Node):
     @staticmethod
     def intersection(line1: "Line", line2: "Line") -> Point:
         """Return the intersection point of two lines"""
+        # Get the coordinates of the points
+        x1, y1 = line1.p1.x.value, line1.p1.y.value
+        x2, y2 = line1.p2.x.value, line1.p2.y.value
+        x3, y3 = line2.p1.x.value, line2.p1.y.value
+        x4, y4 = line2.p2.x.value, line2.p2.y.value
 
-        pass
+        # Calculate the denominators
+        denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+        if denom == 0:
+            raise Exception("Lines do not intersect or are collinear")
+
+        # Calculate the intersection point
+        intersect_x = (
+            (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)
+        ) / denom
+        intersect_y = (
+            (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
+        ) / denom
+
+        # Return the intersection point as a Point object
+        sketch = line1.p1.sketch
+        return Point(sketch, intersect_x, intersect_y)
