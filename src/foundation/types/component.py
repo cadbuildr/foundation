@@ -2,7 +2,7 @@ from itertools import count
 from foundation.sketch.sketch import Sketch
 from foundation.types.comp_or_assy import CompOrAssy
 from foundation.types.roots import ComponentRoot
-from foundation.operations import OperationTypes
+from foundation.operations import OperationTypes, operation_types_tuple
 
 
 class Component(CompOrAssy):
@@ -29,6 +29,10 @@ class Component(CompOrAssy):
         """Add an operation to the component
         @param op: Instance of one of the OperationTypes
         """
+        if not isinstance(op, operation_types_tuple):
+            raise Exception(
+                "Operation must be an instance of OperationTypes = Union[Extrusion, Hole, Lathe, Fillet]"
+            )
         self.head.add_operation(op)
 
     def add_operations(self, ops: list[OperationTypes]):

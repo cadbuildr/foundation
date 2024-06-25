@@ -99,6 +99,16 @@ class Arc(Node):  # TODO add SketchElement
     def get_points(self):
         return [self.p1, self.p2, self.p3]
 
+    def is_counterclockwise(self) -> bool:
+        """Check if the arc is counterclockwise based on the order of the points"""
+        p1, p2, p3 = self.p1, self.p2, self.p3
+
+        # Calculate the cross product of vectors (p2 - p1) and (p3 - p2)
+        cross_product = (p2.x.value - p1.x.value) * (p3.y.value - p2.y.value) - (
+            p2.y.value - p1.y.value
+        ) * (p3.x.value - p2.x.value)
+        return cross_product > 0
+
     @staticmethod
     def from_two_points_and_radius(p1: Point, p2: Point, radius: float) -> "Arc":
         """
@@ -142,9 +152,72 @@ class Arc(Node):  # TODO add SketchElement
 
         return Arc(p1, p3, p2)
 
+    def tangent(self):
+        """Tangent at p3"""
+        center = self.get_center()
+        dx = self.p3.x.value - center.x.value
+        dy = self.p3.y.value - center.y.value
+        # Calculate the tangent vector
+        if self.is_counterclockwise():
+            tangent_x = -dy  # Rotate the radius vector 90 degrees counterclockwise
+            tangent_y = dx
+        else:
+            tangent_x = dy  # Rotate the radius vector 90 degrees clockwise
+            tangent_y = -dx
+
+        # normalize
+        tangent_norm = np.linalg.norm([tangent_x, tangent_y])
+        tangent_x /= tangent_norm
+        tangent_y /= tangent_norm
+        return tangent_x, tangent_y
+
     @staticmethod
     def from_point_with_tangent_and_point(tangent: Line, p2: Point):
         pass  # TODO
+
+    def __str__(self) -> str:
+        return f"Arc({self.p1}, {self.p2}, {self.p3})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def get_center(self) -> Point:
+        """Calculate the center of the circle passing through p1, p2, p3"""
+
+        def perpendicular_bisector(p1: Point, p2: Point) -> tuple[float, float, float]:
+            mid = Point.midpoint(p1, p2)
+            dx = p2.x.value - p1.x.value
+            dy = p2.y.value - p1.y.value
+            if dy == 0:  # Vertical line case
+                return (1, 0, -mid.x.value)
+            slope = -dx / dy
+            intercept = mid.y.value - slope * mid.x.value
+            return (
+                slope,
+                -1,
+                intercept,
+            )  # line equation: slope * x - y + intercept = 0
+
+        # Get the perpendicular bisectors of p1p2 and p2p3
+        line1 = perpendicular_bisector(self.p1, self.p2)
+        line2 = perpendicular_bisector(self.p2, self.p3)
+
+        # Calculate the intersection of the two lines
+        def intersection(
+            line1: tuple[float, float, float], line2: tuple[float, float, float]
+        ) -> Point:
+            a1, b1, c1 = line1
+            a2, b2, c2 = line2
+            determinant = a1 * b2 - a2 * b1
+            if determinant == 0:
+                raise ValueError(
+                    "The points are collinear and do not define a unique circle"
+                )
+            x = (b2 * c1 - b1 * c2) / determinant
+            y = (a1 * c2 - a2 * c1) / determinant
+            return Point(x=x, y=y, sketch=self.p1.sketch)
+
+        return intersection(line1, line2)
 
 
 ArcChildren.__annotations__["p1"] = Point
