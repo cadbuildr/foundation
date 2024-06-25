@@ -106,7 +106,6 @@ class Node(object):
         """Current Node as a dictionary"""
         is_serializable, node_type = self.is_serializable()
         if only_keep_serializable_nodes and not is_serializable:
-            print(serializable_nodes.keys())
             raise TypeError(
                 f"""Node type {type(self).__name__} is not serializable, make sure
                             to add it to the serializable_nodes dict in the serializable.py file."""
