@@ -20,9 +20,9 @@ class Node(object):
 
     """
 
-    parent_types: list[
-        str
-    ] = []  # can be reimplemented in child classes to enforce a parent type to the Node
+    parent_types: list[str] = (
+        []
+    )  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
     children_class = NodeChildren  # Default : overriden in child classes
 
@@ -93,19 +93,26 @@ class Node(object):
         )
         return res
 
+    def is_serializable(self):
+        if type(self).__name__ in serializable_nodes.keys():
+            return True, serializable_nodes[type(self).__name__]
+        # look at all the parent classes
+        for parent in type(self).__mro__:
+            if parent.__name__ in serializable_nodes.keys():
+                return True, serializable_nodes[parent.__name__]
+        return False, None
+
     def to_dict(self, only_keep_serializable_nodes: bool = True) -> dict:
         """Current Node as a dictionary"""
-        if (
-            only_keep_serializable_nodes
-            and type(self).__name__ not in serializable_nodes.keys()
-        ):
+        is_serializable, node_type = self.is_serializable()
+        if only_keep_serializable_nodes and not is_serializable:
             print(serializable_nodes.keys())
             raise TypeError(
                 f"""Node type {type(self).__name__} is not serializable, make sure
                             to add it to the serializable_nodes dict in the serializable.py file."""
             )
         node_dict = {
-            "type": serializable_nodes[type(self).__name__],
+            "type": node_type,
             "deps": self.children.get_as_dict_of_ids(),
             "params": self.params,
         }

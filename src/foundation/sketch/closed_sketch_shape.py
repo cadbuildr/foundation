@@ -244,4 +244,33 @@ class Hexagon(Polygon):
         return Hexagon(center, radius)
 
 
+class RoundedCornerPolygon(CustomClosedSketchShape):
+    def __init__(self, sketch: "Sketch", lines: list[Line], radius: float):
+        # use pencil to draw rounded corners
+
+        # move to the first point
+        sketch.pencil.move_to(lines[0].p1.x.value, lines[0].p1.y.value)
+        # move by radius on the first line
+        [dx, dy] = lines[0].tangent()
+        sketch.pencil.move(dx * radius, dy * radius)
+        start_end_point = (sketch.pencil.x, sketch.pencil.y)
+        sketch.pencil.line_to(lines[0].p2.x.value, lines[0].p2.y.value)
+
+        for l in lines[1:]:
+            # draw the line
+            sketch.pencil.rounded_corner_then_line_to(
+                l.p2.x.value, l.p2.y.value, radius
+            )
+
+        # close the shape
+        sketch.pencil.rounded_corner_then_line_to(
+            start_end_point[0], start_end_point[1], radius
+        )
+
+        #  pencil.close(self) -> CustomClosedSketchShape:
+
+        closed_shape = sketch.pencil.close()
+        CustomClosedSketchShape.__init__(self, sketch, closed_shape.primitives)
+
+
 ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedSketchShape
