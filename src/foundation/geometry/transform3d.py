@@ -169,6 +169,9 @@ class TransformMatrix:
     def __init__(self, matrix: ndarray):
         self.matrix = matrix
 
+    def __str__(self) -> str:
+        return str(self.matrix)
+
     def concat(self, B2C: "TransformMatrix"):
         """Considering self as A2B, return A2C"""
         return TransformMatrix(np.dot(B2C.matrix, self.matrix))

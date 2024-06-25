@@ -63,6 +63,16 @@ class Frame(Node):
         else:
             return None
 
+    def __str__(self) -> str:
+        return (
+            "Frame : "
+            + self.name
+            + " with parent : "
+            + str(self.get_parent_name())
+            + " and transform : "
+            + str(self.transform)
+        )
+
     def get_frame_coordinates(self) -> ndarray:
         return self.transform.get_position()
 
@@ -104,13 +114,11 @@ class Frame(Node):
 
     def get_translated_frame(self, name: str, translation: ndarray) -> "Frame":
         """Translation is a 3d vector (numpy array)"""
-        top_tf = self.get_transform()
         tf = TransformMatrix.get_from_position(translation)
         return Frame(self, name, tf)
 
     def get_rotated_frame(self, name: str, rot_mat: RotationMatrix) -> "Frame":
         """Rotation is a 3x3 matrix (numpy array)"""
-        top_tf = self.get_transform()
         tf = TransformMatrix.get_from_rotation_matrix(rot_mat)
         return Frame(self, name, tf)
 
@@ -131,6 +139,29 @@ class Frame(Node):
         """return the rotated frame rotated by given axis and angle"""
         rot_mat = RotationMatrix.from_axis_angle(axis, angle)
         return self.get_rotated_frame(name=name, rot_mat=rot_mat)
+
+    def from_3dpoint_and_xy_axes(
+        self, name: str, point: ndarray, x_axis: ndarray, y_axis: ndarray
+    ) -> "Frame":
+        """Return a frame from a 3d point and 2 orthogonal vectors
+        the point is the origin of the frame
+        the x_axis is the first vector of the frame
+        the y_axis is the second vector of the frame
+        """
+        # Check if the vectors are unit vectors
+        if not np.isclose(np.linalg.norm(x_axis), 1.0):
+            raise ValueError("x_axis is not a unit vector")
+        if not np.isclose(np.linalg.norm(y_axis), 1.0):
+            raise ValueError("y_axis is not a unit vector")
+
+        # Check if the vectors are orthogonal
+        if not np.isclose(np.dot(x_axis, y_axis), 0.0):
+            raise ValueError("x_axis and y_axis are not orthogonal")
+
+        z_axis = np.cross(x_axis, y_axis)
+        rot_mat = RotationMatrix(np.array([x_axis, y_axis, z_axis]).T)
+        tf = TransformMatrix.from_rotation_matrix_and_position(rot_mat, point)
+        return Frame(self, name, tf)
 
     def compute_params(self):
         p, q = self.transform.to_position_quaternion()

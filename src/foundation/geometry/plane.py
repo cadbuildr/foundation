@@ -11,6 +11,7 @@ from foundation.types.parameters import (
     cast_to_bool_parameter,
     UnCastBool,
 )
+from foundation.types.point_3d import Point3D
 
 
 class PlaneChildren(NodeChildren):
@@ -117,6 +118,40 @@ class PlaneFactory:
             frame.get_y_axis(), np.pi / 2, name
         )
         return PlaneFromFrame(rotated_frame, name)
+
+    def get_plane_from_3_points(
+        self, origin_frame: Frame, points: list[Point3D], name: str | None = None
+    ) -> PlaneFromFrame:
+        """return a plane from 3 points
+        the frame will be oriented using [P1, P2] as the x axis and P1 as the origin
+        the frame as an arg is the coordinate system in which the points are defined
+        """
+        if len(points) != 3:
+            raise ValueError("Exactly three points are required to define a plane.")
+
+        p1, p2, p3 = points
+
+        # Create vectors from the points
+        v1 = p2 - p1
+        v2 = p3 - p1
+
+        # Compute the normal to the plane
+        normal = np.cross(v1.to_array(), v2.to_array())
+        normal /= np.linalg.norm(normal)
+
+        # Create the frame using p1 as the origin and v1, v2 for the directions
+        x_axis = v1.to_array() / np.linalg.norm(v1.to_array())
+        y_axis = np.cross(normal, x_axis)
+        y_axis /= np.linalg.norm(y_axis)
+
+        name = "f_3dp_" + str(self.counter)
+
+        # Create a Frame with origin p1 and axes x_axis, y_axis, normal
+        origin = p1.to_array()
+        frame = origin_frame.from_3dpoint_and_xy_axes(name, origin, x_axis, y_axis)
+        plane = PlaneFromFrame(frame, "p_3dp_" + str(self.counter))
+        self.counter += 1
+        return plane
 
     # TODO plan from a point and a normal ?
     # TODO counter not great -> what if multiple plane factory ?

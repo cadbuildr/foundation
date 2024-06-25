@@ -6,6 +6,7 @@ from foundation.types.parameters import (
 )
 from foundation.geometry.transform3d import TransformMatrix
 from foundation.types.node_children import NodeChildren
+import numpy as np
 
 
 class Point3DChildren(NodeChildren):
@@ -29,9 +30,30 @@ class Point3D(Node):
         # shortcuts
         self.x = self.children.x
         self.y = self.children.y
-        self.z = self.children.z0
+        self.z = self.children.z
 
         self.params = {}
+
+    def __str__(self):
+        return f"Point3D({self.x.value}, {self.y.value}, {self.z.value})"
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __sub__(self, other: "Point3D") -> "Point3D":
+        """Subtract another Point3D from this Point3D and return the result as a new Point3D."""
+        if not isinstance(other, Point3D):
+            raise ValueError("The operand must be an instance of Point3D.")
+
+        x_diff = self.x.value - other.x.value
+        y_diff = self.y.value - other.y.value
+        z_diff = self.z.value - other.z.value
+
+        return Point3D(x_diff, y_diff, z_diff)
+
+    def to_array(self) -> np.ndarray:
+        """Convert the Point3D to a NumPy array."""
+        return np.array([self.x.value, self.y.value, self.z.value])
 
 
 class Point3DWithOrientationChildren(NodeChildren):
