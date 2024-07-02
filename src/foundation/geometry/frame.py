@@ -13,6 +13,7 @@ from foundation.types.parameters import (
     UnCastBool,
 )
 from typing import Union
+from foundation.exceptions import NotAUnitVectorException, GeometryException
 
 
 class FrameChildren(NodeChildren):
@@ -150,13 +151,13 @@ class Frame(Node):
         """
         # Check if the vectors are unit vectors
         if not np.isclose(np.linalg.norm(x_axis), 1.0):
-            raise ValueError("x_axis is not a unit vector")
+            raise NotAUnitVectorException(x_axis, "x_axis")
         if not np.isclose(np.linalg.norm(y_axis), 1.0):
-            raise ValueError("y_axis is not a unit vector")
+            raise NotAUnitVectorException(y_axis, "y_axis")
 
         # Check if the vectors are orthogonal
         if not np.isclose(np.dot(x_axis, y_axis), 0.0):
-            raise ValueError("x_axis and y_axis are not orthogonal")
+            raise GeometryException("x_axis and y_axis are not orthogonal")
 
         z_axis = np.cross(x_axis, y_axis)
         rot_mat = RotationMatrix(np.array([x_axis, y_axis, z_axis]).T)

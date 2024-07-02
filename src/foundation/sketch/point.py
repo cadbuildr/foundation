@@ -87,6 +87,26 @@ class Point(SketchElement, Node):
         """Return the distance to another point"""
         return Point.distance_between_points(self, p2)
 
+    def mirror(self, axis_start: "Point", axis_end: "Point") -> "Point":
+        """Mirror the point over the line defined by two points"""
+        dx = axis_end.x.value - axis_start.x.value
+        dy = axis_end.y.value - axis_start.y.value
+        a = (dx**2 - dy**2) / (dx**2 + dy**2)
+        b = 2 * dx * dy / (dx**2 + dy**2)
+        x = self.x.value
+        y = self.y.value
+        x_new = (
+            a * (x - axis_start.x.value)
+            + b * (y - axis_start.y.value)
+            + axis_start.x.value
+        )
+        y_new = (
+            b * (x - axis_start.x.value)
+            - a * (y - axis_start.y.value)
+            + axis_start.y.value
+        )
+        return Point(self.sketch, x_new, y_new)
+
     ## Shorcuts
     @staticmethod
     def midpoint(p1: "Point", p2: "Point") -> "Point":

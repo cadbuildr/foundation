@@ -1,6 +1,13 @@
 # File to remove dependenct on pytransform3d
 import numpy as np
 from numpy import ndarray
+from foundation.exceptions import (
+    NaNInMatrixException,
+    TraceLessThanZeroException,
+    ZeroQuaternionNormException,
+    ZeroLengthVectorException,
+    InvalidParameterTypeException,
+)
 
 
 class RotationMatrix:
@@ -12,12 +19,12 @@ class RotationMatrix:
         return RotationMatrix(np.eye(3, dtype="float"))
 
     @staticmethod
-    def from_axis_angle(
-        axis: ndarray, angle: float, normalized: bool = True
-    ) -> "RotationMatrix":
+    def from_axis_angle(axis: ndarray, angle: float) -> "RotationMatrix":
         """Create the rotation matrix from an axis and an angle that rotate around that axis
         if normalized, we normalize the axis ( otherwise will multiple angle by the norm if not 1)
         """
+        if np.linalg.norm(axis) == 0:
+            ZeroLengthVectorException(axis, "axis")
         axis = axis / np.linalg.norm(axis)
         x, y, z = axis
         c = np.cos(angle)
@@ -52,6 +59,11 @@ class RotationMatrix:
     def from_quaternion(
         quaternion: tuple[float, float, float, float] | ndarray
     ) -> "RotationMatrix":
+        if not isinstance(quaternion, (tuple, np.ndarray)) or len(quaternion) != 4:
+            raise InvalidParameterTypeException(
+                "quaternion", quaternion, "tuple or ndarray of length 4"
+            )
+
         q0, q1, q2, q3 = quaternion
 
         # first row
@@ -76,8 +88,13 @@ class RotationMatrix:
     # TODO define angles type
     @staticmethod
     def from_euler_angles(
-        angles: tuple[float, float, float] | ndarray
+        angles: tuple[float, float, float] | ndarray | list[float]
     ) -> "RotationMatrix":
+        if not isinstance(angles, (tuple, np.ndarray, list)) or len(angles) != 3:
+            raise InvalidParameterTypeException(
+                "angles", angles, "tuple or ndarray of length 3"
+            )
+
         row, pitch, yaw = angles
 
         crow = np.cos(row)
@@ -108,21 +125,14 @@ class RotationMatrix:
         )
 
     def to_quaternion(self) -> ndarray:
-        # return a 4d vector that is a unit quaternion
-        # TODO is this safe ? (division by 0)
-
-        # check if matrix as nan values
+        # Check if matrix contains NaN values
         if np.isnan(self.matrix).any():
-            print("OHOHO NAAAN")
-            print(self.matrix)
+            raise NaNInMatrixException(self.matrix)
+
         tracep1 = 1.0 + self.matrix[0, 0] + self.matrix[1, 1] + self.matrix[2, 2]
-        if 0 > tracep1 > -1e-8:
-            # need this for weird approximations
-            tracep1 = 0.0
-        elif tracep1 < 0:
-            print("tracep1 < 0")
-            print(self.matrix)
-            raise ValueError("tracep1 < 0 not good !")
+        if tracep1 < 0:
+            raise TraceLessThanZeroException(self.matrix)
+
         q0 = np.sqrt(tracep1) / 2.0
         if q0 != 0:
             q1 = (self.matrix[2, 1] - self.matrix[1, 2]) / (4 * q0)
@@ -133,13 +143,13 @@ class RotationMatrix:
             q1 = self.matrix[2, 1] - self.matrix[1, 2]
             q2 = self.matrix[0, 2] - self.matrix[2, 0]
             q3 = self.matrix[1, 0] - self.matrix[0, 1]
+
         quat = np.array([q0, q1, q2, q3])
-        len = np.linalg.norm(quat)
-        if len != 0:
-            return quat / np.linalg.norm(quat)
-        else:
-            print("Warning: quaternion is zero, returning identity")
-            return np.array([1.0, 0.0, 0.0, 0.0])
+        norm = np.linalg.norm(quat)
+        if norm == 0:
+            raise ZeroQuaternionNormException()
+
+        return quat / norm
 
     def to_axis_angle(self) -> tuple[ndarray, float]:
         # return a 3d vector and a scalar
@@ -214,7 +224,11 @@ class TransformMatrix:
         if isinstance(translation, list):
             translation = np.array(translation, dtype="float")
         if translation.shape != (3,):
-            raise ValueError("translation should be a 3d vector")
+            raise InvalidParameterTypeException(
+                "translation",
+                translation,
+                "a list of 3 floats or a numpy array of shape (3,)",
+            )
 
         matrix = np.eye(4, dtype="float")
         matrix[:3, 3] = translation
@@ -226,7 +240,9 @@ class TransformMatrix:
         if isinstance(angles, list):
             angles = np.array(angles, dtype="float")
         if angles.shape != (3,):
-            raise ValueError("angles should be a 3d vector")
+            raise InvalidParameterTypeException(
+                "angles", angles, "a list of 3 floats or a numpy array of shape (3,)"
+            )
 
         rot_mat = RotationMatrix.from_euler_angles(angles)
         matrix = np.eye(4, dtype="float")
@@ -239,8 +255,11 @@ class TransformMatrix:
         if isinstance(quaternion, list):
             quaternion = np.array(quaternion, dtype="float")
         if quaternion.shape != (4,):
-            raise ValueError("quaternion should be a 4d vector")
-
+            raise InvalidParameterTypeException(
+                "quaternion",
+                quaternion,
+                "a list of 4 floats or a numpy array of shape (4,)",
+            )
         rot_mat = RotationMatrix.from_quaternion(quaternion)
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
@@ -250,11 +269,12 @@ class TransformMatrix:
     def from_rotation_matrix_and_position(
         rot_mat: RotationMatrix, position: list[float] | ndarray
     ) -> "TransformMatrix":
+        if not isinstance(position, (list, np.ndarray)) or len(position) != 3:
+            raise InvalidParameterTypeException("position", position, "3d vector")
         if isinstance(position, list):
             position = np.array(position, dtype="float")
         if position.shape != (3,):
-            raise ValueError("position should be a 3d vector")
-
+            raise InvalidParameterTypeException("position", position, "3d vector")
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
         matrix[:3, 3] = position
@@ -265,8 +285,3 @@ class TransformMatrix:
         matrix = np.eye(4, dtype="float")
         matrix[:3, :3] = rot_mat.matrix
         return TransformMatrix(matrix)
-
-
-"""     @staticmethod
-    def get_from_axis_angle(axis: ndarray, angle: float) -> "TransformMatrix":
-        pass """

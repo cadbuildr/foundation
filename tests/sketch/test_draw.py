@@ -1,11 +1,11 @@
 import unittest
 from foundation import Point, Sketch, start_component
-from foundation.sketch.draw import mirror_point, Draw
 from foundation.sketch.point import Point
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.primitives.arc import Arc
 from foundation.sketch.sketch import Sketch
 import numpy as np
+from foundation.exceptions import GeometryException
 
 
 class TestMirrorPoint(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestMirrorPoint(unittest.TestCase):
         point = Point(self.sketch, 2.0, 3.0)
         axis_start = Point(self.sketch, 0.0, 0.0)
         axis_end = Point(self.sketch, 1.0, 0.0)
-        mirrored_point = mirror_point(point, axis_start, axis_end)
+        mirrored_point = point.mirror(axis_start, axis_end)
         self.assertAlmostEqual(mirrored_point.x.value, 2.0)
         self.assertAlmostEqual(mirrored_point.y.value, -3.0)
 
@@ -25,7 +25,7 @@ class TestMirrorPoint(unittest.TestCase):
         point = Point(self.sketch, 3.0, 2.0)
         axis_start = Point(self.sketch, 0.0, 0.0)
         axis_end = Point(self.sketch, 0.0, 1.0)
-        mirrored_point = mirror_point(point, axis_start, axis_end)
+        mirrored_point = point.mirror(axis_start, axis_end)
         self.assertAlmostEqual(mirrored_point.x.value, -3.0)
         self.assertAlmostEqual(mirrored_point.y.value, 2.0)
 
@@ -33,7 +33,7 @@ class TestMirrorPoint(unittest.TestCase):
         point = Point(self.sketch, 1.0, 2.0)
         axis_start = Point(self.sketch, 0.0, 0.0)
         axis_end = Point(self.sketch, 1.0, 1.0)
-        mirrored_point = mirror_point(point, axis_start, axis_end)
+        mirrored_point = point.mirror(axis_start, axis_end)
         self.assertAlmostEqual(mirrored_point.x.value, 2.0)
         self.assertAlmostEqual(mirrored_point.y.value, 1.0)
 
@@ -76,22 +76,14 @@ class TestDrawRoundedCornerThenLineTo(unittest.TestCase):
     def test_rounded_corner_with_large_radius(self):
         # Drawing a line first
         self.draw.line_to(10, 0)
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(GeometryException):
             self.draw.rounded_corner_then_line_to(20, 0, 15)
-        self.assertEqual(
-            str(context.exception),
-            "The radius is too large compared to the length of the previous line segment.",
-        )
 
     def test_rounded_corner_with_large_radius_new_line(self):
         # Drawing a line first
         self.draw.line_to(10, 0)
-        with self.assertRaises(ValueError) as context:
+        with self.assertRaises(GeometryException):
             self.draw.rounded_corner_then_line_to(11, 0, 5)
-        self.assertEqual(
-            str(context.exception),
-            "The radius is too large compared to the length of the new line segment.",
-        )
 
     def test_rounded_corner_then_line_to_success(self):
         # Drawing a line first

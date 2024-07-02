@@ -1,5 +1,6 @@
 from foundation.types.node import Node
 from foundation.types.node_children import NodeChildren
+from foundation.exceptions import InvalidParameterValueException
 
 default_colors: dict = {
     "red": [1, 0, 0],
@@ -51,21 +52,21 @@ class Material(Node):
 
     def set_diffuse_colorRGB(self, r: int, g: int, b: int):
         if r > 255 or g > 255 or b > 255 or r < 0 or g < 0 or b < 0:
-            raise ValueError("Color values should be between 0 and 255")
+            raise InvalidParameterValueException(
+                "r,g,b", (r, g, b), "between 0 and 255"
+            )
         self.diffuse_color = (r, g, b)
         self.params["options"] = {"diffuse_color": self.diffuse_color}
 
     def set_transparency(self, alpha: float):
         if alpha > 1 or alpha < 0:
-            raise ValueError("Alpha should be between 0 and 1")
+            raise InvalidParameterValueException("alpha", alpha, "between 0 and 1")
         self.params["options"] = {"alpha": alpha}
 
     def set_diffuse_color(self, color_name: str):
         if color_name not in default_colors:
-            raise ValueError(
-                "Color not found in default colors, maybe try set_diffuse_colorRGB? : Colors available : \n  {}".format(
-                    default_colors
-                )
+            raise InvalidParameterValueException(
+                "color_name", color_name, "one of {}".format(default_colors.keys())
             )
         self.diffuse_color = default_colors[color_name]
         self.params["options"] = {"diffuse_color": self.diffuse_color}
