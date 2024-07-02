@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class FoundationException(Exception):
