@@ -109,6 +109,14 @@ class Arc(Node):  # TODO add SketchElement
         ) * (p3.x.value - p2.x.value)
         return cross_product > 0
 
+    def mirror(self, axis_start: Point, axis_end: Point) -> "Arc":
+        """Mirror the arc over the line defined by two points"""
+        return Arc(
+            self.p3.mirror(axis_start, axis_end),
+            self.p2.mirror(axis_start, axis_end),
+            self.p1.mirror(axis_start, axis_end),
+        )
+
     @staticmethod
     def from_two_points_and_radius(p1: Point, p2: Point, radius: float) -> "Arc":
         """

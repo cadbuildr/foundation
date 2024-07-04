@@ -1,27 +1,32 @@
+from __future__ import annotations
+
 import math
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Polygon, RoundedCornerPolygon
 
-from typing import TYPE_CHECKING, Type, Union
+from typing import TYPE_CHECKING, Type, TypeVar
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
 
+T = TypeVar("T", bound="BaseRectangle")
+
 
 class BaseRectangle:
-    def __init__(self, sketch: "Sketch", p1: Point, p2: Point, p3: Point, p4: Point):
+    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
         self.sketch = sketch
         self.p1 = p1
         self.p2 = p2
         self.p3 = p3
         self.p4 = p4
+        print(p1)
         self.lines = [Line(p1, p2), Line(p2, p3), Line(p3, p4), Line(p4, p1)]
 
     @classmethod
     def from_2_points(
-        cls: Type["BaseRectangle"], p1: Point, p3: Point, radius: float | None = None
-    ) -> Union["Rectangle", "RoundedCornerRectangle"]:
+        cls: Type[T], p1: Point, p3: Point, radius: float | None = None
+    ) -> T:
         sketch = p1.sketch
         p2 = Point(sketch, p3.x.value, p1.y.value)
         p4 = Point(sketch, p1.x.value, p3.y.value)
@@ -29,11 +34,11 @@ class BaseRectangle:
 
     @classmethod
     def from_center_and_point(
-        cls: Type["BaseRectangle"],
+        cls: Type[T],
         center: Point,
         p1: Point,
         radius: float | None = None,
-    ) -> Union["Rectangle", "RoundedCornerRectangle"]:
+    ) -> T:
         sketch = center.sketch
         dx = center.x.value - p1.x.value
         dy = center.y.value - p1.y.value
@@ -46,12 +51,12 @@ class BaseRectangle:
 
     @classmethod
     def from_3_points(
-        cls: Type["BaseRectangle"],
+        cls: Type[T],
         p1: Point,
         p2: Point,
         opposed: Point,
         radius: float | None = None,
-    ) -> Union["Rectangle", "RoundedCornerRectangle"]:
+    ) -> T:
         sketch = p1.sketch
         l1 = Line(p1, p2)
         width = l1.distance_to_point(opposed, absolute=False)
@@ -72,12 +77,12 @@ class BaseRectangle:
 
     @classmethod
     def from_center_and_sides(
-        cls: Type["BaseRectangle"],
+        cls: Type[T],
         center: Point,
         length: float,
         width: float,
         radius: float | None = None,
-    ) -> Union["Rectangle", "RoundedCornerRectangle"]:
+    ) -> T:
         sketch = center.sketch
         p1 = Point(sketch, center.x.value - length / 2, center.y.value - width / 2)
         p4 = Point(sketch, center.x.value - length / 2, center.y.value + width / 2)
@@ -88,41 +93,41 @@ class BaseRectangle:
 
     @classmethod
     def create_rectangle(
-        cls: Type["BaseRectangle"],
-        sketch: "Sketch",
+        cls: Type[T],
+        sketch: Sketch,
         p1: Point,
         p2: Point,
         p3: Point,
         p4: Point,
         radius: float | None,
-    ) -> Union["Rectangle", "RoundedCornerRectangle"]:
-        if radius is not None:
-            return RoundedCornerRectangle(sketch, p1, p2, p3, p4, radius)
+    ) -> T:
+        if radius is not None and issubclass(cls, RoundedCornerRectangle):
+            return cls(sketch, p1, p2, p3, p4, radius)  # type: ignore
+        elif issubclass(cls, Rectangle):
+            return cls(sketch, p1, p2, p3, p4)  # type: ignore
         else:
-            return Rectangle(sketch, p1, p2, p3, p4)
+            raise TypeError(f"Unsupported class type: {cls}")
 
 
 class Rectangle(Polygon, BaseRectangle):
-    def __init__(self, sketch: "Sketch", p1: Point, p2: Point, p3: Point, p4: Point):
+    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
         BaseRectangle.__init__(self, sketch, p1, p2, p3, p4)
         Polygon.__init__(self, sketch, self.lines)
 
 
 class Square(Rectangle):
-    def __init__(self, sketch: "Sketch", p1: Point, p2: Point, p3: Point, p4: Point):
+    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
         super().__init__(sketch, p1, p2, p3, p4)
 
-    @staticmethod
-    def from_center_and_side(center: Point, size: float) -> "Square":
-        sketch = center.sketch
-        rect = BaseRectangle.from_center_and_sides(center, size, size)
-        return Square(rect.sketch, rect.p1, rect.p2, rect.p3, rect.p4)
+    @classmethod
+    def from_center_and_side(cls: Type[T], center: Point, size: float) -> T:
+        return cls.from_center_and_sides(center, size, size)
 
 
 class RoundedCornerRectangle(RoundedCornerPolygon, BaseRectangle):
     def __init__(
         self,
-        sketch: "Sketch",
+        sketch: Sketch,
         p1: Point,
         p2: Point,
         p3: Point,
@@ -145,12 +150,9 @@ class RoundedCornerSquare(RoundedCornerRectangle):
     ):
         super().__init__(sketch, p1, p2, p3, p4, radius)
 
-    @staticmethod
+    @classmethod
     def from_center_and_side(
-        center: Point, size: float, radius: float
-    ) -> "RoundedCornerSquare":
-        sketch = center.sketch
+        cls: Type[RoundedCornerSquare], center: Point, size: float, radius: float
+    ) -> RoundedCornerSquare:
         rect = BaseRectangle.from_center_and_sides(center, size, size, radius)
-        return RoundedCornerSquare(
-            rect.sketch, rect.p1, rect.p2, rect.p3, rect.p4, radius
-        )
+        return cls(rect.sketch, rect.p1, rect.p2, rect.p3, rect.p4, radius)

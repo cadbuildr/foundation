@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from foundation.types.node import Node
 from foundation.sketch.base import SketchElement
 from foundation.sketch.point import Point
@@ -140,6 +142,11 @@ class Line(SketchElement, Node):
     def __repr__(self) -> str:
         return f"Line({self.p1}, {self.p2})"
 
+    def mirror(self, axis_p1: Point, axis_p2: Point) -> Line:
+        start = self.p1.mirror(axis_p1, axis_p2)
+        end = self.p2.mirror(axis_p1, axis_p2)
+        return Line(start, end)
+
     @staticmethod
     def intersection(line1: "Line", line2: "Line") -> Point:
         """Return the intersection point of two lines"""
@@ -165,3 +172,7 @@ class Line(SketchElement, Node):
         # Return the intersection point as a Point object
         sketch = line1.p1.sketch
         return Point(sketch, intersect_x, intersect_y)
+
+
+LineChildren.__annotations__["p1"] = Point
+LineChildren.__annotations__["p2"] = Point

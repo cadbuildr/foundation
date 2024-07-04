@@ -12,6 +12,10 @@ from foundation.types.parameters import (
     UnCastBool,
 )
 from foundation.types.point_3d import Point3D
+from foundation.exceptions import (
+    InvalidParameterTypeException,
+    InvalidParameterValueException,
+)
 
 
 class PlaneChildren(NodeChildren):
@@ -127,7 +131,9 @@ class PlaneFactory:
         the frame as an arg is the coordinate system in which the points are defined
         """
         if len(points) != 3:
-            raise ValueError("Exactly three points are required to define a plane.")
+            raise InvalidParameterTypeException(
+                "points", points, "list of exactly three non aligned Point3D objects"
+            )
 
         p1, p2, p3 = points
 
@@ -137,12 +143,20 @@ class PlaneFactory:
 
         # Compute the normal to the plane
         normal = np.cross(v1.to_array(), v2.to_array())
+        if np.linalg.norm(normal) == 0:
+            if np.linalg.norm(v1.to_array()) == 0 or np.linalg.norm(v2.to_array()) == 0:
+                raise InvalidParameterValueException(
+                    "points", points, "at least two points are the same"
+                )
+            raise InvalidParameterValueException(
+                "points", points, "the points are alligned"
+            )
         normal /= np.linalg.norm(normal)
 
         # Create the frame using p1 as the origin and v1, v2 for the directions
         x_axis = v1.to_array() / np.linalg.norm(v1.to_array())
         y_axis = np.cross(normal, x_axis)
-        y_axis /= np.linalg.norm(y_axis)
+        y_axis /= np.linalg.norm(y_axis)  # cannot be 0
 
         name = "f_3dp_" + str(self.counter)
 

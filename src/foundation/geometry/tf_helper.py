@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import numpy as np
 from numpy import ndarray
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
+from foundation.exceptions import InvalidParameterTypeException
 
 
 def get_rotation_matrix(axis, angle):
     """axis is a 3d vector (numpy array)"""
-    return RotationMatrix.from_axis_angle(axis, angle, normalized=True)
+    return RotationMatrix.from_axis_angle(axis, angle)
 
 
 class TFHelper:
@@ -25,12 +28,16 @@ class TFHelper:
 
     def translate(
         self, translation: ndarray | list[float], rotate: bool = False
-    ) -> "TFHelper":
+    ) -> TFHelper:
         """Translation is a 3d vector (numpy array)"""
         if isinstance(translation, list):
             translation = np.array(translation, dtype="float")
         if translation.shape != (3,):
-            raise ValueError("translation should be a 3d vector")
+            raise InvalidParameterTypeException(
+                "translation",
+                translation,
+                "a list of 3 floats or a numpy array of shape (3,)",
+            )
 
         if rotate:
             self.rotate_and_translate(RotationMatrix.get_identity(), translation)
@@ -49,16 +56,16 @@ class TFHelper:
 
     def rotate(
         self, axis: ndarray = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
-    ) -> "TFHelper":
+    ) -> TFHelper:
         """axis is a 3d vector (numpy array) and angle is a float"""
         axis = np.array(axis, dtype="float")
-        rotation_matrix = RotationMatrix.from_axis_angle(axis, angle, normalized=True)
+        rotation_matrix = RotationMatrix.from_axis_angle(axis, angle)
         self.rotate_and_translate(rotation_matrix, [0.0, 0.0, 0.0])
         return self
 
     def rotate_and_translate(
         self, rotation_matrix: RotationMatrix, translation: list[float] | ndarray
-    ) -> "TFHelper":
+    ) -> TFHelper:
         """using a rotation_matrix and translation, update the tf"""
         pq_transform = TransformMatrix.from_rotation_matrix_and_position(
             rotation_matrix, translation

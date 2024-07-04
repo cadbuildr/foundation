@@ -50,25 +50,6 @@ def start_assembly() -> Assembly:
     return assembly
 
 
-def check_dict(d) -> None:
-    """Useful debug tool on dict to see if any value is nan"""
-    for k, v in d.items():
-        if isinstance(v, dict):
-            check_dict(v)
-        elif isinstance(v, list):
-            for i in v:
-                if isinstance(i, dict):
-                    check_dict(i)
-                elif isinstance(i, float):
-                    assert not np.isnan(i)
-        elif isinstance(v, float):
-            assert not np.isnan(v)
-        else:
-            if isinstance(v, float):
-                if np.isnan(v):
-                    print(k, v)
-
-
 def format_dag(dag: dict):
     """Format the DAG to include extra information :
     - the serializable nodes

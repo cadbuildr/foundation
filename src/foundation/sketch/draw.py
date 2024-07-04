@@ -6,6 +6,11 @@ from foundation.sketch.closed_sketch_shape import (
     CustomClosedSketchShape,
     SketchPrimitiveTypes,
 )
+from foundation.exceptions import (
+    InternalStateException,
+    GeometryException,
+    InvalidParameterValueException,
+)
 import numpy as np
 import math
 
@@ -13,23 +18,6 @@ from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
-
-
-def mirror_point(point: Point, axis_start: Point, axis_end: Point):
-    """Mirrors a point across the axis defined by axis_start and axis_end."""
-    dx = axis_end.x.value - axis_start.x.value
-    dy = axis_end.y.value - axis_start.y.value
-    a = (dx**2 - dy**2) / (dx**2 + dy**2)
-    b = 2 * dx * dy / (dx**2 + dy**2)
-    x = point.x.value
-    y = point.y.value
-    x_new = (
-        a * (x - axis_start.x.value) + b * (y - axis_start.y.value) + axis_start.x.value
-    )
-    y_new = (
-        b * (x - axis_start.x.value) - a * (y - axis_start.y.value) + axis_start.y.value
-    )
-    return Point(point.sketch, x_new, y_new)
 
 
 class Draw:
@@ -121,7 +109,7 @@ class Draw:
         # Check that all the primitives are lines and filter them into a new list
         for primitive in self.primitives:
             if not isinstance(primitive, Line):
-                raise ValueError("All primitives must be lines")
+                raise InternalStateException("All primitives must be lines")
             lines.append(primitive)
 
         # for i in range(len(self.points) - 1):
@@ -145,7 +133,9 @@ class Draw:
     def close_with_mirror(self) -> CustomClosedSketchShape:
         """Mirror the primitives to close the shape symmetrically based on axis from first to last point."""
         if len(self.points) < 2:
-            raise ValueError("At least two points are required to perform mirroring.")
+            raise GeometryException(
+                "At least two points are required to perform mirroring."
+            )
 
         # Determine the axis of symmetry
         start_point = self.points[0]
@@ -154,18 +144,7 @@ class Draw:
         mirrored_primitives: list[SketchPrimitiveTypes] = []
 
         for primitive in self.primitives:
-            if isinstance(primitive, Line):
-                start = mirror_point(primitive.p1, start_point, end_point)
-                end = mirror_point(primitive.p2, start_point, end_point)
-                mirrored_primitives.append(Line(end, start))
-            elif isinstance(primitive, Arc):
-                mp1 = mirror_point(primitive.p1, start_point, end_point)
-                mp2 = mirror_point(primitive.p2, start_point, end_point)
-                mp3 = mirror_point(primitive.p3, start_point, end_point)
-                mirrored_primitives.append(Arc(mp3, mp2, mp1))
-            else:
-                raise ValueError("Unsupported primitive type for mirroring.")
-
+            mirrored_primitives.append(primitive.mirror(start_point, end_point))
         all_primitives = self.primitives + mirrored_primitives[::-1]
 
         return CustomClosedSketchShape(self.sketch, all_primitives)
@@ -181,6 +160,10 @@ class Draw:
 
         p1 = self.points[-1]
         p2 = Point(self.sketch, x, y)
+        if p1.x.value == p2.x.value and p1.y.value == p2.y.value:
+            raise InvalidParameterValueException(
+                "(x,y)", (x, y), "Destination point is the same as previous one"
+            )
 
         tangent_unit_vector = self.primitives[-1].tangent()
         bisector_line = self._calculate_perpendicular_bisector(p1, p2)
@@ -191,9 +174,8 @@ class Draw:
         center = Line.intersection(bisector_line, perpendicular_line_through_p1)
 
         # Ensure center is found
-
         if center is None:
-            raise ValueError("Cannot determine the center of the arc.")
+            raise GeometryException("Cannot determine the center of the arc.")
 
             # Create an Arc using the three points on the arc: p1, a point on the arc, and p2
         # Calculate an intermediate point on the arc, halfway between p1 and p2
@@ -219,8 +201,6 @@ class Draw:
 
     def _calculate_perpendicular_bisector(self, p1: Point, p2: Point) -> Line:
         """Calculate the perpendicular bisector of the line segment connecting p1 and p2."""
-        if p1.x.value == p2.x.value and p1.y.value == p2.y.value:
-            raise ValueError("Points p1 and p2 must not be identical")
 
         midpoint = Point.midpoint(p1, p2)
 
@@ -229,10 +209,9 @@ class Draw:
         dy = p2.y.value - p1.y.value
 
         # Calculate the length of the direction vector
-        length = math.sqrt(dx**2 + dy**2)
+        length = math.sqrt(dx**2 + dy**2)  # cannot be zero
         if length == 0:
-            raise ValueError("Points p1 and p2 must not be identical")
-
+            raise InternalStateException("The length of the direction vector is zero")
         # Calculate the unit vector perpendicular to the direction vector
         unit_perpendicular = np.array([-dy / length, dx / length])
 
@@ -296,8 +275,8 @@ class Draw:
         line_dy = p2.y.value - p1.y.value
         line_length = math.sqrt(line_dx**2 + line_dy**2)
 
-        if line_length <= radius:
-            raise ValueError(
+        if line_length < radius:
+            raise GeometryException(
                 "The radius is too large compared to the length of the previous line segment."
             )
 
@@ -315,8 +294,11 @@ class Draw:
         new_line_length = math.sqrt(dx**2 + dy**2)
 
         if new_line_length < radius:
-            raise ValueError(
-                "The radius is too large compared to the length of the new line segment."
+            raise GeometryException(
+                "The radius is too large compared to the length of the new line segment, got radius: "
+                + str(radius)
+                + " and line length: "
+                + str(new_line_length)
             )
 
         unit_dx = dx / new_line_length
