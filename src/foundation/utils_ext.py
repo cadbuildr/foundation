@@ -1,5 +1,6 @@
-from foundation.types.component import Component
 from foundation.utils import format_dag
+from typing import Union
+from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
 
 try:
     import json
@@ -16,7 +17,9 @@ except ImportError:
     websocket = MockWebSocket("websocket")
 
 
-def showExt(component: Component) -> None:
+def showExt(
+    component: Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
+) -> None:
     dic = component.to_dag()
     dic = format_dag(dic)
     try:

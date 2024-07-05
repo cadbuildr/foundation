@@ -16,6 +16,7 @@ from foundation.exceptions import (
     InvalidParameterTypeException,
     InvalidParameterValueException,
 )
+from typing import Union, List
 
 
 class PlaneChildren(NodeChildren):
@@ -90,12 +91,14 @@ class PlaneFactory:
     def get_angle_plane_from_axis(
         self,
         plane: PlaneFromFrame,
-        axis: ndarray,
+        axis: Union[ndarray, List[int]],
         angle: float,
         name: str | None = None,
     ) -> PlaneFromFrame:
         """return a plane rotated around the given axis by the given angle
         axis must be on the frame"""
+        if not isinstance(axis, ndarray):
+            axis = np.array(axis)
 
         return plane.get_angle_plane_from_axis(axis, angle, self._get_name(name))
 
