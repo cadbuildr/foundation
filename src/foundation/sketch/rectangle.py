@@ -4,23 +4,26 @@ import math
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Polygon, RoundedCornerPolygon
+from foundation.exceptions import ElementsNotOnSameSketchException
 
-from typing import TYPE_CHECKING, Type, TypeVar
-
-if TYPE_CHECKING:
-    from foundation.sketch.sketch import Sketch
+from typing import Type, TypeVar
 
 T = TypeVar("T", bound="BaseRectangle")
 
 
 class BaseRectangle:
-    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
+    def __init__(self, p1: Point, p2: Point, p3: Point, p4: Point):
+        if p1.sketch != p2.sketch or p1.sketch != p3.sketch or p1.sketch != p4.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {p1}, {p2}, {p3}, {p4} are not on the same sketch"
+            )
+        sketch = p1.sketch
+
         self.sketch = sketch
         self.p1 = p1
         self.p2 = p2
         self.p3 = p3
         self.p4 = p4
-        print(p1)
         self.lines = [Line(p1, p2), Line(p2, p3), Line(p3, p4), Line(p4, p1)]
 
     @classmethod
@@ -73,7 +76,7 @@ class BaseRectangle:
             p1.y.value + width * math.sin(angle),
         )
 
-        return cls.create_rectangle(sketch, p1, p2, p3, p4, radius)
+        return cls.create_rectangle(p1, p2, p3, p4, radius)
 
     @classmethod
     def from_center_and_sides(
@@ -94,7 +97,6 @@ class BaseRectangle:
     @classmethod
     def create_rectangle(
         cls: Type[T],
-        sketch: Sketch,
         p1: Point,
         p2: Point,
         p3: Point,
@@ -102,22 +104,22 @@ class BaseRectangle:
         radius: float | None,
     ) -> T:
         if radius is not None and issubclass(cls, RoundedCornerRectangle):
-            return cls(sketch, p1, p2, p3, p4, radius)  # type: ignore
+            return cls(p1, p2, p3, p4, radius)  # type: ignore
         elif issubclass(cls, Rectangle):
-            return cls(sketch, p1, p2, p3, p4)  # type: ignore
+            return cls(p1, p2, p3, p4)  # type: ignore
         else:
             raise TypeError(f"Unsupported class type: {cls}")
 
 
 class Rectangle(Polygon, BaseRectangle):
-    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
-        BaseRectangle.__init__(self, sketch, p1, p2, p3, p4)
-        Polygon.__init__(self, sketch, self.lines)
+    def __init__(self, p1: Point, p2: Point, p3: Point, p4: Point):
+        BaseRectangle.__init__(self, p1, p2, p3, p4)
+        Polygon.__init__(self, self.lines)
 
 
 class Square(Rectangle):
-    def __init__(self, sketch: Sketch, p1: Point, p2: Point, p3: Point, p4: Point):
-        super().__init__(sketch, p1, p2, p3, p4)
+    def __init__(self, p1: Point, p2: Point, p3: Point, p4: Point):
+        super().__init__(p1, p2, p3, p4)
 
     @classmethod
     def from_center_and_side(cls: Type[T], center: Point, size: float) -> T:
@@ -127,32 +129,30 @@ class Square(Rectangle):
 class RoundedCornerRectangle(RoundedCornerPolygon, BaseRectangle):
     def __init__(
         self,
-        sketch: Sketch,
         p1: Point,
         p2: Point,
         p3: Point,
         p4: Point,
         radius: float,
     ):
-        BaseRectangle.__init__(self, sketch, p1, p2, p3, p4)
-        RoundedCornerPolygon.__init__(self, sketch, self.lines, radius)
+        BaseRectangle.__init__(self, p1, p2, p3, p4)
+        RoundedCornerPolygon.__init__(self.lines, radius)
 
 
 class RoundedCornerSquare(RoundedCornerRectangle):
     def __init__(
         self,
-        sketch: "Sketch",
         p1: Point,
         p2: Point,
         p3: Point,
         p4: Point,
         radius: float,
     ):
-        super().__init__(sketch, p1, p2, p3, p4, radius)
+        super().__init__(p1, p2, p3, p4, radius)
 
     @classmethod
     def from_center_and_side(
         cls: Type[RoundedCornerSquare], center: Point, size: float, radius: float
     ) -> RoundedCornerSquare:
         rect = BaseRectangle.from_center_and_sides(center, size, size, radius)
-        return cls(rect.sketch, rect.p1, rect.p2, rect.p3, rect.p4, radius)
+        return cls(rect.p1, rect.p2, rect.p3, rect.p4, radius)

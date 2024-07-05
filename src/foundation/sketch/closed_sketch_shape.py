@@ -14,6 +14,7 @@ from foundation.types.parameters import (
 from typing import TYPE_CHECKING
 from foundation.types.node_children import NodeChildren
 from foundation.sketch.primitives import SketchPrimitiveTypes
+from foundation.exceptions import ElementsNotOnSameSketchException
 
 if TYPE_CHECKING:
     from foundation.sketch.sketch import Sketch
@@ -27,15 +28,22 @@ class ClosedSketchShape(SketchElement):
         raise NotImplementedError("Implement in children")
 
 
-class CustomClosedSketchShapeChildren(NodeChildren):
+class CustomClosedShapeChildren(NodeChildren):
     primitives: list[SketchPrimitiveTypes]
 
 
-class CustomClosedSketchShape(ClosedSketchShape, Node):
+class CustomClosedShape(ClosedSketchShape, Node):
 
-    children_class = CustomClosedSketchShapeChildren
+    children_class = CustomClosedShapeChildren
 
-    def __init__(self, sketch: "Sketch", primitives: list[SketchPrimitiveTypes]):
+    def __init__(self, primitives: list[SketchPrimitiveTypes]):
+        for p in primitives[1:]:
+            if primitives[0].sketch != p.sketch:
+                raise ElementsNotOnSameSketchException(
+                    f"Primitives {primitives[0]} and {p} are not on the same sketch"
+                )
+        sketch = primitives[0].sketch
+
         ClosedSketchShape.__init__(self, sketch)
         Node.__init__(self, parents=[sketch])
 
@@ -55,22 +63,18 @@ class CustomClosedSketchShape(ClosedSketchShape, Node):
             points += prim.get_points()
         return points
 
-    def rotate(
-        self, angle: float, center: Point | None = None
-    ) -> "CustomClosedSketchShape":
+    def rotate(self, angle: float, center: Point | None = None) -> "CustomClosedShape":
         if center is None:
             center = self.primitives[0].sketch.origin
         list_of_prim = [p.rotate(angle, center) for p in self.primitives]
-        return CustomClosedSketchShape(self.sketch, list_of_prim)
+        return CustomClosedShape(list_of_prim)
 
-    def translate(self, dx: float, dy: float) -> "CustomClosedSketchShape":
+    def translate(self, dx: float, dy: float) -> "CustomClosedShape":
         list_of_prim = [p.translate(dx, dy) for p in self.primitives]
-        return CustomClosedSketchShape(self.sketch, list_of_prim)
+        return CustomClosedShape(list_of_prim)
 
 
-CustomClosedSketchShapeChildren.__annotations__["primitives"] = list[
-    SketchPrimitiveTypes
-]
+CustomClosedShapeChildren.__annotations__["primitives"] = list[SketchPrimitiveTypes]
 
 
 class PolygonChildren(NodeChildren):
@@ -82,7 +86,14 @@ class Polygon(ClosedSketchShape, Node):
 
     children_class = PolygonChildren
 
-    def __init__(self, sketch: "Sketch", lines: list[Line]):
+    def __init__(self, lines: list[Line]):
+        for l in lines[1:]:
+            if lines[0].sketch != l.sketch:
+                raise ElementsNotOnSameSketchException(
+                    f"Lines {lines[0]} and {l} are not on the same sketch"
+                )
+        sketch = lines[0].sketch
+
         # Check all frames are the same ?
         ClosedSketchShape.__init__(self, sketch)
         Node.__init__(self, parents=[sketch])
@@ -112,11 +123,11 @@ class Polygon(ClosedSketchShape, Node):
         if center is None:
             center = self.lines[0].sketch.origin
         lines = [l.rotate(angle, center) for l in self.lines]
-        return Polygon(self.sketch, lines)
+        return Polygon(lines)
 
     def translate(self, dx: float, dy: float) -> "Polygon":
         lines = [l.translate(dx, dy) for l in self.lines]
-        return Polygon(self.sketch, lines)
+        return Polygon(lines)
 
 
 PolygonChildren.__annotations__["lines"] = list[Line]
@@ -244,9 +255,15 @@ class Hexagon(Polygon):
         return Hexagon(center, radius)
 
 
-class RoundedCornerPolygon(CustomClosedSketchShape):
-    def __init__(self, sketch: "Sketch", lines: list[Line], radius: float):
+class RoundedCornerPolygon(CustomClosedShape):
+    def __init__(self, lines: list[Line], radius: float):
         # use pencil to draw rounded corners
+        for l in lines[1:]:
+            if lines[0].sketch != l.sketch:
+                raise ElementsNotOnSameSketchException(
+                    f"Lines {lines[0]} and {l} are not on the same sketch"
+                )
+        sketch = lines[0].sketch
 
         # move to the first point
         sketch.pencil.move_to(lines[0].p1.x.value, lines[0].p1.y.value)
@@ -267,10 +284,10 @@ class RoundedCornerPolygon(CustomClosedSketchShape):
             start_end_point[0], start_end_point[1], radius
         )
 
-        #  pencil.close(self) -> CustomClosedSketchShape:
+        #  pencil.close(self) -> CustomClosedShape:
 
         closed_shape = sketch.pencil.close()
-        CustomClosedSketchShape.__init__(self, sketch, closed_shape.primitives)
+        CustomClosedShape.__init__(self, sketch, closed_shape.primitives)
 
 
-ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedSketchShape
+ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedShape

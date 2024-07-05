@@ -195,7 +195,7 @@ class SK:
             lines = []
             for i in range(len(points)):
                 lines.append(Line(points[i], points[(i + 1) % len(points)]))
-            polygon = Polygon(s, lines)
+            polygon = Polygon(lines)
 
             return polygon
 
