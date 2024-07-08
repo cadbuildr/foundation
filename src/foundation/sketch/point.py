@@ -107,7 +107,7 @@ class Point(SketchElement, Node):
         )
         return Point(self.sketch, x_new, y_new)
 
-    ## Shorcuts
+    ## Shortcuts
     @staticmethod
     def midpoint(p1: "Point", p2: "Point") -> "Point":
         return Point(

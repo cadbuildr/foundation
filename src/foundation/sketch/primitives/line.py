@@ -4,6 +4,8 @@ from foundation.types.node import Node
 from foundation.sketch.base import SketchElement
 from foundation.sketch.point import Point
 from foundation.types.node_children import NodeChildren
+from foundation.exceptions import ElementsNotOnSameSketchException
+
 
 import numpy as np
 import math
@@ -45,7 +47,9 @@ class Line(SketchElement, Node):
         # geometry.Line.__init__(self, p1, p2)
         Node.__init__(self, [p1.sketch])
         if p1.sketch != p2.sketch:
-            raise ValueError("Points are not on the same sketch")
+            raise ElementsNotOnSameSketchException(
+                f"Points {p1} and {p2} are not on the same sketch"
+            )
         SketchElement.__init__(self, p1.sketch)
 
         self.children.set_p1(p1)
@@ -80,8 +84,8 @@ class Line(SketchElement, Node):
 
     def angle_to_other_line(self, line_b: "Line") -> float:
         """Return the angle in degrees to another line.
-        TODO this should probablly return a FloatParameter with a parent being the line
-        so that we actually propgate the changes in the tree.
+        TODO this should probably return a FloatParameter with a parent being the line
+        so that we actually propagate the changes in the tree.
         """
         return (
             math.degrees(
@@ -94,6 +98,12 @@ class Line(SketchElement, Node):
         """
         Same here, probably should return a FloatParameter
         area is bxh/2"""
+
+        if p1.sketch != self.p1.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {p1} and {self.p1} are not on the same sketch"
+            )
+
         return (
             triangle_area(p1, self.p1, self.p2, absolute=absolute) * 2.0 / self.length()
         )
@@ -151,6 +161,12 @@ class Line(SketchElement, Node):
     def intersection(line1: "Line", line2: "Line") -> Point:
         """Return the intersection point of two lines"""
         # Get the coordinates of the points
+
+        if line1.p1.sketch != line2.p1.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Lines {line1} and {line2} are not on the same sketch"
+            )
+
         x1, y1 = line1.p1.x.value, line1.p1.y.value
         x2, y2 = line1.p2.x.value, line1.p2.y.value
         x3, y3 = line2.p1.x.value, line2.p1.y.value

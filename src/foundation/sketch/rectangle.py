@@ -33,7 +33,7 @@ class BaseRectangle:
         sketch = p1.sketch
         p2 = Point(sketch, p3.x.value, p1.y.value)
         p4 = Point(sketch, p1.x.value, p3.y.value)
-        return cls.create_rectangle(sketch, p1, p2, p3, p4, radius)
+        return cls.create_rectangle(p1, p2, p3, p4, radius)
 
     @classmethod
     def from_center_and_point(
@@ -42,7 +42,11 @@ class BaseRectangle:
         p1: Point,
         radius: float | None = None,
     ) -> T:
-        sketch = center.sketch
+        if center.sketch != p1.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {center} and {p1} are not on the same sketch"
+            )
+        sketch = p1.sketch
         dx = center.x.value - p1.x.value
         dy = center.y.value - p1.y.value
 
@@ -50,7 +54,7 @@ class BaseRectangle:
         p3 = Point(sketch, p1.x.value + dx * 2, p1.y.value + dy * 2)
         p4 = Point(sketch, p1.x.value + dx * 2, p1.y.value)
 
-        return cls.create_rectangle(sketch, p1, p2, p3, p4, radius)
+        return cls.create_rectangle(p1, p2, p3, p4, radius)
 
     @classmethod
     def from_3_points(
@@ -60,11 +64,12 @@ class BaseRectangle:
         opposed: Point,
         radius: float | None = None,
     ) -> T:
-        sketch = p1.sketch
+
         l1 = Line(p1, p2)
         width = l1.distance_to_point(opposed, absolute=False)
         angle = math.atan2(l1.dy(), l1.dx())
 
+        sketch = p1.sketch
         p3 = Point(
             sketch,
             p2.x.value + width * math.cos(angle),

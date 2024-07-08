@@ -3,6 +3,7 @@ from foundation.sketch.point import Point, PointWithTangent
 from foundation.types.node import Node
 from typing import List
 from foundation.types.node_children import NodeChildren
+from foundation.exceptions import ElementsNotOnSameSketchException
 
 
 def solve_at3_bt2_ct_d(
@@ -34,6 +35,10 @@ def solve_at3_bt2_ct_d(
 
 class TwoPointsSpline:
     def __init__(self, p1: PointWithTangent, p2: PointWithTangent):
+        if p1.p.sketch != p2.p.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {p1.p} and {p2.p} are not on the same sketch"
+            )
         self.p1 = p1
         self.p2 = p2
 
@@ -68,18 +73,8 @@ class TwoPointsSpline:
         points = []
         for i in range(n_points):
             t = i / n_points
-            x = (
-                x_coeffs[0] * t**3
-                + x_coeffs[1] * t**2
-                + x_coeffs[2] * t
-                + x_coeffs[3]
-            )
-            y = (
-                y_coeffs[0] * t**3
-                + y_coeffs[1] * t**2
-                + y_coeffs[2] * t
-                + y_coeffs[3]
-            )
+            x = x_coeffs[0] * t**3 + x_coeffs[1] * t**2 + x_coeffs[2] * t + x_coeffs[3]
+            y = y_coeffs[0] * t**3 + y_coeffs[1] * t**2 + y_coeffs[2] * t + y_coeffs[3]
             points.append(Point(self.p1.sketch, x, y))
         return points
 

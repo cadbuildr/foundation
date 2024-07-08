@@ -5,19 +5,12 @@ from foundation.sketch.primitives.line import Line
 from foundation.sketch.point import Point
 from foundation.types.parameters import (
     UnCastFloat,
-    UnCastInt,
     cast_to_float_parameter,
-    cast_to_int_parameter,
     FloatParameter,
-    IntParameter,
 )
-from typing import TYPE_CHECKING
 from foundation.types.node_children import NodeChildren
 from foundation.sketch.primitives import SketchPrimitiveTypes
 from foundation.exceptions import ElementsNotOnSameSketchException
-
-if TYPE_CHECKING:
-    from foundation.sketch.sketch import Sketch
 
 
 class ClosedSketchShape(SketchElement):
@@ -66,6 +59,7 @@ class CustomClosedShape(ClosedSketchShape, Node):
     def rotate(self, angle: float, center: Point | None = None) -> "CustomClosedShape":
         if center is None:
             center = self.primitives[0].sketch.origin
+
         list_of_prim = [p.rotate(angle, center) for p in self.primitives]
         return CustomClosedShape(list_of_prim)
 

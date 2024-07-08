@@ -5,6 +5,7 @@ from foundation.types.node import Node
 import numpy as np
 from foundation.types.parameters import UnCastFloat, cast_to_float_parameter
 from foundation.types.node_children import NodeChildren
+from foundation.exceptions import ElementsNotOnSameSketchException
 
 
 def get_arc_center_from_3_points_coords(
@@ -47,6 +48,11 @@ class Arc(Node):  # TODO add SketchElement
 
     def __init__(self, p1: Point, p2: Point, p3: Point):
         Node.__init__(self, parents=[p1.sketch])
+
+        if p1.sketch != p2.sketch or p1.sketch != p3.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {p1}, {p2}, {p3} are not on the same sketch"
+            )
 
         # TODO check if points are aligned and raise an error
 
@@ -111,6 +117,12 @@ class Arc(Node):  # TODO add SketchElement
 
     def mirror(self, axis_start: Point, axis_end: Point) -> "Arc":
         """Mirror the arc over the line defined by two points"""
+
+        if axis_start.sketch != self.sketch or axis_end.sketch != self.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {axis_start} and {axis_end} are not on the same sketch"
+            )
+
         return Arc(
             self.p3.mirror(axis_start, axis_end),
             self.p2.mirror(axis_start, axis_end),
@@ -123,6 +135,12 @@ class Arc(Node):  # TODO add SketchElement
         Create an arc from two points and a radius.
         The arc is on the left side of the line from p1 to p2.
         """
+
+        if p1.sketch != p2.sketch:
+            raise ElementsNotOnSameSketchException(
+                f"Points {p1} and {p2} are not on the same sketch"
+            )
+
         # Calculate midpoint
         midpoint = Point.midpoint(p1, p2)
 
