@@ -78,6 +78,5 @@ class InternalStateException(FoundationException):
 
 
 class ElementsNotOnSameSketchException(FoundationException):
-    def __init__(self) -> None:
-        message = "All elements must be on the same sketch."
+    def __init__(self, message: str) -> None:
         super().__init__(message)

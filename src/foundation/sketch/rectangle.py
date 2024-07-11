@@ -97,7 +97,7 @@ class BaseRectangle:
         p3 = Point(sketch, center.x.value + length / 2, center.y.value + width / 2)
         p2 = Point(sketch, center.x.value + length / 2, center.y.value - width / 2)
 
-        return cls.create_rectangle(sketch, p1, p2, p3, p4, radius)
+        return cls.create_rectangle(p1, p2, p3, p4, radius)
 
     @classmethod
     def create_rectangle(
@@ -141,7 +141,7 @@ class RoundedCornerRectangle(RoundedCornerPolygon, BaseRectangle):
         radius: float,
     ):
         BaseRectangle.__init__(self, p1, p2, p3, p4)
-        RoundedCornerPolygon.__init__(self.lines, radius)
+        RoundedCornerPolygon.__init__(self, self.lines, radius)
 
 
 class RoundedCornerSquare(RoundedCornerRectangle):

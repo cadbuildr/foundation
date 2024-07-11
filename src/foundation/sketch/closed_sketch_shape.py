@@ -240,7 +240,7 @@ class Hexagon(Polygon):
         for i in range(6):
             lines.append(Line(points[i], points[(i + 1) % 6]))
 
-        Polygon.__init__(self, self.sketch, lines)
+        Polygon.__init__(self, lines)
 
     @staticmethod
     def from_center_and_side_length(center: Point, side_length: float) -> "Hexagon":
@@ -281,7 +281,7 @@ class RoundedCornerPolygon(CustomClosedShape):
         #  pencil.close(self) -> CustomClosedShape:
 
         closed_shape = sketch.pencil.close()
-        CustomClosedShape.__init__(self, sketch, closed_shape.primitives)
+        CustomClosedShape.__init__(self, closed_shape.primitives)
 
 
 ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedShape
