@@ -8,7 +8,7 @@ from typing import List
 
 from foundation.sketch.closed_sketch_shape import (
     ClosedSketchShape,
-    CustomClosedSketchShape,
+    CustomClosedShape,
     Polygon,
 )
 from foundation.sketch.point import Point, PointWithTangent
@@ -25,7 +25,7 @@ SketchElementTypes = (
     | EllipseArc
     | Rectangle
     | Polygon
-    | CustomClosedSketchShape
+    | CustomClosedShape
     | Point
     | PointWithTangent
 )

@@ -24,7 +24,7 @@ def get_brady_laptop_holder():
     l2 = Line(p2, p3)
     l3 = Line(p3, p4)
     l4 = Line(p4, p1)
-    square = Polygon(s, [l1, l2, l3, l4])
+    square = Polygon([l1, l2, l3, l4])
     e = Extrusion(square, length, cut=True)
     brady_lh.add_operation(e)
 
@@ -41,7 +41,7 @@ def get_brady_laptop_holder():
     l2 = Line(p2, p3)
     l3 = Line(p3, p4)
     l4 = Line(p4, p1)
-    square = Polygon(s, [l1, l2, l3, l4])
+    square = Polygon([l1, l2, l3, l4])
     e = Extrusion(square, 50, cut=True)
     brady_lh.add_operation(e)
 
@@ -61,7 +61,7 @@ def get_brady_laptop_holder():
     return brady_lh
 
 
-# TODO add CustomClosedSketchShape in the serializable nodes
+# TODO add CustomClosedShape in the serializable nodes
 # def get_brady_laptop_holder_simpler():
 #     # params :
 #     width, length, height = 50, 40, 40
@@ -72,7 +72,7 @@ def get_brady_laptop_holder():
 #     s = Sketch(xz_p)
 #     # Operation 1 : Half Ellipse extrusion
 #     ellipse_arc = EllipseArc(s.origin, width / 2, height, 0, np.pi)
-#     e = Extrusion(CustomClosedSketchShape([ellipse_arc]), length)
+#     e = Extrusion(CustomClosedShape([ellipse_arc]), length)
 #     brady_lh.add_operation(e)
 
 #     # Operation2 : slot2

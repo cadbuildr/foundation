@@ -26,7 +26,7 @@ class SketchPrimitives(SketchElement):
     closed shape, for instance :
     - lines,
     - arcs,
-    - ellipsearcs ..."""
+    - EllipseArc ..."""
 
     def __init__(self, sketch: "Sketch"):
         super().__init__(sketch)

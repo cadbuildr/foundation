@@ -3,7 +3,7 @@ from foundation.sketch.primitives.line import Line
 from foundation.sketch.primitives.arc import Arc
 from foundation.sketch.closed_sketch_shape import (
     Polygon,
-    CustomClosedSketchShape,
+    CustomClosedShape,
     SketchPrimitiveTypes,
 )
 from foundation.exceptions import (
@@ -116,21 +116,21 @@ class Draw:
         #     lines.append(Line(self.points[i], self.points[i + 1]))
         if self.points[0] != self.points[-1]:
             lines.append(Line(self.points[-1], self.points[0]))
-        return Polygon(self.sketch, lines)
+        return Polygon(lines)
 
-    def get_closed_shape(self) -> CustomClosedSketchShape:
+    def get_closed_shape(self) -> CustomClosedShape:
         """Return a closed shape using the primitives and closes it with a line if needed."""
         primitives = []
         for primitive in self.primitives:
             primitives.append(primitive)
         if self.points[0] != self.points[-1]:
             primitives.append(Line(self.points[-1], self.points[0]))
-        return CustomClosedSketchShape(self.sketch, primitives)
+        return CustomClosedShape(primitives)
 
-    def close(self) -> CustomClosedSketchShape:
+    def close(self) -> CustomClosedShape:
         return self.get_closed_shape()
 
-    def close_with_mirror(self) -> CustomClosedSketchShape:
+    def close_with_mirror(self) -> CustomClosedShape:
         """Mirror the primitives to close the shape symmetrically based on axis from first to last point."""
         if len(self.points) < 2:
             raise GeometryException(
@@ -147,7 +147,7 @@ class Draw:
             mirrored_primitives.append(primitive.mirror(start_point, end_point))
         all_primitives = self.primitives + mirrored_primitives[::-1]
 
-        return CustomClosedSketchShape(self.sketch, all_primitives)
+        return CustomClosedShape(all_primitives)
 
     def tangent_arc(self, dx: float, dy: float):
         """Draw an arc tangentially to the last primitive, relative move."""

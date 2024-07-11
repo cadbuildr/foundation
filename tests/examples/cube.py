@@ -14,7 +14,7 @@ def get_cube():
     l2 = Line(p2, p3)
     l3 = Line(p3, p4)
     l4 = Line(p4, p1)
-    square = Polygon(s, [l1, l2, l3, l4])
+    square = Polygon([l1, l2, l3, l4])
 
     e = Extrusion(square, 1)
     cube.add_operation(e)

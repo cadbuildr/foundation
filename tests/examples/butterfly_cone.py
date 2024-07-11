@@ -15,7 +15,7 @@ def get_butterfly_cone():
 
     axis = Axis(Line(p6, p7))
     lines = [Line(p1, p2), Line(p2, p4), Line(p4, p5), Line(p5, p1)]
-    polygon = Polygon(s, lines)
+    polygon = Polygon(lines)
     # Operation 2
     e = Lathe(polygon, axis)
     butterfly_cone.add_operation(e)

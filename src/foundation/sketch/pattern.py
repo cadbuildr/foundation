@@ -2,7 +2,7 @@ from foundation.sketch.closed_sketch_shape import (
     Polygon,
     Circle,
     Ellipse,
-    CustomClosedSketchShape,
+    CustomClosedShape,
 )
 from foundation.sketch.rectangle import Square, Rectangle
 from foundation.sketch.primitives.arc import Arc, EllipseArc
@@ -18,7 +18,7 @@ sketch_components = [
     Rectangle,
     Arc,
     EllipseArc,
-    CustomClosedSketchShape,
+    CustomClosedShape,
 ]
 
 

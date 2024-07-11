@@ -75,3 +75,8 @@ class ZeroLengthVectorException(GeometryException):
 class InternalStateException(FoundationException):
     def __init__(self, message: Optional[str] = None) -> None:
         super().__init__(message)
+
+
+class ElementsNotOnSameSketchException(FoundationException):
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
