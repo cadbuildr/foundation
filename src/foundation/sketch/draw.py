@@ -33,6 +33,14 @@ class Draw:
         self.points: list[Point] = []
         self.primitives: list[SketchPrimitiveTypes] = []
 
+    def reset(self):
+        self.x = 0.0
+        self.y = 0.0
+        self.point_added = False
+        self.point_idx = 0
+        self.points = []
+        self.primitives = []
+
     def move_to(self, x: float, y: float):
         """Move to absolute position"""
         self.x = x
