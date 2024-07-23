@@ -21,7 +21,7 @@ def start_component() -> Component:
     # Add the 2 other frames
     o = component.head.get_frame()
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
-    yz = xz.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
+    yz = xz.get_rotated_frame_from_axis(xz.get_y_axis(), np.pi / 2, "yz_f")
 
     pxy = PlaneFromFrame(o, component.id + "_pxy")
     pyz = PlaneFromFrame(yz, component.id + "_pyz")
@@ -39,7 +39,7 @@ def start_assembly() -> Assembly:
     assembly = Assembly()
     o = assembly.head.get_frame()
     xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
-    yz = xz.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
+    yz = xz.get_rotated_frame_from_axis(xz.get_y_axis(), np.pi / 2, "yz_f")
 
     pxy = PlaneFromFrame(o, assembly.id + "_pxy")
     pyz = PlaneFromFrame(yz, assembly.id + "_pyz")
