@@ -1,11 +1,12 @@
-from foundation.types.component import Component
-from foundation.types.assembly import Assembly
 from foundation.types.serializable import serializable_nodes
-from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
+from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
+
 import numpy as np
 import sys
+from typing import get_args, Union
 
 DAG_VERSION_FORMAT = "1.0"
+DISPLAY_TYPE = Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
 
 
 # TODO clean this code to remove copy paste
@@ -50,7 +51,7 @@ def start_assembly() -> Assembly:
     return assembly
 
 
-def format_dag(dag: dict):
+def format_dag(dag: dict, check_display_type: bool = True) -> dict:
     """Format the DAG to include extra information :
     - the serializable nodes
     - format version
@@ -58,11 +59,25 @@ def format_dag(dag: dict):
 
     @param dag: the DAG to format ( see to_dag functions.)
     """
-    # first of the key :
+    root_node_id = next(iter(dag.keys()))
+
+    if check_display_type:
+        types_allowed = get_args(DISPLAY_TYPE)
+        types_allowed_str = [t.__name__ for t in types_allowed]
+
+        root_node_type_id = dag[root_node_id]["type"]
+        root_node_type = [
+            k for k, v in serializable_nodes.items() if v == root_node_type_id
+        ][0]
+
+        if root_node_type not in types_allowed_str:
+            raise TypeError(
+                f"Error: You cannot show a {root_node_type} object.\nYou can only show {types_allowed}"
+            )
 
     return {
         "version": DAG_VERSION_FORMAT,
-        "rootNodeId": next(iter(dag.keys())),
+        "rootNodeId": root_node_id,
         "DAG": dag,
         "serializableNodes": serializable_nodes,
     }
