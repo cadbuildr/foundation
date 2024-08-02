@@ -155,7 +155,7 @@ class Line(SketchElement, Node):
     def mirror(self, axis_p1: Point, axis_p2: Point) -> Line:
         start = self.p1.mirror(axis_p1, axis_p2)
         end = self.p2.mirror(axis_p1, axis_p2)
-        return Line(start, end)
+        return Line(end, start)
 
     @staticmethod
     def intersection(line1: "Line", line2: "Line") -> Point:
