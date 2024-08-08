@@ -7,6 +7,7 @@ from typing import get_args, Union
 
 DAG_VERSION_FORMAT = "1.0"
 DISPLAY_TYPE = Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
+ID_TYPE_ALLOWED = [3, 14, 15, 5, 6]
 
 
 # TODO clean this code to remove copy paste
@@ -51,6 +52,16 @@ def start_assembly() -> Assembly:
     return assembly
 
 
+def search_name_with_id(id: int) -> str:
+    """Search the name of a serializable node with its id
+
+    @param id: the id to search
+    """
+    for key, value in serializable_nodes.items():
+        if value == id:
+            return key
+
+
 def format_dag(dag: dict, check_display_type: bool = True) -> dict:
     """Format the DAG to include extra information :
     - the serializable nodes
@@ -62,17 +73,12 @@ def format_dag(dag: dict, check_display_type: bool = True) -> dict:
     root_node_id = next(iter(dag.keys()))
 
     if check_display_type:
-        types_allowed = get_args(DISPLAY_TYPE)
-        types_allowed_str = [t.__name__ for t in types_allowed]
-
         root_node_type_id = dag[root_node_id]["type"]
-        root_node_type = [
-            k for k, v in serializable_nodes.items() if v == root_node_type_id
-        ][0]
 
-        if root_node_type not in types_allowed_str:
+        if root_node_type_id not in ID_TYPE_ALLOWED:
+            types_allowed = [search_name_with_id(id) for id in ID_TYPE_ALLOWED]
             raise TypeError(
-                f"Error: You cannot show a {root_node_type} object.\nYou can only show {types_allowed}"
+                f"Error: You cannot show a {search_name_with_id(root_node_type_id)} object.\nYou can only show {{{ ', '.join(types_allowed) }}}"
             )
 
     return {
