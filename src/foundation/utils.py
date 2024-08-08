@@ -1,11 +1,13 @@
-from foundation.types.component import Component
-from foundation.types.assembly import Assembly
 from foundation.types.serializable import serializable_nodes
-from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
+from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
+
 import numpy as np
 import sys
+from typing import Union
 
 DAG_VERSION_FORMAT = "1.0"
+DISPLAY_TYPE = Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
+ID_TYPE_ALLOWED = [3, 14, 15, 5, 6]
 
 
 # TODO clean this code to remove copy paste
@@ -50,7 +52,18 @@ def start_assembly() -> Assembly:
     return assembly
 
 
-def format_dag(dag: dict):
+def search_name_with_id(id: int) -> str:
+    """Search the name of a serializable node with its id
+
+    @param id: the id to search
+    """
+    for key, value in serializable_nodes.items():
+        if value == id:
+            return key
+    return "Unknown"
+
+
+def format_dag(dag: dict, check_display_type: bool = True) -> dict:
     """Format the DAG to include extra information :
     - the serializable nodes
     - format version
@@ -58,11 +71,20 @@ def format_dag(dag: dict):
 
     @param dag: the DAG to format ( see to_dag functions.)
     """
-    # first of the key :
+    root_node_id = next(iter(dag.keys()))
+
+    if check_display_type:
+        root_node_type_id = dag[root_node_id]["type"]
+
+        if root_node_type_id not in ID_TYPE_ALLOWED:
+            types_allowed = [search_name_with_id(id) for id in ID_TYPE_ALLOWED]
+            raise TypeError(
+                f"Error: You cannot show a {search_name_with_id(root_node_type_id)} object.\nYou can only show {{{ ', '.join(types_allowed) }}}"
+            )
 
     return {
         "version": DAG_VERSION_FORMAT,
-        "rootNodeId": next(iter(dag.keys())),
+        "rootNodeId": root_node_id,
         "DAG": dag,
         "serializableNodes": serializable_nodes,
     }
