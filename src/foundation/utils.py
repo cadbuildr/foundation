@@ -3,7 +3,7 @@ from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
 
 import numpy as np
 import sys
-from typing import get_args, Union
+from typing import Union
 
 DAG_VERSION_FORMAT = "1.0"
 DISPLAY_TYPE = Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
@@ -60,6 +60,7 @@ def search_name_with_id(id: int) -> str:
     for key, value in serializable_nodes.items():
         if value == id:
             return key
+    return "Unknown"
 
 
 def format_dag(dag: dict, check_display_type: bool = True) -> dict:
