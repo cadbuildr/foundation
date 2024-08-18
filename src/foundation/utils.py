@@ -1,13 +1,14 @@
 from foundation.types.serializable import serializable_nodes
-from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
-
+from foundation import Sketch, Frame, PlaneFromFrame, Component, Assembly
+from foundation.types.roots import AssemblyRoot, ComponentRoot
 import numpy as np
 import sys
-from typing import Union
 
 DAG_VERSION_FORMAT = "1.0"
-DISPLAY_TYPE = Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
-ID_TYPE_ALLOWED = [3, 14, 15, 5, 6]
+TYPE_LIST = [Sketch, AssemblyRoot, ComponentRoot, Frame, PlaneFromFrame]
+#
+# ID_TYPE_ALLOWED = [3, 14, 15, 5, 6]
+ID_TYPE_ALLOWED = [serializable_nodes[t.__name__] for t in TYPE_LIST]
 
 
 # TODO clean this code to remove copy paste

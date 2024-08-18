@@ -1,4 +1,8 @@
-from foundation.utils import format_dag, DISPLAY_TYPE
+from foundation.utils import format_dag
+from typing import Union
+from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
+
+DISPLAY_TYPE = Union[Sketch, Assembly, Component, Frame, PlaneFromFrame]
 
 try:
     import json
