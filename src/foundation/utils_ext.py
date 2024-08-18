@@ -2,6 +2,8 @@ from foundation.utils import format_dag
 from typing import Union
 from foundation import Sketch, Assembly, Component, Frame, PlaneFromFrame
 
+DISPLAY_TYPE = Union[Sketch, Assembly, Component, Frame, PlaneFromFrame]
+
 try:
     import json
     import websocket
@@ -18,8 +20,9 @@ except ImportError:
 
 
 def showExt(
-    component: Union[Sketch, Component, Assembly, Frame, PlaneFromFrame]
+    component: DISPLAY_TYPE,
 ) -> None:
+
     dic = component.to_dag()
     dic = format_dag(dic)
     try:

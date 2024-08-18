@@ -123,6 +123,13 @@ class Polygon(ClosedSketchShape, Node):
         lines = [l.translate(dx, dy) for l in self.lines]
         return Polygon(lines)
 
+    @staticmethod
+    def from_points(points: list[Point]) -> "Polygon":
+        lines = []
+        for i in range(len(points)):
+            lines.append(Line(points[i], points[(i + 1) % len(points)]))
+        return Polygon(lines)
+
 
 PolygonChildren.__annotations__["lines"] = list[Line]
 
