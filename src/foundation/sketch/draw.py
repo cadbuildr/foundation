@@ -254,7 +254,8 @@ class Draw:
         """Draw a rounded corner followed by a line, ending at (x, y)."""
         if not self.point_added:
             self.add_point()
-
+        if len(self.primitives) == 0:
+            raise GeometryException("No previous line to round the corner of.")
         last_primitive = self.primitives[-1]
 
         if not isinstance(last_primitive, Line):
