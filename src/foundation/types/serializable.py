@@ -32,4 +32,5 @@ serializable_nodes: dict[str, int] = {
     "Shell": 29,
     "CustomClosedShape": 30,
     "Arc": 31,
+    "SVGShape": 32,
 }

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from foundation.types.node import Node
 import math
 from foundation.sketch.base import SketchElement
@@ -7,10 +9,17 @@ from foundation.types.parameters import (
     UnCastFloat,
     cast_to_float_parameter,
     FloatParameter,
+    StringParameter,
+    cast_to_string_parameter,
+    UnCastString,
 )
 from foundation.types.node_children import NodeChildren
 from foundation.sketch.primitives import SketchPrimitiveTypes
 from foundation.exceptions import ElementsNotOnSameSketchException
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from foundation.sketch.sketch import Sketch
 
 
 class ClosedSketchShape(SketchElement):
@@ -291,4 +300,27 @@ class RoundedCornerPolygon(CustomClosedShape):
         CustomClosedShape.__init__(self, closed_shape.primitives)
 
 
-ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedShape
+class SVGShapeChildren(NodeChildren):
+    svg: StringParameter
+
+
+class SVGShape(ClosedSketchShape, Node):
+    """Use a SVG file given as a string to the constructor to create a shape in the sketch."""
+
+    children_class = SVGShapeChildren
+
+    def __init__(self, sketch: Sketch, svg: UnCastString):
+        ClosedSketchShape.__init__(self, sketch)
+        Node.__init__(self, parents=[sketch])
+
+        self.children.set_svg(cast_to_string_parameter(svg))
+        self.sketch = sketch
+        self.params = {}
+
+        # add to sketch
+        sketch.add_element(self)
+
+
+SVGShapeChildren.__annotations__["svg"] = StringParameter
+
+ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedShape | SVGShape
