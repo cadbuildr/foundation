@@ -302,6 +302,9 @@ class RoundedCornerPolygon(CustomClosedShape):
 
 class SVGShapeChildren(NodeChildren):
     svg: StringParameter
+    xshift: FloatParameter
+    yshift: FloatParameter
+    angle: FloatParameter
 
 
 class SVGShape(ClosedSketchShape, Node):
@@ -309,11 +312,23 @@ class SVGShape(ClosedSketchShape, Node):
 
     children_class = SVGShapeChildren
 
-    def __init__(self, sketch: Sketch, svg: UnCastString):
+    def __init__(
+        self,
+        sketch: Sketch,
+        svg: UnCastString,
+        xshift: UnCastFloat = 0,
+        yshift: UnCastFloat = 0,
+        angle: UnCastFloat = 0,
+        scale: UnCastFloat = 1,
+    ):
         ClosedSketchShape.__init__(self, sketch)
         Node.__init__(self, parents=[sketch])
 
         self.children.set_svg(cast_to_string_parameter(svg))
+        self.children.set_xshift(cast_to_float_parameter(xshift))
+        self.children.set_yshift(cast_to_float_parameter(yshift))
+        self.children.set_angle(cast_to_float_parameter(angle))
+        self.children.set_scale(cast_to_float_parameter(scale))
         self.sketch = sketch
         self.params = {}
 
@@ -322,5 +337,9 @@ class SVGShape(ClosedSketchShape, Node):
 
 
 SVGShapeChildren.__annotations__["svg"] = StringParameter
+SVGShapeChildren.__annotations__["xshift"] = FloatParameter
+SVGShapeChildren.__annotations__["yshift"] = FloatParameter
+SVGShapeChildren.__annotations__["angle"] = FloatParameter
+SVGShapeChildren.__annotations__["scale"] = FloatParameter
 
 ClosedSketchShapeTypes = Polygon | Circle | Ellipse | CustomClosedShape | SVGShape
