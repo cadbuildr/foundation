@@ -305,6 +305,7 @@ class SVGShapeChildren(NodeChildren):
     xshift: FloatParameter
     yshift: FloatParameter
     angle: FloatParameter
+    scale: FloatParameter
 
 
 class SVGShape(ClosedSketchShape, Node):
