@@ -16,8 +16,9 @@ from foundation.sketch.closed_sketch_shape import (
     SVGShape,
     Polygon,
     Hexagon,
+    RoundedCornerPolygon,
 )
-from foundation.sketch.rectangle import Rectangle, Square
+from foundation.sketch.rectangle import Rectangle, Square, RoundedCornerRectangle
 from foundation.geometry.plane import PlaneFromFrame, PlaneFactory
 from foundation.geometry.frame import Frame
 from foundation.types.parameters import (
