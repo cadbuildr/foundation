@@ -25,7 +25,7 @@ class PlaneChildren(NodeChildren):
     display: BoolParameter
 
 
-class PlaneFromFrame(Node):
+class Plane(Node):
     parent_types = []
     children_class = PlaneChildren
 
@@ -53,7 +53,7 @@ class PlaneFromFrame(Node):
         this is the 3rd vector of the frame."""
         return self.frame.get_z_axis(local)
 
-    def get_parallel_plane(self, distance: float, name: str) -> "PlaneFromFrame":
+    def get_parallel_plane(self, distance: float, name: str) -> "Plane":
         """return a plane parallel to the given plane at the given distance
         distance can be negative, it really is a translation in the direction of the normal
         """
@@ -62,15 +62,15 @@ class PlaneFromFrame(Node):
         translated_frame = self.frame.get_translated_frame(
             name="f" + name, translation=normal * distance
         )
-        return PlaneFromFrame(translated_frame, name)
+        return Plane(translated_frame, name)
 
     def get_angle_plane_from_axis(
         self, axis: ndarray, angle: float, name: str
-    ) -> "PlaneFromFrame":
+    ) -> "Plane":
         """return the angle between the plane and the given axis"""
         # check_axis_is_on_plane(axis, plane) TODO
         rotated_frame = self.frame.get_rotated_frame_from_axis(axis, angle, "f" + name)
-        return PlaneFromFrame(rotated_frame, name)
+        return Plane(rotated_frame, name)
 
 
 class PlaneFactory:
@@ -84,17 +84,17 @@ class PlaneFactory:
         return name
 
     def get_parallel_plane(
-        self, plane: PlaneFromFrame, distance: float, name: str | None = None
-    ) -> PlaneFromFrame:
+        self, plane: Plane, distance: float, name: str | None = None
+    ) -> Plane:
         return plane.get_parallel_plane(distance, self._get_name(name))
 
     def get_angle_plane_from_axis(
         self,
-        plane: PlaneFromFrame,
+        plane: Plane,
         axis: Union[ndarray, List[int]],
         angle: float,
         name: str | None = None,
-    ) -> PlaneFromFrame:
+    ) -> Plane:
         """return a plane rotated around the given axis by the given angle
         axis must be on the frame"""
         if not isinstance(axis, ndarray):
@@ -102,33 +102,27 @@ class PlaneFactory:
 
         return plane.get_angle_plane_from_axis(axis, angle, self._get_name(name))
 
-    def get_xy_plane_from_frame(
-        self, frame: Frame, name: str | None = None
-    ) -> PlaneFromFrame:
+    def get_xy_plane_from_frame(self, frame: Frame, name: str | None = None) -> Plane:
         # xy is the default plane from the frame ( no need for any rotation)
-        return PlaneFromFrame(frame, self._get_name(name))
+        return Plane(frame, self._get_name(name))
 
-    def get_xz_plane_from_frame(
-        self, frame: Frame, name: str | None = None
-    ) -> PlaneFromFrame:
+    def get_xz_plane_from_frame(self, frame: Frame, name: str | None = None) -> Plane:
         name = self._get_name(name)
         rotated_frame = frame.get_rotated_frame_from_axis(
             frame.get_x_axis(), np.pi / 2, name
         )
-        return PlaneFromFrame(rotated_frame, name)
+        return Plane(rotated_frame, name)
 
-    def get_yz_plane_from_frame(
-        self, frame: Frame, name: str | None = None
-    ) -> PlaneFromFrame:
+    def get_yz_plane_from_frame(self, frame: Frame, name: str | None = None) -> Plane:
         name = self._get_name(name)
         rotated_frame = frame.get_rotated_frame_from_axis(
             frame.get_y_axis(), np.pi / 2, name
         )
-        return PlaneFromFrame(rotated_frame, name)
+        return Plane(rotated_frame, name)
 
     def get_plane_from_3_points(
         self, origin_frame: Frame, points: list[Point3D], name: str | None = None
-    ) -> PlaneFromFrame:
+    ) -> Plane:
         """return a plane from 3 points
         the frame will be oriented using [P1, P2] as the x axis and P1 as the origin
         the frame as an arg is the coordinate system in which the points are defined
@@ -166,7 +160,7 @@ class PlaneFactory:
         # Create a Frame with origin p1 and axes x_axis, y_axis, normal
         origin = p1.to_array()
         frame = origin_frame.from_3dpoint_and_xy_axes(name, origin, x_axis, y_axis)
-        plane = PlaneFromFrame(frame, "p_3dp_" + str(self.counter))
+        plane = Plane(frame, "p_3dp_" + str(self.counter))
         self.counter += 1
         return plane
 

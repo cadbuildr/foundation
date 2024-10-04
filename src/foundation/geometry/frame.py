@@ -12,7 +12,7 @@ from foundation.types.parameters import (
     UnCastString,
     UnCastBool,
 )
-from typing import Union
+from typing import Union, Optional
 from foundation.exceptions import NotAUnitVectorException, GeometryException
 
 
@@ -46,17 +46,15 @@ class Frame(Node):
 
         # shortcuts
         self.top_frame = top_frame
-        self.name = name
+        self.name = self.children._children["name"]
 
         if top_frame is not None:
             top_frame.compute_params()
         self.compute_params()
-        self.name = name
-        self.top_frame = top_frame
         self.transform = transform
 
     def get_name(self) -> str:
-        return self.name
+        return self.name.value
 
     def get_parent_name(self) -> str | None:
         if self.top_frame is not None:
@@ -67,7 +65,7 @@ class Frame(Node):
     def __str__(self) -> str:
         return (
             "Frame : "
-            + self.name
+            + self.get_name()
             + " with parent : "
             + str(self.get_parent_name())
             + " and transform : "
@@ -104,6 +102,9 @@ class Frame(Node):
     def get_transform(self) -> TransformMatrix:
         """return the transform of the frame (from the parent frame)"""
         return self.transform
+
+    def set_transform(self, tf: TransformMatrix):
+        self.transform = tf
 
     def get_position_and_quaternions(self) -> dict[str, dict[str, float]]:
         """return the position of the frame (from the parent frame)"""
@@ -171,11 +172,18 @@ class Frame(Node):
             "quaternion": list(q),
         }
 
-    def change_top_frame(self, new_top_frame: "Frame", new_name: UnCastString, new_tf):
+    def change_top_frame(
+        self,
+        new_top_frame: "Frame",
+        new_name: Optional[UnCastString] = None,
+        new_tf=None,
+    ):
         self.children.set_top_frame(new_top_frame)
-        self.children.set_name(cast_to_string_parameter(new_name))
+        if new_name is not None:
+            self.children.set_name(cast_to_string_parameter(new_name))
 
-        self.transform = new_tf
+        if new_tf is not None:
+            self.transform = new_tf
         # shortcuts update
         self.top_frame = self.children._children["top_frame"]
         self.name = self.children._children["name"]

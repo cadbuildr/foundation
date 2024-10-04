@@ -8,7 +8,7 @@ class Cube:
         self.size = size
 
     def get_part(self):
-        cube = start_component()
+        cube = Part()
         # Create a Sketch from XY Plane
         s = Sketch(cube.xy())
         square = Square.from_center_and_side(s.origin, self.size)
@@ -22,7 +22,7 @@ class Cube:
 
 class MonoCubeAssy:
     def __init__(self):
-        self.assy = start_assembly()
+        self.assy = Assembly()
         self.cube_size = 10
 
     def get_assy(self):
@@ -44,7 +44,7 @@ class Pyramid:
     def __init__(self, depth=2, cube_size=20):
         self.depth = depth
         self.cube_size = cube_size
-        self.assy = start_assembly()
+        self.assy = Assembly()
 
     def get_assy(self, total_depth=None):
         """Recursive function"""
@@ -153,7 +153,7 @@ class LegoBrick:
                 brick.add_operation(e)
 
     def get_part(self):
-        brick = start_component()
+        brick = Part()
         self.get_outer_extrusion(brick)
         self.get_inner_extrusion(brick)
         self.get_circles(brick)

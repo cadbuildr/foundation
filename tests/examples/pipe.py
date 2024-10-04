@@ -3,7 +3,7 @@ import numpy as np
 
 
 def get_pipe():
-    pipe = start_component()
+    pipe = Part()
     s = Sketch(pipe.xy())
     p1 = Point(s, 0, 0)
     # outer extrusion

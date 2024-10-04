@@ -1,7 +1,7 @@
 from foundation.types.node import Node
 from foundation.sketch.point import Point
 from foundation.sketch.draw import Draw
-from foundation.geometry.plane import PlaneFromFrame
+from foundation.geometry.plane import Plane
 from foundation.types.node_children import NodeChildren
 from typing import List
 
@@ -10,6 +10,7 @@ from foundation.sketch.closed_sketch_shape import (
     ClosedSketchShape,
     CustomClosedShape,
     Polygon,
+    ClosedSketchShapeTypes,
 )
 from foundation.sketch.point import Point, PointWithTangent
 from foundation.sketch.rectangle import Rectangle
@@ -32,7 +33,7 @@ SketchElementTypes = (
 
 
 class SketchChildren(NodeChildren):
-    plane: PlaneFromFrame
+    plane: Plane
     origin: Point
     elements = List[SketchElementTypes]
 
@@ -48,8 +49,8 @@ class Sketch(Node):
 
     children_class = SketchChildren
 
-    # TODO check if plane is a PlaneFromFrame
-    def __init__(self, plane: PlaneFromFrame):
+    # TODO check if plane is a Plane
+    def __init__(self, plane: Plane):
         super().__init__()
 
         self.children.set_plane(plane)
@@ -67,12 +68,18 @@ class Sketch(Node):
     def add_element(self, element: SketchElementTypes):
         self.children._children["elements"].append(element)
 
+    def get_shapes(self):
+        """elements of type ClosedSketchShapeTypes"""
+        return [
+            e for e in self.children.elements if isinstance(e, ClosedSketchShapeTypes)
+        ]
+
 
 class SketchOrigin(Point):
     def __init__(self, sketch: Sketch):
         super().__init__(sketch, 0.0, 0.0)
 
 
-SketchChildren.__annotations__["plane"] = PlaneFromFrame
+SketchChildren.__annotations__["plane"] = Plane
 SketchChildren.__annotations__["origin"] = Point
 SketchChildren.__annotations__["elements"] = List[SketchElementTypes]

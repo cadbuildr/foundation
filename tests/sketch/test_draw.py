@@ -1,5 +1,5 @@
 import unittest
-from foundation import Point, Sketch, start_component
+from foundation import Point, Sketch, Part
 from foundation.sketch.point import Point
 from foundation.sketch.primitives.line import Line
 from foundation.sketch.primitives.arc import Arc
@@ -10,7 +10,7 @@ from foundation.exceptions import GeometryException
 
 class TestMirrorPoint(unittest.TestCase):
     def setUp(self):
-        self.part = start_component()
+        self.part = Part()
         self.sketch = Sketch(self.part.xy())
 
     def test_mirror_point_across_x_axis(self):
@@ -40,7 +40,7 @@ class TestMirrorPoint(unittest.TestCase):
 
 class TestDraw(unittest.TestCase):
     def setUp(self):
-        self.part = start_component()
+        self.part = Part()
         self.sketch = Sketch(self.part.xy())
         self.sketch.pencil.line(20, 0)
 
@@ -69,7 +69,7 @@ class TestDraw(unittest.TestCase):
 
 class TestDrawRoundedCornerThenLineTo(unittest.TestCase):
     def setUp(self):
-        self.part = start_component()
+        self.part = Part()
         self.sketch = Sketch(self.part.xy())
         self.draw = self.sketch.pencil
 

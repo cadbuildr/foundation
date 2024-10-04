@@ -7,7 +7,7 @@ class Cube:
         self.size = size
 
     def get_part(self):
-        cube = start_component()
+        cube = Part()
         # Create a Sketch from XY Plane
         s = Sketch(cube.xy())
         square = Square.from_center_and_side(s.origin, self.size)
@@ -25,7 +25,7 @@ class Pyramid:
     def __init__(self, depth=2, cube_size=20):
         self.depth = depth
         self.cube_size = cube_size
-        self.assy = start_assembly()
+        self.assy = Assembly()
 
     def get_assy(self, total_depth=None):
         """Recursive function"""

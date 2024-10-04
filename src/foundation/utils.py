@@ -1,56 +1,13 @@
 from foundation.types.serializable import serializable_nodes
-from foundation import Sketch, Frame, PlaneFromFrame, Component, Assembly
-from foundation.types.roots import AssemblyRoot, ComponentRoot
-import numpy as np
+from foundation import Sketch, Frame, Plane, Part, Assembly
+from foundation.types.roots import AssemblyRoot, PartRoot
 import sys
 
 DAG_VERSION_FORMAT = "1.0"
-TYPE_LIST = [Sketch, AssemblyRoot, ComponentRoot, Frame, PlaneFromFrame]
+TYPE_LIST = [Sketch, AssemblyRoot, PartRoot, Frame, Plane]
 #
 # ID_TYPE_ALLOWED = [3, 14, 15, 5, 6]
 ID_TYPE_ALLOWED = [serializable_nodes[t.__name__] for t in TYPE_LIST]
-
-
-# TODO clean this code to remove copy paste
-
-
-def start_component() -> Component:
-    """
-    Start a component with an origin frame and 3 planes
-
-    """
-    # TODO remove the extra planes if they are not necessary and create on call.
-    component = Component()
-    # Add the 2 other frames
-    o = component.head.get_frame()
-    xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
-    yz = xz.get_rotated_frame_from_axis(xz.get_y_axis(), np.pi / 2, "yz_f")
-
-    pxy = PlaneFromFrame(o, component.id + "_pxy")
-    pyz = PlaneFromFrame(yz, component.id + "_pyz")
-    pxz = PlaneFromFrame(xz, component.id + "_pxz")
-
-    component.head.children.set_origin_planes([pxy, pyz, pxz])
-    return component
-
-
-def start_assembly() -> Assembly:
-    """
-    Start an assembly with an origin frame and 3 planes
-    """
-    # TODO remove the extra planes if they are not necessary and create on call.
-    assembly = Assembly()
-    o = assembly.head.get_frame()
-    xz = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
-    yz = xz.get_rotated_frame_from_axis(xz.get_y_axis(), np.pi / 2, "yz_f")
-
-    pxy = PlaneFromFrame(o, assembly.id + "_pxy")
-    pyz = PlaneFromFrame(yz, assembly.id + "_pyz")
-    pxz = PlaneFromFrame(xz, assembly.id + "_pxz")
-
-    assembly.head.children.set_origin_planes([pxy, pyz, pxz])
-
-    return assembly
 
 
 def search_name_with_id(id: int) -> str:
@@ -91,7 +48,7 @@ def format_dag(dag: dict, check_display_type: bool = True) -> dict:
     }
 
 
-def show(component: Component) -> None:
+def show(component: Part) -> None:
     """Function that is actually mocked on
     server and browser, but not on the tests"""
     if sys.platform == "emscripten":

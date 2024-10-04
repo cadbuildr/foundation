@@ -9,7 +9,7 @@ def get_cylinder():
     # Operation 1 Create Sketch
     # Operation 2 Create Extrusion
 
-    cylinder = start_component()
+    cylinder = Part()
     # Operation 1
     s = Sketch(cylinder.xy())
     p1 = Point(s, 0, 0)

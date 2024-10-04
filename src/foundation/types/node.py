@@ -8,7 +8,7 @@ class Node(object):
     Nodes of the Directed Acyclic Graph (DAG) representing parts and assemblies.
     The Node class is a base class meant to be inherited by all the nodes of the DAG:
     - Assembly
-    - Component
+    - Part
     - Operations
     - Frame
     - Parameter (leaf of the tree)
@@ -20,9 +20,9 @@ class Node(object):
 
     """
 
-    parent_types: list[
-        str
-    ] = []  # can be reimplemented in child classes to enforce a parent type to the Node
+    parent_types: list[str] = (
+        []
+    )  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
     children_class = NodeChildren  # Default : overriden in child classes
 

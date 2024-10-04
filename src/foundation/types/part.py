@@ -1,13 +1,15 @@
 from itertools import count
 from foundation.sketch.sketch import Sketch
 from foundation.types.comp_or_assy import CompOrAssy
-from foundation.types.roots import ComponentRoot
+from foundation.types.roots import PartRoot
 from foundation.operations import OperationTypes, operation_types_tuple
+from foundation.geometry.plane import Plane
+import numpy as np
 
 
-class Component(CompOrAssy):
+class Part(CompOrAssy):
     """
-    A Component is a tree, with a head that is a node ( see Node type)
+    A Part is a tree, with a head that is a node ( see Node type)
     #TODO Transform into a Node.
     """
 
@@ -15,15 +17,8 @@ class Component(CompOrAssy):
 
     def __init__(self):
         name = "part" + str(next(self._ids))
-        super().__init__(root=ComponentRoot(name))
+        super().__init__(root=PartRoot(name))
         self.id = name
-
-    def get_sketch_from_plane(self, plane_node):
-        # TODO move this ?
-        for c in plane_node.children:
-            if isinstance(c, Sketch):
-                return c
-        return None
 
     def add_operation(self, op: OperationTypes):
         """Add an operation to the component
@@ -56,10 +51,6 @@ class Component(CompOrAssy):
 
     def get_sketches(self) -> list[Sketch]:
         return list(set(self.head.rec_list_nodes(type_filter=["Sketch"])))
-
-    def attach_operations(self):
-        for o in self.get_operations():
-            o.set_component_name(self.id)
 
     @classmethod
     def reset_ids(cls):

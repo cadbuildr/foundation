@@ -14,7 +14,7 @@ class GridXY:
         self.spacing_y = spacing_y
 
     def get_assy(self) -> Assembly:
-        self.assembly = start_assembly()
+        self.assembly = Assembly()
         for i in range(self.n_x):
             for j in range(self.n_y):
                 tf_helper = TFHelper()

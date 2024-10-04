@@ -2,7 +2,7 @@ from foundation import *
 
 
 def get_cube():
-    cube = start_component()
+    cube = Part()
     # Operation 1
     s = Sketch(cube.xy())
     p1 = Point(s, 0, 0)

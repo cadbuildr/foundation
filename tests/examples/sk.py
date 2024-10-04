@@ -169,7 +169,7 @@ class SK:
         self.params = model_params[modelNo]
 
     def get_part(self):
-        self.sk = start_component()
+        self.sk = Part()
         W = self.params["W"]
         G = self.params["G"]
         P = self.params["P"]

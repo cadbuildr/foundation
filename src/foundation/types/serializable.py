@@ -1,12 +1,12 @@
 # This is a dictionary that maps the name of the Serializable Nodes to
 # a unique integer. This is used to serialize the DAG.
 serializable_nodes: dict[str, int] = {
-    "Component": 0,
+    "Part": 0,
     "Assembly": 1,
     "Extrusion": 2,
     "Sketch": 3,
     "Point": 4,
-    "PlaneFromFrame": 5,
+    "Plane": 5,
     "Frame": 6,
     "Line": 8,
     "FloatParameter": 9,
@@ -14,7 +14,7 @@ serializable_nodes: dict[str, int] = {
     "BoolParameter": 11,
     "StringParameter": 12,
     "SketchOrigin": 13,
-    "ComponentRoot": 14,
+    "PartRoot": 14,
     "AssemblyRoot": 15,
     "Circle": 16,
     "Rectangle": 17,

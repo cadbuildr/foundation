@@ -1,11 +1,11 @@
 import unittest
 from math import sqrt, isclose
-from foundation import Sketch, start_component, Point, Arc
+from foundation import Sketch, Part, Point, Arc
 
 
 class TestArc(unittest.TestCase):
     def setUp(self):
-        comp = start_component()
+        comp = Part()
         # Operation 1
         self.sketch = Sketch(comp.xy())
 

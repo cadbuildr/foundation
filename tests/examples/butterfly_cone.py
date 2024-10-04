@@ -2,7 +2,7 @@ from foundation import *
 
 
 def get_butterfly_cone():
-    butterfly_cone = start_component()
+    butterfly_cone = Part()
     # Operation 1
     s = Sketch(butterfly_cone.xy())
     p1 = Point(s, 1, 0)

@@ -8,7 +8,7 @@ from foundation.types.parameters import (
     FloatParameter,
 )
 from foundation.types.point_3d import Point3D
-from foundation.geometry.plane import PlaneFromFrame
+from foundation.geometry.plane import Plane
 
 
 class FinderRule(NodeInterface):
@@ -18,14 +18,14 @@ class FinderRule(NodeInterface):
 
 
 class InPlaneFinderRuleChildren(NodeChildren):
-    plane: PlaneFromFrame  # Plane in which to do the search
+    plane: Plane  # Plane in which to do the search
     distance: FloatParameter  # distance to plane if needed (default to 0)
 
 
 class InPlaneFinderRule(FinderRule, Node):
     children_class = InPlaneFinderRuleChildren
 
-    def __init__(self, plane: PlaneFromFrame, distance: UnCastFloat = 0.0):
+    def __init__(self, plane: Plane, distance: UnCastFloat = 0.0):
         FinderRule.__init__(self)
         Node.__init__(self, parents=[])
         self.children.set_plane(plane)
@@ -35,7 +35,7 @@ class InPlaneFinderRule(FinderRule, Node):
         self.params = {}
 
 
-InPlaneFinderRuleChildren.__annotations__["plane"] = PlaneFromFrame
+InPlaneFinderRuleChildren.__annotations__["plane"] = Plane
 InPlaneFinderRuleChildren.__annotations__["distance"] = FloatParameter
 
 

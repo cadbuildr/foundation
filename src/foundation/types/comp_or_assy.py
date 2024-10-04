@@ -1,7 +1,7 @@
 from foundation.rendering.material import Material
 from foundation.geometry.tf_helper import TFHelper
 from foundation.types.node_interface import NodeInterface
-from foundation.types.roots import ComponentRoot, AssemblyRoot
+from foundation.types.roots import PartRoot, AssemblyRoot
 import numpy as np
 from numpy import ndarray
 from foundation.geometry.plane import PlaneFactory
@@ -9,13 +9,13 @@ from foundation.geometry.transform3d import TransformMatrix
 
 
 class CompOrAssy(NodeInterface):
-    """Abstract parent class of Component and Assembly"""
+    """Abstract parent class of Part and Assembly"""
 
-    def __init__(self, root: ComponentRoot | AssemblyRoot):
+    def __init__(self, root: PartRoot | AssemblyRoot):
         super().__init__()
         self.tfh = (
             TFHelper()
-        )  # Components or Assemblies have a tf helper to manage their transform
+        )  # Parts or Assemblies have a tf helper to manage their transform
         self.head = root  # TODO change head to root
         self.pf = PlaneFactory()
 
@@ -39,15 +39,27 @@ class CompOrAssy(NodeInterface):
 
     def xy(self):
         """Return the XY plane of the component"""
-        return self.head.get_origin_planes()[0]
+        return self.head.get_or_create_plane("xy", prefix=self.id)
 
     def yz(self):
         """Return the YZ plane of the component"""
-        return self.head.get_origin_planes()[1]
+        return self.head.get_or_create_plane("yz", prefix=self.id)
 
     def xz(self):
         """Return the XZ plane of the component"""
-        return self.head.get_origin_planes()[2]
+        return self.head.get_or_create_plane("xz", prefix=self.id)
+
+    def yx(self):
+        """Return the YX plane of the component"""
+        return self.head.get_or_create_plane("yx", prefix=self.id)
+
+    def zx(self):
+        """Return the ZX plane of the component"""
+        return self.head.get_or_create_plane("zx", prefix=self.id)
+
+    def zy(self):
+        """Return the ZY plane of the component"""
+        return self.head.get_or_create_plane("zy", prefix=self.id)
 
     # tf helper methods
     def reset_tf(self, tf=None):
@@ -83,10 +95,13 @@ class CompOrAssy(NodeInterface):
         """Return the transform of the component"""
         return self.tfh.get_tf()
 
+    def get_position(self) -> ndarray:
+        """Return the position of the component"""
+        return self.tfh.get_tf().get_position()
+
     def to_dag(self) -> dict:
         """Serialize a Directed Acyclic Graph (DAG) into a dictionary
         (id : {type, params, deps})
         recursive function.
         """
-        # self.attach_operations()
         return self.head.to_dag(ids_already_seen=set())
