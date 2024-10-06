@@ -35,12 +35,5 @@ from foundation.sketch.pattern import *
 from foundation.types.parameterUI import ParameterUI
 from foundation.sketch.sketch import Sketch
 from foundation.types.node import Node
-from foundation.utils_ext import showExt
-from foundation.utils import show
+from foundation.utils import show, reset_ids
 from foundation.types.point_3d import Point3D
-
-
-def reset_ids():
-    Node.reset_ids()
-    Part.reset_ids()
-    Assembly.reset_ids()

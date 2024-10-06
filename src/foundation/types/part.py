@@ -5,6 +5,7 @@ from foundation.types.roots import PartRoot
 from foundation.operations import OperationTypes, operation_types_tuple
 from foundation.geometry.plane import Plane
 import numpy as np
+from typing import Optional
 
 
 class Part(CompOrAssy):
@@ -15,8 +16,9 @@ class Part(CompOrAssy):
 
     _ids = count(0)
 
-    def __init__(self):
-        name = "part" + str(next(self._ids))
+    def __init__(self, name: Optional[str] = None):
+        if name is None:
+            name = "part" + str(next(self._ids))
         super().__init__(root=PartRoot(name))
         self.id = name
 

@@ -6,6 +6,7 @@ import numpy as np
 from numpy import ndarray
 from foundation.geometry.plane import PlaneFactory
 from foundation.geometry.transform3d import TransformMatrix
+from typing import Any, Dict, List, Tuple
 
 
 class CompOrAssy(NodeInterface):
@@ -99,9 +100,169 @@ class CompOrAssy(NodeInterface):
         """Return the position of the component"""
         return self.tfh.get_tf().get_position()
 
-    def to_dag(self) -> dict:
+    def post_process_dag(
+        self, dag: Dict[str, Dict[str, Any]], initial_length: int = 4
+    ) -> Dict[str, Dict[str, Any]]:
+        """
+        Post-process the DAG to assign shorter unique IDs based on truncated SHA-256 hashes.
+
+        Args:
+            dag (dict): The original DAG with full SHA-256 hash IDs.
+            initial_length (int): The initial number of characters to use for truncated IDs.
+
+        Returns:
+            dict: The processed DAG with truncated unique IDs.
+        """
+
+        def common_prefix_length(a: str, b: str) -> int:
+            """
+            Calculate the length of the common prefix between two strings.
+
+            Args:
+                a (str): First string.
+                b (str): Second string.
+
+            Returns:
+                int: Length of the common prefix.
+            """
+            min_len = min(len(a), len(b))
+            i = 0
+            while i < min_len and a[i] == b[i]:
+                i += 1
+            return i
+
+        def get_min_unique_prefixes(
+            sorted_hashes: List[str], initial_length: int
+        ) -> Dict[str, int]:
+            """
+            Determine the minimal unique prefix length for each hash.
+
+            Args:
+                sorted_hashes (list): List of sorted hash strings.
+                initial_length (int): Starting length for prefixes.
+
+            Returns:
+                dict: Mapping from full hash to its minimal unique prefix length.
+            """
+            prefixes = {}
+            n = len(sorted_hashes)
+            for i in range(n):
+                current_hash = sorted_hashes[i]
+                # Initialize prefix length
+                prefix_length = initial_length
+
+                # Compare with previous hash
+                if i > 0:
+                    prev_hash = sorted_hashes[i - 1]
+                    common_prev = common_prefix_length(current_hash, prev_hash)
+                    prefix_length = max(prefix_length, common_prev + 1)
+
+                # Compare with next hash
+                if i < n - 1:
+                    next_hash = sorted_hashes[i + 1]
+                    common_next = common_prefix_length(current_hash, next_hash)
+                    prefix_length = max(prefix_length, common_next + 1)
+
+                # Ensure prefix_length does not exceed hash length
+                prefix_length = min(prefix_length, len(current_hash))
+
+                prefixes[current_hash] = prefix_length
+
+            return prefixes
+
+        def build_truncated_ids(
+            sorted_hashes: List[str], prefixes: Dict[str, int]
+        ) -> Dict[str, str]:
+            """
+            Assign truncated IDs based on minimal unique prefixes.
+
+            Args:
+                sorted_hashes (list): List of sorted hash strings.
+                prefixes (dict): Mapping from full hash to prefix length.
+
+            Returns:
+                dict: Mapping from full hash to truncated ID.
+            """
+            truncated_ids = {}
+            seen_truncated_ids = set()
+
+            for hash_str in sorted_hashes:
+                prefix_length = prefixes[hash_str]
+                truncated_id = hash_str[:prefix_length]
+
+                # Handle any unforeseen collisions by incrementing prefix length
+                while truncated_id in seen_truncated_ids and truncated_id != hash_str:
+                    prefix_length += 1
+                    if prefix_length > len(hash_str):
+                        raise ValueError(
+                            f"Cannot truncate hash {hash_str} to a unique ID."
+                        )
+                    truncated_id = hash_str[:prefix_length]
+
+                truncated_ids[hash_str] = truncated_id
+                seen_truncated_ids.add(truncated_id)
+
+            return truncated_ids
+
+        def replace_ids_in_dag(
+            original_dag: Dict[str, Dict[str, Any]], id_map: Dict[str, str]
+        ) -> Dict[str, Dict[str, Any]]:
+            """
+            Replace full hash IDs with truncated IDs in the DAG.
+
+            Args:
+                original_dag (dict): Original DAG with full hash IDs.
+                id_map (dict): Mapping from full hash to truncated ID.
+
+            Returns:
+                dict: Updated DAG with truncated unique IDs.
+            """
+            updated_dag = {}
+            for full_hash, node in original_dag.items():
+                truncated_id = id_map[full_hash]
+                updated_node = {
+                    "type": node["type"],
+                    "params": node["params"],
+                    "deps": {},
+                }
+
+                for dep_key, dep_value in node.get("deps", {}).items():
+                    if isinstance(dep_value, list):
+                        updated_node["deps"][dep_key] = [
+                            id_map.get(dep, dep) for dep in dep_value
+                        ]
+                    else:
+                        updated_node["deps"][dep_key] = id_map.get(dep_value, dep_value)
+
+                updated_dag[truncated_id] = updated_node
+
+            return updated_dag
+
+        # Step 1: Sort all hashes
+        sorted_hashes = sorted(dag.keys())
+
+        # Step 2: Determine minimal unique prefix lengths
+        prefixes = get_min_unique_prefixes(sorted_hashes, initial_length)
+
+        # Step 3: Assign truncated IDs
+        self.id_map = build_truncated_ids(sorted_hashes, prefixes)
+
+        # Step 4: Replace IDs in the DAG
+        truncated_dag = replace_ids_in_dag(dag, self.id_map)
+
+        return truncated_dag
+
+    def to_dag(self, memo: Dict = {}) -> Dict:
         """Serialize a Directed Acyclic Graph (DAG) into a dictionary
         (id : {type, params, deps})
         recursive function.
         """
-        return self.head.to_dag(ids_already_seen=set())
+        dag = self.head.to_dag(memo=memo)
+        return self.post_process_dag(dag)
+
+    def get_hash(self) -> str:
+        """Return the hash of the component"""
+        if hasattr(self, "id_map") and self.id_map is not None:
+            return self.id_map[self.head.get_hash()]
+        else:  # Fallback to full hash
+            return self.head.get_hash()

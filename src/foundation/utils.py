@@ -1,13 +1,30 @@
 from foundation.types.serializable import serializable_nodes
 from foundation import Sketch, Frame, Plane, Part, Assembly
-from foundation.types.roots import AssemblyRoot, PartRoot
+from foundation.types.roots import AssemblyRoot, PartRoot, Node
 import sys
+from typing import Union
 
-DAG_VERSION_FORMAT = "1.0"
+try:
+    import json
+    import websocket
+except ImportError:
+    # mock the websocket module for environments where it is not available
+    from types import ModuleType
+
+    class MockWebSocket(ModuleType):
+        @staticmethod
+        def create_connection(*args, **kwargs):
+            raise ImportError("websocket not available")
+
+    websocket = MockWebSocket("websocket")
+
+DAG_VERSION_FORMAT = "2.0"
 TYPE_LIST = [Sketch, AssemblyRoot, PartRoot, Frame, Plane]
 #
 # ID_TYPE_ALLOWED = [3, 14, 15, 5, 6]
 ID_TYPE_ALLOWED = [serializable_nodes[t.__name__] for t in TYPE_LIST]
+
+DISPLAY_TYPE = Union[Sketch, Assembly, Part, Frame, Plane]
 
 
 def search_name_with_id(id: int) -> str:
@@ -21,7 +38,14 @@ def search_name_with_id(id: int) -> str:
     return "Unknown"
 
 
-def format_dag(dag: dict, check_display_type: bool = True) -> dict:
+def show_dag(x: DISPLAY_TYPE):
+    dag = x.to_dag(memo={})
+    comp_hash = x.get_hash()
+    dag = format_dag(dag, comp_hash)
+    return dag
+
+
+def format_dag(dag: dict, comp_hash: str, check_display_type: bool = True) -> dict:
     """Format the DAG to include extra information :
     - the serializable nodes
     - format version
@@ -29,7 +53,7 @@ def format_dag(dag: dict, check_display_type: bool = True) -> dict:
 
     @param dag: the DAG to format ( see to_dag functions.)
     """
-    root_node_id = next(iter(dag.keys()))
+    root_node_id = comp_hash
 
     if check_display_type:
         root_node_type_id = dag[root_node_id]["type"]
@@ -48,13 +72,21 @@ def format_dag(dag: dict, check_display_type: bool = True) -> dict:
     }
 
 
-def show(component: Part) -> None:
+def show(x: DISPLAY_TYPE) -> None:
     """Function that is actually mocked on
     server and browser, but not on the tests"""
     if sys.platform == "emscripten":
         pass  # is getting mocked
     else:
-        pass
+        dag = show_dag(x)
+
+        try:
+            ws = websocket.create_connection("ws://127.0.0.1:3000")
+            json_str = json.dumps(dag)
+            ws.send(json_str)
+            reset_ids()
+        except Exception:
+            print("WebSocket not available")
 
 
 def show_with_params(comp_class, params):
@@ -113,3 +145,9 @@ def has_cycle(dag: dict) -> bool:
             return True
 
     return False
+
+
+def reset_ids():
+    Node.reset_ids()
+    Part.reset_ids()
+    Assembly.reset_ids()

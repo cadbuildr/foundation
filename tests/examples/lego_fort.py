@@ -49,7 +49,7 @@ class LegoBrickInterface(Interface):
 
     def stick(
         self,
-        brick: Part | Assembly,
+        brick: LegoBrick
         other_brick: Part | Assembly,
         position: str = "left",
     ):
@@ -174,7 +174,7 @@ class LegoBrick(Part):
         self.interface.stick(self, other_brick, position)
 
 
-# showExt(LegoBrick(4, 2))
+# show(LegoBrick(4, 2))
 
 
 class ClipTest(Assembly):
@@ -187,7 +187,7 @@ class ClipTest(Assembly):
         lego.interface.apply_constraints(self)
 
 
-# showExt(ClipTest())
+# show(ClipTest())
 
 
 class LegoRowOrStack(Assembly):
@@ -263,10 +263,10 @@ class LegoStack(LegoRowOrStack):
         super().__init__(brick_dim, orientation, n_width)
 
 
-# showExt(LegoRow(brick_dim="4x2", orientation="left", n_length=4))
+# show(LegoRow(brick_dim="4x2", orientation="left", n_length=4))
 
 
-# showExt(LegoStack(brick_dim="4x2", orientation="top", n_width=4))
+# show(LegoStack(brick_dim="4x2", orientation="top", n_width=4))
 
 
 class LegoPyramid(Assembly):
@@ -292,7 +292,7 @@ class LegoPyramid(Assembly):
         self.interface.apply_constraints(self)
 
 
-# showExt(LegoPyramid("4x2", 4))
+# show(LegoPyramid("4x2", 4))
 
 
 class LegoFort(Assembly):
@@ -350,6 +350,4 @@ class LegoFort(Assembly):
         return perimeter
 
 
-showExt(LegoFort(n_length=4, n_width=4, n_layers=2))
-
-# %%
+show(LegoFort(n_length=4, n_width=4, n_layers=2))

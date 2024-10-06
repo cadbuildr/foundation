@@ -34,7 +34,7 @@ class MonoCubeAssy:
 
 
 # This code will load the cube and display it
-showExt(MonoCubeAssy().get_assy())
+show(MonoCubeAssy().get_assy())
 
 
 # %%
@@ -74,7 +74,7 @@ class Pyramid:
             return self.assy
 
 
-showExt(Pyramid(depth=5).get_assy())
+show(Pyramid(depth=5).get_assy())
 
 # %%
 from foundation import *
@@ -163,7 +163,7 @@ class LegoBrick:
 
 
 if __name__ == "__main__":
-    showExt(LegoBrick().get_part())
+    show(LegoBrick().get_part())
 
 # %%
 

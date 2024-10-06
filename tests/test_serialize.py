@@ -1,5 +1,5 @@
 import json
-from tests.examples import examples, get_cube
+from .examples import examples, get_cube
 from foundation.types.serializable import serializable_nodes
 
 
