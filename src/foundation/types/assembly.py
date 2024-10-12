@@ -3,14 +3,12 @@ from numpy import ndarray
 
 from foundation.geometry.transform3d import TransformMatrix
 from itertools import count
-from foundation.types.comp_or_assy import CompOrAssy
+from foundation.types.comp_or_assy import CompOrAssy, AutoInitMeta
 from foundation.types.roots import AssemblyRoot
 from typing import Union, cast
-from foundation.geometry.plane import Plane
-import numpy as np
 
 
-class Assembly(CompOrAssy):
+class Assembly(CompOrAssy, metaclass=AutoInitMeta):
     """
     An Assembly is also a tree structure containing components or other assemblies ( sub assembly)
 
@@ -25,6 +23,17 @@ class Assembly(CompOrAssy):
         # list of transform from origin frame to component origin frame.
         self.tf_list = []  # list[TransformMatrix]
         self.id = name
+        self._part_init_called = True
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        original_init = cls.__init__
+
+        def new_init(self, *args, **kwargs):
+            Assembly.__init__(self)
+            original_init(self, *args, **kwargs)
+
+        cls.__init__ = new_init
 
     # TODO rename to add_part or add_assy (both are possible)
     def add_component(

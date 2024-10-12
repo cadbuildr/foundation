@@ -165,6 +165,43 @@ class Frame(Node):
         tf = TransformMatrix.from_rotation_matrix_and_position(rot_mat, point)
         return Frame(self, name, tf)
 
+    def from_xdir_and_normal(
+        self, name: str, point: ndarray, x_dir: ndarray, normal: ndarray
+    ) -> "Frame":
+        """Return a frame from a 3D point, an x-direction vector, and a normal vector.
+        The point is the origin of the frame.
+        The x_dir is the first vector of the frame (x-axis).
+        The normal is the normal vector to the plane formed by x and y axes (z-axis).
+        """
+        # Normalize the vectors
+        x_dir_norm = np.linalg.norm(x_dir)
+        normal_norm = np.linalg.norm(normal)
+        x_dir_unit = x_dir / x_dir_norm
+        normal_unit = normal / normal_norm
+
+        # Check if the vectors are unit vectors
+        if not np.isclose(x_dir_norm, 1.0):
+            raise NotAUnitVectorException(x_dir, "x_dir")
+        if not np.isclose(normal_norm, 1.0):
+            raise NotAUnitVectorException(normal, "normal")
+
+        # Check if the vectors are orthogonal
+        if not np.isclose(np.dot(x_dir_unit, normal_unit), 0.0):
+            raise GeometryException("x_dir and normal are not orthogonal")
+
+        # Compute y_axis as the cross product of normal and x_dir
+        y_axis = np.cross(normal_unit, x_dir_unit)
+        y_axis_unit = y_axis / np.linalg.norm(y_axis)
+
+        # Form the rotation matrix
+        rot_mat = RotationMatrix(np.array([x_dir_unit, y_axis_unit, normal_unit]).T)
+
+        # Create the TransformMatrix
+        tf = TransformMatrix.from_rotation_matrix_and_position(rot_mat, point)
+
+        # Return the new Frame
+        return Frame(self, name, tf)
+
     def compute_params(self):
         p, q = self.transform.to_position_quaternion()
         self.params = {

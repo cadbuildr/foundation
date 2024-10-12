@@ -1,18 +1,30 @@
 from foundation.rendering.material import Material
 from foundation.geometry.tf_helper import TFHelper
 from foundation.types.node_interface import NodeInterface
-from foundation.types.roots import PartRoot, AssemblyRoot
+from foundation.types.roots import PartRoot, AssemblyRoot, PLANES_CONFIG
 import numpy as np
 from numpy import ndarray
 from foundation.geometry.plane import PlaneFactory
 from foundation.geometry.transform3d import TransformMatrix
 from typing import Any, Dict, List, Tuple
+import inspect
+
+
+# # This is a small trick to facilitate user to create a part without having to call super.
+class AutoInitMeta(type):
+    def __call__(cls, *args, **kwargs):
+        obj = super().__call__(*args, **kwargs)
+        if not hasattr(obj, "_part_init_called"):
+            raise RuntimeError(
+                f"__init__ method of {cls.__name__} must call super().__init__()"
+            )
+        return obj
 
 
 class CompOrAssy(NodeInterface):
     """Abstract parent class of Part and Assembly"""
 
-    def __init__(self, root: PartRoot | AssemblyRoot):
+    def __init__(self, root: PartRoot | AssemblyRoot, **kwargs):
         super().__init__()
         self.tfh = (
             TFHelper()
@@ -38,29 +50,29 @@ class CompOrAssy(NodeInterface):
         material.set_diffuse_color(color)
         self.head.children.set_material(material)
 
-    def xy(self):
-        """Return the XY plane of the component"""
-        return self.head.get_or_create_plane("xy", prefix=self.id)
+    # def xy(self):
+    #     """Return the XY plane of the component"""
+    #     return self.head.get_or_create_plane("xy", prefix=self.id)
 
-    def yz(self):
-        """Return the YZ plane of the component"""
-        return self.head.get_or_create_plane("yz", prefix=self.id)
+    # def yz(self):
+    #     """Return the YZ plane of the component"""
+    #     return self.head.get_or_create_plane("yz", prefix=self.id)
 
-    def xz(self):
-        """Return the XZ plane of the component"""
-        return self.head.get_or_create_plane("xz", prefix=self.id)
+    # def xz(self):
+    #     """Return the XZ plane of the component"""
+    #     return self.head.get_or_create_plane("xz", prefix=self.id)
 
-    def yx(self):
-        """Return the YX plane of the component"""
-        return self.head.get_or_create_plane("yx", prefix=self.id)
+    # def yx(self):
+    #     """Return the YX plane of the component"""
+    #     return self.head.get_or_create_plane("yx", prefix=self.id)
 
-    def zx(self):
-        """Return the ZX plane of the component"""
-        return self.head.get_or_create_plane("zx", prefix=self.id)
+    # def zx(self):
+    #     """Return the ZX plane of the component"""
+    #     return self.head.get_or_create_plane("zx", prefix=self.id)
 
-    def zy(self):
-        """Return the ZY plane of the component"""
-        return self.head.get_or_create_plane("zy", prefix=self.id)
+    # def zy(self):
+    #     """Return the ZY plane of the component"""
+    #     return self.head.get_or_create_plane("zy", prefix=self.id)
 
     # tf helper methods
     def reset_tf(self, tf=None):
@@ -266,3 +278,26 @@ class CompOrAssy(NodeInterface):
             return self.id_map[self.head.get_hash()]
         else:  # Fallback to full hash
             return self.head.get_hash()
+
+
+def add_plane_methods_to_comp_or_assy(cls):
+    for plane_name in PLANES_CONFIG.keys():
+        method_name = plane_name.lower()
+
+        def make_plane_method(method_name):
+            def plane_method(self):
+                # Delegate the call to self.head
+                return getattr(self.head, method_name)()
+
+            plane_method.__name__ = method_name
+            plane_method.__qualname__ = f"{cls.__name__}.{method_name}"
+            plane_method.__doc__ = f"Return the {plane_name} plane of the component."
+            return plane_method
+
+        # Capture method_name to avoid closure issues
+        plane_method = make_plane_method(method_name)
+        setattr(cls, method_name, plane_method)
+
+
+# Apply the dynamic method addition to CompOrAssy
+add_plane_methods_to_comp_or_assy(CompOrAssy)

@@ -13,6 +13,57 @@ from foundation.rendering.material import Material
 from foundation.geometry.transform3d import TransformMatrix
 import numpy as np
 
+PLANES_CONFIG = {
+    "XY": {
+        "xDir": [1, 0, 0],
+        "normal": [0, 0, 1],
+    },
+    "YZ": {
+        "xDir": [0, 1, 0],
+        "normal": [1, 0, 0],
+    },
+    "ZX": {
+        "xDir": [0, 0, 1],
+        "normal": [0, 1, 0],
+    },
+    "XZ": {
+        "xDir": [1, 0, 0],
+        "normal": [0, -1, 0],
+    },
+    "YX": {
+        "xDir": [0, 1, 0],
+        "normal": [0, 0, -1],
+    },
+    "ZY": {
+        "xDir": [0, 0, 1],
+        "normal": [-1, 0, 0],
+    },
+    "front": {
+        "xDir": [1, 0, 0],
+        "normal": [0, 0, 1],
+    },
+    "back": {
+        "xDir": [-1, 0, 0],
+        "normal": [0, 0, -1],
+    },
+    "left": {
+        "xDir": [0, 0, 1],
+        "normal": [-1, 0, 0],
+    },
+    "right": {
+        "xDir": [0, 0, -1],
+        "normal": [1, 0, 0],
+    },
+    "top": {
+        "xDir": [1, 0, 0],
+        "normal": [0, 1, 0],
+    },
+    "bottom": {
+        "xDir": [1, 0, 0],
+        "normal": [0, -1, 0],
+    },
+}
+
 
 class RootChildren(NodeChildren):
     frame: Frame
@@ -56,34 +107,6 @@ class BaseRoot(Node):
     def add_plane(self, plane: Plane):
         self.children._children["planes"].append(plane)
 
-    def get_or_create_plane(self, axis: str, prefix: str) -> Plane:
-        """axis is xy, yx, xz, zx, yz, zy"""
-        for plane in self.children._children["planes"]:
-            if plane.name.endswith('_p" + axis'):
-                return plane
-
-        o = self.get_frame()
-        if axis == "xy":
-            frame = o
-        elif axis == "xz":
-            frame = o.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "xz_f")
-        elif axis == "yz":
-            xz = self.get_or_create_plane("xz", prefix).frame
-            frame = xz.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "yz_f")
-        elif axis == "yx":
-            # x is actually in the negative y direction
-            frame = o.get_rotated_frame_from_axis(o.get_z_axis(), np.pi / 2, "yx_f")
-        elif axis == "zx":
-            xz = self.get_or_create_plane("xz", prefix).frame
-            frame = xz.get_rotated_frame_from_axis(o.get_y_axis(), np.pi / 2, "zx_f")
-        elif axis == "zy":
-            yz = self.get_or_create_plane("yz", prefix).frame
-            frame = yz.get_rotated_frame_from_axis(o.get_x_axis(), np.pi / 2, "zy_f")
-        # create the plane
-        plane = Plane(frame, prefix + "_p" + axis)
-        self.add_plane(plane)
-        return plane
-
     def make_origin_frame_default_frame(
         self, id: str, new_tf: TransformMatrix, new_top_frame: Frame
     ):
@@ -103,6 +126,41 @@ class BaseRoot(Node):
 
     def get_origin_planes(self) -> List[Plane]:
         return self.children._children["origin_planes"]
+
+
+def make_plane_getter(plane_name, config):
+    def get_plane(self: BaseRoot) -> Plane:
+        # Check if plane already exists
+        for plane in self.children._children["planes"]:
+            if plane.name == plane_name:
+                return plane
+        # Create the plane
+        x_dir = np.array(config["xDir"], dtype=float)
+        normal = np.array(config["normal"], dtype=float)
+        point = np.array([0.0, 0.0, 0.0])
+        frame = self._frame.from_xdir_and_normal(
+            name=f"{plane_name}_frame",
+            point=point,
+            x_dir=x_dir,
+            normal=normal,
+        )
+        plane = Plane(frame, plane_name)
+        self.add_plane(plane)
+        return plane
+
+    method_name = plane_name.lower()
+    get_plane.__name__ = method_name
+    get_plane.__qualname__ = f"{BaseRoot.__name__}.{method_name}"
+    return get_plane
+
+
+def make_plane_getters(cls):
+    for plane_name, config in PLANES_CONFIG.items():
+        getter = make_plane_getter(plane_name, config)
+        setattr(cls, getter.__name__, getter)
+
+
+make_plane_getters(BaseRoot)
 
 
 class PartRoot(BaseRoot):
