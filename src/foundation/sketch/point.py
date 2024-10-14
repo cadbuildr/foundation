@@ -1,13 +1,7 @@
 from foundation.types.parameters import (
     UnCastFloat,
-    UnCastBool,
-    UnCastString,
     cast_to_float_parameter,
-    cast_to_bool_parameter,
-    cast_to_string_parameter,
     FloatParameter,
-    BoolParameter,
-    StringParameter,
 )
 from foundation.types.node import Node
 from foundation.sketch.base import SketchElement
@@ -41,16 +35,12 @@ class Point(SketchElement, Node):
         sketch: "Sketch",
         x: UnCastFloat,
         y: UnCastFloat,
-        # name: UnCastString | None = None,
     ):
         Node.__init__(self, [sketch])
         SketchElement.__init__(self, sketch)
 
         self.children.set_x(cast_to_float_parameter(x))
         self.children.set_y(cast_to_float_parameter(y))
-        # if name is None:
-        #     name = "p_" + str(self.id)
-        # self.children.set_name(cast_to_string_parameter(name))
 
         # shortcuts
         self.x = self.children.x
@@ -131,7 +121,6 @@ class Point(SketchElement, Node):
 
 PointChildren.__annotations__["x"] = FloatParameter
 PointChildren.__annotations__["y"] = FloatParameter
-# PointChildren.__annotations__["name"] = StringParameter
 
 
 class PointWithTangentChildren(NodeChildren):
