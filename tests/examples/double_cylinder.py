@@ -2,7 +2,7 @@ from foundation import *
 
 
 def get_double_cylinder():
-    double_extrusion = start_component()
+    double_extrusion = Part()
     plane1 = double_extrusion.xy()
     s = Sketch(plane1)
     p1 = Point(s, 0, 0)

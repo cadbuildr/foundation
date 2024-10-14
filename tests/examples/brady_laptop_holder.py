@@ -2,7 +2,7 @@ from foundation import *
 
 
 def get_brady_laptop_holder():
-    brady_lh = start_component()
+    brady_lh = Part()
     # Operation 1 Ellipse extrusion
     xy, xz, yz = brady_lh.origin_planes
     # TODO simplify access to y plane.
@@ -66,7 +66,7 @@ def get_brady_laptop_holder():
 #     # params :
 #     width, length, height = 50, 40, 40
 
-#     brady_lh = start_component()
+#     brady_lh = Part()
 #     xz_p, xy_p, yz_p = brady_lh.origin_planes
 
 #     s = Sketch(xz_p)

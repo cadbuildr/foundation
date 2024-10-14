@@ -1,11 +1,11 @@
 import unittest
-from foundation import Sketch, Point, Line, start_component
+from foundation import Sketch, Point, Line, Part
 import numpy as np
 
 
 class TestLine(unittest.TestCase):
     def setUp(self):
-        part = start_component()
+        part = Part()
         self.sketch = Sketch(part.xy())
         self.p1 = Point(self.sketch, 0, 0)
         self.p2 = Point(self.sketch, 3, 3)

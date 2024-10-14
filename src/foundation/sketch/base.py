@@ -1,6 +1,6 @@
 from foundation.types.node_interface import NodeInterface
 from foundation.geometry.frame import Frame
-from foundation.geometry.plane import PlaneFromFrame
+from foundation.geometry.plane import Plane
 
 from typing import TYPE_CHECKING
 
@@ -14,7 +14,7 @@ class SketchElement(NodeInterface):
         self.sketch = sketch
 
     # TODO check what is the plane to use
-    def get_plane(self) -> PlaneFromFrame:
+    def get_plane(self) -> Plane:
         return self.sketch.plane
 
     def get_frame(self) -> Frame:

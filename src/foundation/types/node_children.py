@@ -1,5 +1,5 @@
 from types import MethodType
-from typing import get_origin, get_args, Union
+from typing import get_origin, get_args, Union, Optional, Dict, List
 
 
 def is_union_type(tp):
@@ -119,28 +119,6 @@ class NodeChildren(metaclass=NodeChildrenMeta):
     def __iter__(self):
         return iter(filter(None, self._children.values()))
 
-    def to_dag(
-        self, ids_already_seen: set = set(), only_keep_serializable_nodes: bool = True
-    ):
-        if ids_already_seen is None:
-            ids_already_seen = set()
-        res = {}
-        for _, c in self._children.items():
-            if c is not None:
-                # check if c is not a list
-                if not isinstance(c, list):
-                    c = [c]
-                for child in c:
-                    if child.id not in ids_already_seen:
-                        res.update(
-                            child.to_dag(
-                                ids_already_seen=ids_already_seen,
-                                only_keep_serializable_nodes=only_keep_serializable_nodes,
-                            )
-                        )
-                        ids_already_seen.add(child.id)
-        return res
-
     def get_as_dict_of_ids(self):
         res = {}
         for k, v in self._children.items():
@@ -151,6 +129,27 @@ class NodeChildren(metaclass=NodeChildrenMeta):
                 else:
                     res[k] = v.id
         return res
+
+    def to_dag(
+        self, memo: Dict, only_keep_serializable_nodes: bool = True
+    ) -> Dict[str, str | List[str]]:
+        """Add to the memo the relevant data and also
+        returns a dict of hashes of the children"""
+        # Collect children's hashes and add them to memo.
+        children_hashes: Dict[str, str | List[str]] = {}
+        for child_name, c in self._children.items():
+            if c is not None:
+                # check if c is not a list
+                if not isinstance(c, list):
+                    c.to_dag(memo, only_keep_serializable_nodes)
+                    children_hashes[child_name] = c.get_hash()
+                else:
+                    c_hashes = []
+                    for child in c:
+                        child.to_dag(memo, only_keep_serializable_nodes)
+                        c_hashes.append(child.get_hash())
+                    children_hashes[child_name] = c_hashes
+        return children_hashes
 
 
 """

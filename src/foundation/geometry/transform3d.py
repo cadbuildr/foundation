@@ -124,32 +124,42 @@ class RotationMatrix:
             np.array([[r00, r01, r02], [r10, r11, r12], [r20, r21, r22]])
         )
 
-    def to_quaternion(self) -> ndarray:
-        # Check if matrix contains NaN values
-        if np.isnan(self.matrix).any():
-            raise NaNInMatrixException(self.matrix)
+    def to_quaternion(self) -> np.ndarray:
+        """Convert the rotation matrix to a quaternion."""
+        M = self.matrix
+        q = np.empty(4)
+        trace = M[0, 0] + M[1, 1] + M[2, 2]
 
-        tracep1 = 1.0 + self.matrix[0, 0] + self.matrix[1, 1] + self.matrix[2, 2]
-        if tracep1 < 0:
-            raise TraceLessThanZeroException(self.matrix)
-
-        q0 = np.sqrt(tracep1) / 2.0
-        if q0 != 0:
-            q1 = (self.matrix[2, 1] - self.matrix[1, 2]) / (4 * q0)
-            q2 = (self.matrix[0, 2] - self.matrix[2, 0]) / (4 * q0)
-            q3 = (self.matrix[1, 0] - self.matrix[0, 1]) / (4 * q0)
+        if trace > 0.0:
+            s = 0.5 / np.sqrt(trace + 1.0)
+            q[0] = 0.25 / s
+            q[1] = (M[2, 1] - M[1, 2]) * s
+            q[2] = (M[0, 2] - M[2, 0]) * s
+            q[3] = (M[1, 0] - M[0, 1]) * s
         else:
-            q0 = 0.0
-            q1 = self.matrix[2, 1] - self.matrix[1, 2]
-            q2 = self.matrix[0, 2] - self.matrix[2, 0]
-            q3 = self.matrix[1, 0] - self.matrix[0, 1]
+            if M[0, 0] > M[1, 1] and M[0, 0] > M[2, 2]:
+                s = 2.0 * np.sqrt(1.0 + M[0, 0] - M[1, 1] - M[2, 2])
+                q[0] = (M[2, 1] - M[1, 2]) / s
+                q[1] = 0.25 * s
+                q[2] = (M[0, 1] + M[1, 0]) / s
+                q[3] = (M[0, 2] + M[2, 0]) / s
+            elif M[1, 1] > M[2, 2]:
+                s = 2.0 * np.sqrt(1.0 + M[1, 1] - M[0, 0] - M[2, 2])
+                q[0] = (M[0, 2] - M[2, 0]) / s
+                q[1] = (M[0, 1] + M[1, 0]) / s
+                q[2] = 0.25 * s
+                q[3] = (M[1, 2] + M[2, 1]) / s
+            else:
+                s = 2.0 * np.sqrt(1.0 + M[2, 2] - M[0, 0] - M[1, 1])
+                q[0] = (M[1, 0] - M[0, 1]) / s
+                q[1] = (M[0, 2] + M[2, 0]) / s
+                q[2] = (M[1, 2] + M[2, 1]) / s
+                q[3] = 0.25 * s
 
-        quat = np.array([q0, q1, q2, q3])
-        norm = np.linalg.norm(quat)
+        norm = np.linalg.norm(q)
         if norm == 0:
             raise ZeroQuaternionNormException()
-
-        return quat / norm
+        return q / norm
 
     def to_axis_angle(self) -> tuple[ndarray, float]:
         # return a 3d vector and a scalar

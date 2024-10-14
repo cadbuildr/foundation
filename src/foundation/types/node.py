@@ -1,6 +1,9 @@
 from itertools import count
 from .node_children import NodeChildren
 from foundation.types.serializable import serializable_nodes
+import hashlib
+import json
+from typing import Dict, Optional
 
 
 class Node(object):
@@ -8,7 +11,7 @@ class Node(object):
     Nodes of the Directed Acyclic Graph (DAG) representing parts and assemblies.
     The Node class is a base class meant to be inherited by all the nodes of the DAG:
     - Assembly
-    - Component
+    - Part
     - Operations
     - Frame
     - Parameter (leaf of the tree)
@@ -20,9 +23,9 @@ class Node(object):
 
     """
 
-    parent_types: list[
-        str
-    ] = []  # can be reimplemented in child classes to enforce a parent type to the Node
+    parent_types: list[str] = (
+        []
+    )  # can be reimplemented in child classes to enforce a parent type to the Node
     _ids = count(0)  # used to generate unique ids for the node
     children_class = NodeChildren  # Default : overriden in child classes
 
@@ -36,22 +39,9 @@ class Node(object):
         # node id used to identify component  (maybe should be a UUID to keep state)
         self.id = next(self._ids)
 
-    def check_parent_type(self):
-        raise DeprecationWarning("Using Deprecated method check_parent_type")
-        """If the Node has a parent, we check that the parent is of the correct type,
-        If not it can only be Frame (origin) ( the only root node )"""
-        if len(self.parents) != 0:
-            for pt, parent in zip(self.parent_types, self.parents):
-                assert pt == type(parent).__name__
-        else:
-            assert type(self).__name__ == "Frame"
-
-    def register_child(self, child: "Node"):
-        """Adds a child to the list"""
-        raise DeprecationWarning("Using Deprecated method register_child")
-        if child not in self.children:
-            # print("Registering child", child, " to ", self)
-            self.children.append(child)
+        # Hashing store for to_dag
+        self._hash: Optional[str] = None
+        self._hash_content: Optional[dict] = None
 
     def rec_list_nodes(
         self, type_filter: list[str], include_only_interface: bool = True
@@ -71,27 +61,21 @@ class Node(object):
             res += c.rec_list_nodes(type_filter)
         return res
 
-    def to_dag(
-        self, ids_already_seen: set = set(), only_keep_serializable_nodes: bool = True
-    ) -> dict:
+    def to_dag(self, memo, only_keep_serializable_nodes: bool = True) -> dict:
         """
         Return the Direct Acyclig Graph (DAG) of this node and all it's children recursively
         result is a dictionary of dictionaries with keys the id of the node and the
         values the dictionary of the node (see to_dict function)
         """
-        res = {}
-        # add yourself if not already seen
-        if self.id not in ids_already_seen:
-            res[self.id] = self.to_dict(only_keep_serializable_nodes)
-            ids_already_seen.add(self.id)
-        # add all the children
-        res.update(
-            self.children.to_dag(
-                ids_already_seen=ids_already_seen,
-                only_keep_serializable_nodes=only_keep_serializable_nodes,
-            )
-        )
-        return res
+        hash_content = self.get_content_for_hash(memo, only_keep_serializable_nodes)
+        node_hash = self.compute_hash(hash_content)
+        # If the node is already serialized, return the existing memo
+        if node_hash in memo:
+            return memo
+
+        # otherwise, add the node to the memo all the children are already there
+        memo[node_hash] = hash_content
+        return memo
 
     def is_serializable(self):
         if type(self).__name__ in serializable_nodes.keys():
@@ -104,6 +88,7 @@ class Node(object):
 
     def to_dict(self, only_keep_serializable_nodes: bool = True) -> dict:
         """Current Node as a dictionary"""
+        raise DeprecationWarning("to_dict is deprecated replaced with hashing method")
         is_serializable, node_type = self.is_serializable()
         if only_keep_serializable_nodes and not is_serializable:
             raise TypeError(
@@ -126,6 +111,42 @@ class Node(object):
             if collect_all or len(list(set(c.get_types()) & set(type_filter))):
                 res.append(c)
         return res
+
+    def get_content_for_hash(
+        self, memo: Dict, only_keep_serializable_nodes: bool = True
+    ):
+        # Check if there already
+        if hasattr(self, "_hash_content") and self._hash_content is not None:
+            return self._hash_content
+        # Collect node's type and parameters
+        is_serializable, node_type = self.is_serializable()
+        if only_keep_serializable_nodes and not is_serializable:
+            raise TypeError(
+                f"""Node type {type(self).__name__} is not serializable, make sure
+                            to add it to the serializable_nodes dict in the serializable.py file."""
+            )
+
+        content = {
+            "type": node_type,
+            "params": self.params,
+            "deps": self.children.to_dag(memo, only_keep_serializable_nodes),
+        }
+        self._hash_content = content
+        return content
+
+    def get_hash(self):
+        return self._hash
+
+    def compute_hash(self, hash_content: Dict):
+        if self.get_hash() is not None:
+            return self.get_hash()
+        # Serialize content
+        content_bytes = json.dumps(hash_content, sort_keys=True).encode("utf-8")
+        # Compute SHA-256 hash
+        node_hash = hashlib.sha256(content_bytes).hexdigest()
+        # Store the hash in the node instance
+        self._hash = node_hash
+        return node_hash
 
     @classmethod
     def get_types(cls, include_only_interface: bool = True) -> list[str]:

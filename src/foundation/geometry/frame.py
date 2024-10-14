@@ -12,7 +12,7 @@ from foundation.types.parameters import (
     UnCastString,
     UnCastBool,
 )
-from typing import Union
+from typing import Union, Optional
 from foundation.exceptions import NotAUnitVectorException, GeometryException
 
 
@@ -46,17 +46,15 @@ class Frame(Node):
 
         # shortcuts
         self.top_frame = top_frame
-        self.name = name
+        self.name = self.children._children["name"]
 
         if top_frame is not None:
             top_frame.compute_params()
         self.compute_params()
-        self.name = name
-        self.top_frame = top_frame
         self.transform = transform
 
     def get_name(self) -> str:
-        return self.name
+        return self.name.value
 
     def get_parent_name(self) -> str | None:
         if self.top_frame is not None:
@@ -67,7 +65,7 @@ class Frame(Node):
     def __str__(self) -> str:
         return (
             "Frame : "
-            + self.name
+            + self.get_name()
             + " with parent : "
             + str(self.get_parent_name())
             + " and transform : "
@@ -104,6 +102,9 @@ class Frame(Node):
     def get_transform(self) -> TransformMatrix:
         """return the transform of the frame (from the parent frame)"""
         return self.transform
+
+    def set_transform(self, tf: TransformMatrix):
+        self.transform = tf
 
     def get_position_and_quaternions(self) -> dict[str, dict[str, float]]:
         """return the position of the frame (from the parent frame)"""
@@ -164,6 +165,43 @@ class Frame(Node):
         tf = TransformMatrix.from_rotation_matrix_and_position(rot_mat, point)
         return Frame(self, name, tf)
 
+    def from_xdir_and_normal(
+        self, name: str, point: ndarray, x_dir: ndarray, normal: ndarray
+    ) -> "Frame":
+        """Return a frame from a 3D point, an x-direction vector, and a normal vector.
+        The point is the origin of the frame.
+        The x_dir is the first vector of the frame (x-axis).
+        The normal is the normal vector to the plane formed by x and y axes (z-axis).
+        """
+        # Normalize the vectors
+        x_dir_norm = np.linalg.norm(x_dir)
+        normal_norm = np.linalg.norm(normal)
+        x_dir_unit = x_dir / x_dir_norm
+        normal_unit = normal / normal_norm
+
+        # Check if the vectors are unit vectors
+        if not np.isclose(x_dir_norm, 1.0):
+            raise NotAUnitVectorException(x_dir, "x_dir")
+        if not np.isclose(normal_norm, 1.0):
+            raise NotAUnitVectorException(normal, "normal")
+
+        # Check if the vectors are orthogonal
+        if not np.isclose(np.dot(x_dir_unit, normal_unit), 0.0):
+            raise GeometryException("x_dir and normal are not orthogonal")
+
+        # Compute y_axis as the cross product of normal and x_dir
+        y_axis = np.cross(normal_unit, x_dir_unit)
+        y_axis_unit = y_axis / np.linalg.norm(y_axis)
+
+        # Form the rotation matrix
+        rot_mat = RotationMatrix(np.array([x_dir_unit, y_axis_unit, normal_unit]).T)
+
+        # Create the TransformMatrix
+        tf = TransformMatrix.from_rotation_matrix_and_position(rot_mat, point)
+
+        # Return the new Frame
+        return Frame(self, name, tf)
+
     def compute_params(self):
         p, q = self.transform.to_position_quaternion()
         self.params = {
@@ -171,11 +209,18 @@ class Frame(Node):
             "quaternion": list(q),
         }
 
-    def change_top_frame(self, new_top_frame: "Frame", new_name: UnCastString, new_tf):
+    def change_top_frame(
+        self,
+        new_top_frame: "Frame",
+        new_name: Optional[UnCastString] = None,
+        new_tf=None,
+    ):
         self.children.set_top_frame(new_top_frame)
-        self.children.set_name(cast_to_string_parameter(new_name))
+        if new_name is not None:
+            self.children.set_name(cast_to_string_parameter(new_name))
 
-        self.transform = new_tf
+        if new_tf is not None:
+            self.transform = new_tf
         # shortcuts update
         self.top_frame = self.children._children["top_frame"]
         self.name = self.children._children["name"]

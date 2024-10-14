@@ -1,13 +1,7 @@
 from foundation.types.parameters import (
     UnCastFloat,
-    UnCastBool,
-    UnCastString,
     cast_to_float_parameter,
-    cast_to_bool_parameter,
-    cast_to_string_parameter,
     FloatParameter,
-    BoolParameter,
-    StringParameter,
 )
 from foundation.types.node import Node
 from foundation.sketch.base import SketchElement
@@ -25,7 +19,7 @@ if TYPE_CHECKING:
 class PointChildren(NodeChildren):
     x: FloatParameter
     y: FloatParameter
-    name: StringParameter
+    # name: StringParameter
 
 
 class Point(SketchElement, Node):
@@ -41,21 +35,17 @@ class Point(SketchElement, Node):
         sketch: "Sketch",
         x: UnCastFloat,
         y: UnCastFloat,
-        name: UnCastString | None = None,
     ):
         Node.__init__(self, [sketch])
         SketchElement.__init__(self, sketch)
 
         self.children.set_x(cast_to_float_parameter(x))
         self.children.set_y(cast_to_float_parameter(y))
-        if name is None:
-            name = "p_" + str(self.id)
-        self.children.set_name(cast_to_string_parameter(name))
 
         # shortcuts
         self.x = self.children.x
         self.y = self.children.y
-        self.name = self.children.name
+        # self.name = self.children.name
         self.sketch = sketch
 
         # add to sketch
@@ -126,12 +116,11 @@ class Point(SketchElement, Node):
         return self.x.value == other.x.value and self.y.value == other.y.value
 
     def __str__(self):
-        return f"Point(name={self.name}, x={self.x.value}, y={self.y.value})"
+        return f"Point(x={self.x.value}, y={self.y.value})"
 
 
 PointChildren.__annotations__["x"] = FloatParameter
 PointChildren.__annotations__["y"] = FloatParameter
-PointChildren.__annotations__["name"] = StringParameter
 
 
 class PointWithTangentChildren(NodeChildren):

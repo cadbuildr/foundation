@@ -4,7 +4,7 @@ from foundation import *
 
 
 def get_small_table():
-    small_table = start_component()
+    small_table = Part()
     plane1 = small_table.xy()
     s = Sketch(plane1)
     p = Point(s, 0, 0)

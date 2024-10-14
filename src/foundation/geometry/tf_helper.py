@@ -4,6 +4,7 @@ import numpy as np
 from numpy import ndarray
 from foundation.geometry.transform3d import RotationMatrix, TransformMatrix
 from foundation.exceptions import InvalidParameterTypeException
+from typing import List
 
 
 def get_rotation_matrix(axis, angle):
@@ -55,7 +56,9 @@ class TFHelper:
         return self.translate([0.0, 0.0, float(z)], rotate)
 
     def rotate(
-        self, axis: ndarray = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
+        self,
+        axis: ndarray | List[float] = np.array([0.0, 0.0, 1.0]),
+        angle: float = np.pi / 2,
     ) -> TFHelper:
         """axis is a 3d vector (numpy array) and angle is a float"""
         axis = np.array(axis, dtype="float")

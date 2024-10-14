@@ -1,14 +1,14 @@
-from foundation.types.component import Component
+from foundation.types.part import Part
 from numpy import ndarray
 
 from foundation.geometry.transform3d import TransformMatrix
 from itertools import count
-from foundation.types.comp_or_assy import CompOrAssy
+from foundation.types.comp_or_assy import CompOrAssy, AutoInitMeta
 from foundation.types.roots import AssemblyRoot
 from typing import Union, cast
 
 
-class Assembly(CompOrAssy):
+class Assembly(CompOrAssy, metaclass=AutoInitMeta):
     """
     An Assembly is also a tree structure containing components or other assemblies ( sub assembly)
 
@@ -19,19 +19,30 @@ class Assembly(CompOrAssy):
     def __init__(self):
         name = "assy" + str(next(self._ids))
         super().__init__(AssemblyRoot(name))
-        self.components = []  # list of components/subassemblies
+        self.components = []  # list of parts/subassemblies
         # list of transform from origin frame to component origin frame.
         self.tf_list = []  # list[TransformMatrix]
         self.id = name
+        self._part_init_called = True
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        original_init = cls.__init__
+
+        def new_init(self, *args, **kwargs):
+            Assembly.__init__(self)
+            original_init(self, *args, **kwargs)
+
+        cls.__init__ = new_init
 
     # TODO rename to add_part or add_assy (both are possible)
     def add_component(
-        self, component: Union[Component, "Assembly"], tf: TransformMatrix | None = None
+        self, component: Union[Part, "Assembly"], tf: TransformMatrix | None = None
     ):
         """Add a component to the assembly
         We first figure out the transform from the assembly root to the component root
-        We change the Frame of the ComponentRoot and then register the
-        ComponentRoot as a child of the assembly root.
+        We change the Frame of the PartRoot and then register the
+        PartRoot as a child of the assembly root.
         """
         if tf is None:
             tf = component.get_tf()
@@ -40,6 +51,7 @@ class Assembly(CompOrAssy):
         # Modifying component directly ? Might not be the best.
         if tf is None:
             tf = TransformMatrix.get_identity()
+
         component.head.make_origin_frame_default_frame(
             id=component.id, new_tf=tf, new_top_frame=self.head.get_frame()
         )
@@ -49,13 +61,6 @@ class Assembly(CompOrAssy):
         # component.head.parents.append(self.head)
         self.components.append(component)
         self.tf_list.append(tf)
-
-    def add_joint(self, joint):
-        """Adding a joint to the assembly
-        A joint is just another node in the tree
-        """
-        # TODO change Assembly to be a real Node
-        pass
 
     def add_construction_element(self, name, element):
         """Add a construction element to the construction element dictionary to be used
@@ -84,11 +89,6 @@ class Assembly(CompOrAssy):
                 c.pretty_print()
             else:
                 print(f"""{self.id} -> {[type(o) for o in c.get_operations()]}""")
-
-    def attach_operations(self):
-        """Attach operations to the assembly"""
-        for c in self.components:
-            c.attach_operations()
 
     @classmethod
     def reset_ids(cls):
