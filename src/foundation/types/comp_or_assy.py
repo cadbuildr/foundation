@@ -6,8 +6,14 @@ import numpy as np
 from numpy import ndarray
 from foundation.geometry.plane import PlaneFactory
 from foundation.geometry.transform3d import TransformMatrix
-from typing import Any, Dict, List, Tuple
-import inspect
+from typing import Any, Dict, List, TypeVar, Protocol
+from foundation.geometry.plane import Plane
+
+T = TypeVar("T")
+
+
+class PlaneMethod(Protocol):
+    def __call__(self: T) -> Plane: ...
 
 
 # # This is a small trick to facilitate user to create a part without having to call super.
@@ -23,6 +29,19 @@ class AutoInitMeta(type):
 
 class CompOrAssy(NodeInterface):
     """Abstract parent class of Part and Assembly"""
+
+    xy: PlaneMethod
+    yz: PlaneMethod
+    xz: PlaneMethod
+    yx: PlaneMethod
+    zx: PlaneMethod
+    zy: PlaneMethod
+    front: PlaneMethod
+    back: PlaneMethod
+    left: PlaneMethod
+    right: PlaneMethod
+    top: PlaneMethod
+    bottom: PlaneMethod
 
     def __init__(self, root: PartRoot | AssemblyRoot, **kwargs):
         super().__init__()
@@ -50,30 +69,6 @@ class CompOrAssy(NodeInterface):
         material.set_diffuse_color(color)
         self.head.children.set_material(material)
 
-    # def xy(self):
-    #     """Return the XY plane of the component"""
-    #     return self.head.get_or_create_plane("xy", prefix=self.id)
-
-    # def yz(self):
-    #     """Return the YZ plane of the component"""
-    #     return self.head.get_or_create_plane("yz", prefix=self.id)
-
-    # def xz(self):
-    #     """Return the XZ plane of the component"""
-    #     return self.head.get_or_create_plane("xz", prefix=self.id)
-
-    # def yx(self):
-    #     """Return the YX plane of the component"""
-    #     return self.head.get_or_create_plane("yx", prefix=self.id)
-
-    # def zx(self):
-    #     """Return the ZX plane of the component"""
-    #     return self.head.get_or_create_plane("zx", prefix=self.id)
-
-    # def zy(self):
-    #     """Return the ZY plane of the component"""
-    #     return self.head.get_or_create_plane("zy", prefix=self.id)
-
     # tf helper methods
     def reset_tf(self, tf=None):
         """Reset the transform of the component"""
@@ -82,7 +77,7 @@ class CompOrAssy(NodeInterface):
         else:
             self.tfh.set_tf(tf)
 
-    def translate(self, translation: ndarray, rotate: bool = False):
+    def translate(self, translation: ndarray | List[float], rotate: bool = False):
         """Translate the component"""
         self.tfh.translate(translation, rotate)
 
@@ -99,7 +94,9 @@ class CompOrAssy(NodeInterface):
         self.tfh.translate_z(z, rotate)
 
     def rotate(
-        self, axis: ndarray = np.array([0.0, 0.0, 1.0]), angle: float = np.pi / 2
+        self,
+        axis: ndarray | List[float] = np.array([0.0, 0.0, 1.0]),
+        angle: float = np.pi / 2,
     ):
         """Rotate the component around axis, with given angle"""
         self.tfh.rotate(axis, angle)
