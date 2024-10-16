@@ -86,22 +86,6 @@ class Node(object):
                 return True, serializable_nodes[parent.__name__]
         return False, None
 
-    def to_dict(self, only_keep_serializable_nodes: bool = True) -> dict:
-        """Current Node as a dictionary"""
-        raise DeprecationWarning("to_dict is deprecated replaced with hashing method")
-        is_serializable, node_type = self.is_serializable()
-        if only_keep_serializable_nodes and not is_serializable:
-            raise TypeError(
-                f"""Node type {type(self).__name__} is not serializable, make sure
-                            to add it to the serializable_nodes dict in the serializable.py file."""
-            )
-        node_dict = {
-            "type": node_type,
-            "deps": self.children.get_as_dict_of_ids(),
-            "params": self.params,
-        }
-        return node_dict
-
     def get_children(self, type_filter: list[str]):
         """return the children of the component, eventually filtered"""
         res = []

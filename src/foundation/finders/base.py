@@ -7,7 +7,7 @@ from foundation.types.parameters import (
     cast_to_float_parameter,
     FloatParameter,
 )
-from foundation.types.point_3d import Point3D
+from foundation.types.types_3d.point_3d import Point3D
 from foundation.geometry.plane import Plane
 
 

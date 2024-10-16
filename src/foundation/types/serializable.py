@@ -33,4 +33,7 @@ serializable_nodes: dict[str, int] = {
     "CustomClosedShape": 30,
     "Arc": 31,
     "SVGShape": 32,
+    "Helix3D": 33,
+    "Sweep": 34,
+    "Point3D": 35,
 }

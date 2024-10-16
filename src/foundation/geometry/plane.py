@@ -11,7 +11,7 @@ from foundation.types.parameters import (
     cast_to_bool_parameter,
     UnCastBool,
 )
-from foundation.types.point_3d import Point3D
+from foundation.types.types_3d.point_3d import Point3D
 from foundation.exceptions import (
     InvalidParameterTypeException,
     InvalidParameterValueException,

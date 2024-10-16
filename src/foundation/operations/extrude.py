@@ -23,7 +23,7 @@ class ExtrusionChildren(NodeChildren):
     start: FloatParameter
     end: FloatParameter
     cut: BoolParameter
-    sketch: "Sketch"
+    sketch: Sketch
 
 
 class Extrusion(Operation, Node):

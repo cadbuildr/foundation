@@ -36,4 +36,6 @@ from foundation.types.parameterUI import ParameterUI
 from foundation.sketch.sketch import Sketch
 from foundation.types.node import Node
 from foundation.utils import show, reset_ids
-from foundation.types.point_3d import Point3D
+from foundation.types.types_3d.point_3d import Point3D
+from foundation.types.types_3d.curve import Helix3D
+from foundation.operations.sweep import Sweep
