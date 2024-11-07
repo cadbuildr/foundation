@@ -5,7 +5,6 @@ import sys
 from typing import Union
 
 try:
-    import json
     import websocket
 except ImportError:
     # mock the websocket module for environments where it is not available
