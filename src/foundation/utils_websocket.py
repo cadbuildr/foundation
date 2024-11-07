@@ -3,8 +3,15 @@ import threading
 import time
 from typing import Any, Dict
 import json
-import websockets
 from foundation.utils import reset_ids
+
+try:
+    import websockets
+
+    is_websockets_available = True
+except ImportError:
+    is_websockets_available = False
+
 
 # Global variables to manage the server and clients
 server_instance = None
@@ -80,6 +87,9 @@ async def _send_all_clients(message: str):
 
 def show_ext(dag: Any) -> None:
     """Function to generate DAG data and send it via WebSocket."""
+    if not is_websockets_available:
+        print("Websockets are not available")
+        return
     try:
         global server_instance
         if server_instance is None:
