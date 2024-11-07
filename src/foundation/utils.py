@@ -81,10 +81,9 @@ def show(x: DISPLAY_TYPE) -> None:
         dag = show_dag(x)
 
         try:
-            ws = websocket.create_connection("ws://127.0.0.1:3000")
-            json_str = json.dumps(dag)
-            ws.send(json_str)
-            reset_ids()
+            from foundation.utils_websocket import show_ext
+
+            show_ext(dag)
         except Exception:
             print("WebSocket not available")
 

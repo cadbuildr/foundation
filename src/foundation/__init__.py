@@ -39,3 +39,4 @@ from foundation.utils import show, reset_ids
 from foundation.types.types_3d.point_3d import Point3D
 from foundation.types.types_3d.curve import Helix3D
 from foundation.operations.sweep import Sweep
+from foundation.utils_websocket import set_port
