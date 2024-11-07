@@ -49,7 +49,7 @@ class LegoBrickInterface(Interface):
 
     def stick(
         self,
-        brick: LegoBrick
+        brick: LegoBrick,
         other_brick: Part | Assembly,
         position: str = "left",
     ):

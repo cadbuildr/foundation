@@ -1,7 +1,7 @@
 from foundation.operations.base import Operation
 from foundation.types.node import Node
 
-from foundation.sketch.base import SketchElement
+from foundation.sketch.point import Point
 from foundation.sketch.closed_sketch_shape import Circle, ClosedSketchShape
 from foundation.types.node_children import NodeChildren
 from foundation.sketch.sketch import Sketch
@@ -23,7 +23,7 @@ class ExtrusionChildren(NodeChildren):
     start: FloatParameter
     end: FloatParameter
     cut: BoolParameter
-    sketch: "Sketch"
+    sketch: Sketch
 
 
 class Extrusion(Operation, Node):
@@ -69,8 +69,14 @@ ExtrusionChildren.__annotations__["sketch"] = Sketch
 # NOTE this is quite restrictive as a definition ( different type of holes for machining will need to be implemented
 # including threads, profiles ... )
 class Hole(Extrusion):
-    def __init__(self, point, radius, depth):
+    def __init__(
+        self,
+        point: Point,
+        radius: UnCastFloat,
+        depth: UnCastFloat,
+        other_depth: UnCastFloat = 0.0,
+    ):
         shape = Circle(point, radius)
-        super().__init__(shape=shape, end=depth, cut=True)
-        self.diameter = radius
+        super().__init__(shape=shape, end=depth, start=other_depth, cut=True)
+        self.diameter = cast_to_float_parameter(radius)
         self.point = point

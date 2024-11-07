@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from foundation.types.node import Node
 from foundation.sketch.point import Point
 from foundation.sketch.draw import Draw
