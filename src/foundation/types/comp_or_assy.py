@@ -13,8 +13,7 @@ T = TypeVar("T")
 
 
 class PlaneMethod(Protocol):
-    def __call__(self: T) -> Plane:
-        ...
+    def __call__(self: T) -> Plane: ...
 
 
 # # This is a small trick to facilitate user to create a part without having to call super.
@@ -60,7 +59,7 @@ class CompOrAssy(NodeInterface):
         """Set the material of the component"""
         self.head.children.set_material(material)
 
-    def paint(self, color: str = "green"):
+    def paint(self, color: str = "green", transparency: float = 0.5):
         """Paint the component"""
         material = self.head.children._children[
             "material"
@@ -68,6 +67,7 @@ class CompOrAssy(NodeInterface):
         if material is None:
             material = Material()
         material.set_diffuse_color(color)
+        # material.set_transparency(transparency)
         self.head.children.set_material(material)
 
     # tf helper methods

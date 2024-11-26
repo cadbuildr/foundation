@@ -187,14 +187,14 @@ class Draw:
 
             # Create an Arc using the three points on the arc: p1, a point on the arc, and p2
         # Calculate an intermediate point on the arc, halfway between p1 and p2
+        # Calculate angles from the center to p1 and p2
         angle1 = math.atan2(p1.y.value - center.y.value, p1.x.value - center.x.value)
         angle2 = math.atan2(p2.y.value - center.y.value, p2.x.value - center.x.value)
 
-        # Calculate the correct mid_angle
-        if angle2 < angle1:
-            angle2 += 2 * math.pi
+        # Normalize the angular difference to be between -π and π
+        delta_angle = (angle2 - angle1 + math.pi) % (2 * math.pi) - math.pi
 
-        mid_angle = (angle1 + angle2) / 2
+        mid_angle = angle1 + delta_angle / 2
 
         mid_radius = math.sqrt(
             (p1.x.value - center.x.value) ** 2 + (p1.y.value - center.y.value) ** 2
