@@ -13,7 +13,8 @@ T = TypeVar("T")
 
 
 class PlaneMethod(Protocol):
-    def __call__(self: T) -> Plane: ...
+    def __call__(self: T) -> Plane:
+        ...
 
 
 # # This is a small trick to facilitate user to create a part without having to call super.
