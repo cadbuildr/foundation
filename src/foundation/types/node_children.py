@@ -22,6 +22,28 @@ def is_union_type(tp):
     return False
 
 
+def check_value_against_type(value, expected_type):
+    if is_union_type(expected_type):
+        # Check if value matches any type in the Union
+        return any(check_value_against_type(value, t) for t in get_args(expected_type))
+    origin_type = get_origin(expected_type)
+    if origin_type:
+        # For parameterized generics like List[Type]
+        if not isinstance(value, origin_type):
+            return False
+        arg_types = get_args(expected_type)
+        if arg_types:
+            if origin_type is list:
+                # Check each item in the list
+                item_type = arg_types[0]
+                return all(check_value_against_type(item, item_type) for item in value)
+            # Handle other generics if necessary (e.g., Dict, Tuple)
+        return True
+    else:
+        # Non-generic, non-Union types
+        return isinstance(value, expected_type)
+
+
 class NodeChildrenMeta(type):
     """
     A metaclass for automatically generating setter methods for child nodes in NodeChildren instances.
@@ -45,31 +67,22 @@ class NodeChildrenMeta(type):
 
         def create_setter(child_name, child_type):
             def setter(self, value):
-                origin_type = get_origin(child_type)
-                if is_union_type(child_type):  # Handle Union types
-                    union_types = get_args(child_type)
-                    if not any(isinstance(value, t) for t in union_types):
-                        union_type_names = [t.__name__ for t in union_types]
-                        raise TypeError(
-                            f"{child_name} must be an instance of one of {union_type_names} but got {type(value).__name__}"
-                        )
-                elif origin_type:  # Handle generic types like List
-                    if not isinstance(value, origin_type):
-                        raise TypeError(
-                            f"{child_name} must be a {origin_type.__name__} but got {type(value).__name__}"
-                        )
-                    arg_types = get_args(child_type)
-                    if arg_types and not all(
-                        isinstance(item, arg_types[0]) for item in value
-                    ):
-                        raise TypeError(
-                            f"All elements of {child_name} must be instances of {arg_types[0].__name__}"
-                        )
-                else:  # Handle non-generic, non-Union types
-                    if not isinstance(value, child_type):
-                        raise TypeError(
-                            f"{child_name} must be an instance of {child_type.__name__} but got {type(value).__name__}"
-                        )
+                if not check_value_against_type(value, child_type):
+                    # Generate a human-readable type name
+                    def type_to_str(t):
+                        if is_union_type(t):
+                            return " | ".join(type_to_str(a) for a in get_args(t))
+                        elif get_origin(t):
+                            origin = get_origin(t)
+                            args = ", ".join(type_to_str(a) for a in get_args(t))
+                            return f"{origin.__name__}[{args}]"
+                        else:
+                            return t.__name__
+
+                    expected_type_name = type_to_str(child_type)
+                    raise TypeError(
+                        f"{child_name} must be of type {expected_type_name}, but got {type(value).__name__}"
+                    )
                 self._children[child_name] = value
 
             return setter

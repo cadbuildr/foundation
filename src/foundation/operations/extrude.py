@@ -19,10 +19,10 @@ from foundation.sketch.closed_sketch_shape import ClosedSketchShapeTypes
 
 
 class ExtrusionChildren(NodeChildren):
-    shape: ClosedSketchShapeTypes
-    start: FloatParameter
-    end: FloatParameter
-    cut: BoolParameter
+    shape: ClosedSketchShapeTypes | list[ClosedSketchShapeTypes]
+    start: FloatParameter | list[FloatParameter]
+    end: FloatParameter | list[FloatParameter]
+    cut: BoolParameter | list[BoolParameter]
     sketch: Sketch
 
 
@@ -39,7 +39,14 @@ class Extrusion(Operation, Node):
         Operation.__init__(self)
         Node.__init__(self, parents=[])
         self.children.set_shape(shape)
-        self.children.set_sketch(shape.sketch)
+        if isinstance(shape, list):
+            # assert they all have the same sketch
+            for s in shape:
+                assert s.sketch == shape[0].sketch
+            sketch = shape[0].sketch
+        else:
+            sketch = shape.sketch
+        self.children.set_sketch(sketch)
         self.children.set_start(cast_to_float_parameter(start))
         self.children.set_end(cast_to_float_parameter(end))
         self.children.set_cut(cast_to_bool_parameter(cut))
@@ -58,10 +65,12 @@ class Extrusion(Operation, Node):
         return self.sketch.frame
 
 
-ExtrusionChildren.__annotations__["shape"] = ClosedSketchShapeTypes
-ExtrusionChildren.__annotations__["start"] = FloatParameter
-ExtrusionChildren.__annotations__["end"] = FloatParameter
-ExtrusionChildren.__annotations__["cut"] = BoolParameter
+ExtrusionChildren.__annotations__["shape"] = (
+    ClosedSketchShapeTypes | list[ClosedSketchShapeTypes]
+)
+ExtrusionChildren.__annotations__["start"] = FloatParameter | list[FloatParameter]
+ExtrusionChildren.__annotations__["end"] = FloatParameter | list[FloatParameter]
+ExtrusionChildren.__annotations__["cut"] = BoolParameter | list[BoolParameter]
 ExtrusionChildren.__annotations__["sketch"] = Sketch
 
 

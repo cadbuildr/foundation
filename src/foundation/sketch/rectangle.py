@@ -8,6 +8,8 @@ from foundation.exceptions import ElementsNotOnSameSketchException
 
 from typing import Type, TypeVar
 
+TOLERANCE = 1e-6  # TODO find a place for this type of things
+
 T = TypeVar("T", bound="BaseRectangle")
 
 
@@ -92,6 +94,12 @@ class BaseRectangle:
         radius: float | None = None,
     ) -> T:
         sketch = center.sketch
+        if abs(length) < TOLERANCE:
+            raise ValueError("Rectangle length cannot be zero or near-zero")
+        if abs(width) < TOLERANCE:
+            raise ValueError("Rectangle width cannot be zero or near-zero")
+        if radius is not None and abs(radius) < TOLERANCE:
+            raise ValueError("Rectangle corner radius cannot be zero or near-zero")
         p1 = Point(sketch, center.x.value - length / 2, center.y.value - width / 2)
         p4 = Point(sketch, center.x.value - length / 2, center.y.value + width / 2)
         p3 = Point(sketch, center.x.value + length / 2, center.y.value + width / 2)
@@ -128,6 +136,8 @@ class Square(Rectangle):
 
     @classmethod
     def from_center_and_side(cls: Type[T], center: Point, size: float) -> T:
+        if abs(size) < TOLERANCE:
+            raise ValueError("Rectangle size cannot be zero or near-zero")
         return cls.from_center_and_sides(center, size, size)
 
 
