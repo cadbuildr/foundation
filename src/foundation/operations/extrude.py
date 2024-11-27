@@ -19,10 +19,10 @@ from foundation.sketch.closed_sketch_shape import ClosedSketchShapeTypes
 
 
 class ExtrusionChildren(NodeChildren):
-    shape: ClosedSketchShapeTypes
-    start: FloatParameter
-    end: FloatParameter
-    cut: BoolParameter
+    shape: ClosedSketchShapeTypes | list[ClosedSketchShapeTypes]
+    start: FloatParameter | list[FloatParameter]
+    end: FloatParameter | list[FloatParameter]
+    cut: BoolParameter | list[BoolParameter]
     sketch: Sketch
 
 
@@ -31,18 +31,47 @@ class Extrusion(Operation, Node):
 
     def __init__(
         self,
-        shape: ClosedSketchShapeTypes,
-        end: UnCastFloat = 1.0,
-        start: UnCastFloat = 0.0,
-        cut: UnCastBool = False,
+        shape: ClosedSketchShapeTypes | list[ClosedSketchShapeTypes],
+        end: UnCastFloat | list[UnCastFloat] = 1.0,
+        start: UnCastFloat | list[UnCastFloat] = 0.0,
+        cut: UnCastBool | list[UnCastBool] = False,
     ):
         Operation.__init__(self)
         Node.__init__(self, parents=[])
         self.children.set_shape(shape)
-        self.children.set_sketch(shape.sketch)
-        self.children.set_start(cast_to_float_parameter(start))
-        self.children.set_end(cast_to_float_parameter(end))
-        self.children.set_cut(cast_to_bool_parameter(cut))
+        if isinstance(shape, list):
+            # assert they all have the same sketch
+            for s in shape:
+                if s.sketch != shape[0].sketch:
+                    raise ValueError("All shapes must have the same sketch")
+                # Check that start , end and cut are the same length as shape or a single value
+                if (
+                    (isinstance(start, list) and len(start) != len(shape))
+                    or (isinstance(end, list) and len(end) != len(shape))
+                    or (isinstance(cut, list) and len(cut) != len(shape))
+                ):
+                    raise ValueError(
+                        "start, end and cut must be the same length as shape or a single value"
+                    )
+            sketch = shape[0].sketch
+        else:
+            sketch = shape.sketch
+        self.children.set_sketch(sketch)
+        if isinstance(start, list):
+            start_list = [cast_to_float_parameter(s) for s in start]
+            self.children.set_start(start_list)
+        else:
+            self.children.set_start(cast_to_float_parameter(start))
+        if isinstance(end, list):
+            end_list = [cast_to_float_parameter(e) for e in end]
+            self.children.set_end(end_list)
+        else:
+            self.children.set_end(cast_to_float_parameter(end))
+        if isinstance(cut, list):
+            cut_list = [cast_to_bool_parameter(c) for c in cut]
+            self.children.set_cut(cut_list)
+        else:
+            self.children.set_cut(cast_to_bool_parameter(cut))
 
         # shortcuts
         self.shape = self.children.shape
@@ -58,10 +87,12 @@ class Extrusion(Operation, Node):
         return self.sketch.frame
 
 
-ExtrusionChildren.__annotations__["shape"] = ClosedSketchShapeTypes
-ExtrusionChildren.__annotations__["start"] = FloatParameter
-ExtrusionChildren.__annotations__["end"] = FloatParameter
-ExtrusionChildren.__annotations__["cut"] = BoolParameter
+ExtrusionChildren.__annotations__["shape"] = (
+    ClosedSketchShapeTypes | list[ClosedSketchShapeTypes]
+)
+ExtrusionChildren.__annotations__["start"] = FloatParameter | list[FloatParameter]
+ExtrusionChildren.__annotations__["end"] = FloatParameter | list[FloatParameter]
+ExtrusionChildren.__annotations__["cut"] = BoolParameter | list[BoolParameter]
 ExtrusionChildren.__annotations__["sketch"] = Sketch
 
 
