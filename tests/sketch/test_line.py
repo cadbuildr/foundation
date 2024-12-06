@@ -1,5 +1,5 @@
 import unittest
-from foundation import Sketch, Point, Line, Part
+from cadbuildr.foundation import Sketch, Point, Line, Part
 import numpy as np
 
 

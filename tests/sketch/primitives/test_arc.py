@@ -1,6 +1,6 @@
 import unittest
 from math import sqrt, isclose
-from foundation import Sketch, Part, Point, Arc
+from cadbuildr.foundation import Sketch, Part, Point, Arc
 
 
 class TestArc(unittest.TestCase):

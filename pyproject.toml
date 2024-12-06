@@ -1,8 +1,11 @@
 [tool.poetry]
-name = "foundation"
-version = "0.0.0.13"
-description = "Python core package for builder"
+name = "cadbuildr-foundation"
+version = "0.0.0.14"
+description = "Python core package for cadbuildr"
 authors = ["Clement Jambou"]
+packages = [
+    { include = "cadbuildr" }
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -11,17 +14,9 @@ websocket-client = "^1.7.0"
 mypy = "^1.9.0"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
+pytest = "^8.2.2"
 pytransform3d = "==1.13.0"
-
-[tool.poetry.group.dev.dependencies]
-ipykernel = "^6.29.3"
-
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.mypy]
-# for now until cleaner examples
-exclude = ["tests/examples"]

@@ -1,6 +1,6 @@
 import pytest
 from typing import Union, List
-from foundation.types.node_children import is_union_type
+from cadbuildr.foundation.types.node_children import is_union_type
 
 # Assuming the is_union_type function is defined here as provided earlier
 

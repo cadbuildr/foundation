@@ -1,4 +1,4 @@
-from foundation import *
+from cadbuildr.foundation import *
 
 
 def get_brady_laptop_holder():

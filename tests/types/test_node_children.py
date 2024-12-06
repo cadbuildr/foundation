@@ -1,5 +1,5 @@
 import pytest
-from foundation.types.node_children import NodeChildren
+from cadbuildr.foundation.types.node_children import NodeChildren
 from typing import Optional
 
 
