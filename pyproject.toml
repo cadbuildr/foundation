@@ -6,6 +6,18 @@ authors = ["Clement Jambou"]
 packages = [
     { include = "cadbuildr" }
 ]
+license = "MIT"
+homepage = "https://cadbuildr.com"
+repository = "https://github.com/cadbuildr/foundation"
+keywords = ["cad", "3d", "modeling"]
+classifiers = [
+    "Development Status :: 4 - Beta",  # Or appropriate status
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",  # Or your license
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+readme = "Readme.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
