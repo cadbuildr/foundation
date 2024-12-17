@@ -1,6 +1,6 @@
 import json
 from .examples import examples, get_cube
-from foundation.types.serializable import serializable_nodes
+from cadbuildr.foundation.types.serializable import serializable_nodes
 
 
 def test_serialize_cube():

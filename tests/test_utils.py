@@ -1,4 +1,4 @@
-from foundation.utils import has_cycle
+from cadbuildr.foundation.utils import has_cycle
 
 
 # Unit tests

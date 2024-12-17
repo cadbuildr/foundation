@@ -1,11 +1,11 @@
 import unittest
-from foundation import Point, Sketch, Part
-from foundation.sketch.point import Point
-from foundation.sketch.primitives.line import Line
-from foundation.sketch.primitives.arc import Arc
-from foundation.sketch.sketch import Sketch
+from cadbuildr.foundation import Point, Sketch, Part
+from cadbuildr.foundation.sketch.point import Point
+from cadbuildr.foundation.sketch.primitives.line import Line
+from cadbuildr.foundation.sketch.primitives.arc import Arc
+from cadbuildr.foundation.sketch.sketch import Sketch
 import numpy as np
-from foundation.exceptions import GeometryException
+from cadbuildr.foundation.exceptions import GeometryException
 
 
 class TestMirrorPoint(unittest.TestCase):

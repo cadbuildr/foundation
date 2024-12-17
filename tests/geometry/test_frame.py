@@ -1,6 +1,6 @@
-from foundation.geometry import frame
+from cadbuildr.foundation.geometry import frame
 import numpy as np
-from foundation.geometry.tf_helper import get_rotation_matrix
+from cadbuildr.foundation.geometry.tf_helper import get_rotation_matrix
 
 
 def test_composability_of_translated_frames():

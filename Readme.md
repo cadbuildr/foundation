@@ -21,3 +21,17 @@ pytest
 ```
 
 Moreover there is a folder examples/ in the tests folder which contains some examples of how to use the library for basic parts.
+
+## Publishing to PyPI
+
+Build :
+
+```bash
+poetry build
+```
+
+Publish :
+
+```bash
+poetry publish
+```

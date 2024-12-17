@@ -1,15 +1,15 @@
 # %%
 from __future__ import annotations
 
-from foundation import *
+from cadbuildr.foundation import *
 import numpy as np
 import random
 
 # random color in red, green, blue, yellow, purple, cyan
 color_choices = ["red", "green", "blue", "yellow", "purple", "cyan"]
 
-from foundation import *
-from foundation.interface.interface import (
+from cadbuildr.foundation import *
+from cadbuildr.foundation.interface.interface import (
     Interface,
     Spec,
     DistanceSpec,
