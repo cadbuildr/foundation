@@ -21,4 +21,4 @@ def get_double_cylinder():
 
 
 # leave this line it's used for loading locally examples
-# show(get_double_cylinder())
+show(get_double_cylinder())

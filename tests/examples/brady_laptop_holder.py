@@ -4,7 +4,7 @@ from cadbuildr.foundation import *
 def get_brady_laptop_holder():
     brady_lh = Part()
     # Operation 1 Ellipse extrusion
-    xy, xz, yz = brady_lh.origin_planes
+    xy, xz, yz = brady_lh.get_origin_planes()
     # TODO simplify access to y plane.
     pf = PlaneFactory()
     s = Sketch(xz)
@@ -103,4 +103,4 @@ def get_brady_laptop_holder():
 #     return brady_lh
 
 
-# show(get_brady_laptop_holder())
+show(get_brady_laptop_holder())

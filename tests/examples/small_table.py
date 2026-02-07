@@ -22,4 +22,4 @@ def get_small_table():
     return small_table
 
 
-# show(get_small_table())
+show(get_small_table())
