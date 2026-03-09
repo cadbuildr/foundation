@@ -33,4 +33,4 @@ def get_pipe_with_holes():
 
 
 # leave this line it's used for loading locally examples
-# show(get_pipe_with_holes())
+show(get_pipe_with_holes())

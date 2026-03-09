@@ -23,4 +23,4 @@ def get_butterfly_cone():
 
 
 # leave this line it's used for loading locally examples
-# show(get_butterfly_cone())
+show(get_butterfly_cone())

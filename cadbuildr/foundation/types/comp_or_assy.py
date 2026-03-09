@@ -299,3 +299,11 @@ def add_plane_methods_to_comp_or_assy(cls):
 
 # Apply the dynamic method addition to CompOrAssy
 add_plane_methods_to_comp_or_assy(CompOrAssy)
+
+
+def get_origin_planes(self) -> tuple[Plane, Plane, Plane]:
+    """Get the three main origin planes (xy, xz, yz) as a tuple."""
+    return (self.xy(), self.xz(), self.yz())
+
+
+CompOrAssy.get_origin_planes = get_origin_planes  # type: ignore[method-assign]

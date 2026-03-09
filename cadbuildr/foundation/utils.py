@@ -80,11 +80,12 @@ def show(x: DISPLAY_TYPE) -> None:
         dag = show_dag(x)
 
         try:
-            from cadbuildr.foundation.utils_websocket import show_ext
+            from cadbuildr.foundation.utils_webrtc import show_ext
 
-            show_ext(dag)
+            return show_ext(dag)
         except Exception:
-            print("WebSocket not available")
+            print("WebRTC broker not available")
+            return None
 
 
 def show_with_params(comp_class, params):

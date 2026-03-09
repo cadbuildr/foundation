@@ -1,5 +1,6 @@
-from cadbuildr.foundation import *
-
+import json
+from cadbuildr.foundation import Part, Sketch, Point, Line, Polygon, Extrusion
+from cadbuildr.foundation.utils import show_dag
 
 def get_cube(size=1):
     cube = Part()
@@ -20,6 +21,12 @@ def get_cube(size=1):
     cube.add_operation(e)
     return cube
 
-
-# leave this line it's used for loading locally examples
-show(get_cube())
+print("Generating DAG from old foundation...")
+try:
+    cube = get_cube()
+    dag = show_dag(cube)
+    print(json.dumps(dag, indent=2))
+except Exception as e:
+    print(f"Execution failed: {e}")
+    import traceback
+    traceback.print_exc()

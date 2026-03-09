@@ -1,0 +1,1013 @@
+{
+  "f94e": {
+    "type": 12,
+    "params": {
+      "value": "origin"
+    },
+    "deps": {}
+  },
+  "7876": {
+    "type": 11,
+    "params": {
+      "value": false
+    },
+    "deps": {}
+  },
+  "6589": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "name": "f94e",
+      "display": "7876"
+    }
+  },
+  "6220": {
+    "type": 12,
+    "params": {
+      "value": "assy1"
+    },
+    "deps": {}
+  },
+  "a87f": {
+    "type": 12,
+    "params": {
+      "value": "part1_origin"
+    },
+    "deps": {}
+  },
+  "07e6": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "6589",
+      "name": "a87f",
+      "display": "7876"
+    }
+  },
+  "adf2": {
+    "type": 12,
+    "params": {
+      "value": "part1"
+    },
+    "deps": {}
+  },
+  "e4cb": {
+    "type": 9,
+    "params": {
+      "value": 0.0
+    },
+    "deps": {}
+  },
+  "0d0c": {
+    "type": 4,
+    "params": {},
+    "deps": {
+      "x": "e4cb",
+      "y": "e4cb"
+    }
+  },
+  "b619": {
+    "type": 9,
+    "params": {
+      "value": 5.0
+    },
+    "deps": {}
+  },
+  "1311": {
+    "type": 4,
+    "params": {},
+    "deps": {
+      "x": "b619",
+      "y": "e4cb"
+    }
+  },
+  "5539": {
+    "type": 8,
+    "params": {},
+    "deps": {
+      "p1": "0d0c",
+      "p2": "1311"
+    }
+  },
+  "1032": {
+    "type": 9,
+    "params": {
+      "value": 3.0
+    },
+    "deps": {}
+  },
+  "f896": {
+    "type": 4,
+    "params": {},
+    "deps": {
+      "x": "b619",
+      "y": "1032"
+    }
+  },
+  "5fe8": {
+    "type": 8,
+    "params": {},
+    "deps": {
+      "p1": "1311",
+      "p2": "f896"
+    }
+  },
+  "7ce6": {
+    "type": 4,
+    "params": {},
+    "deps": {
+      "x": "e4cb",
+      "y": "1032"
+    }
+  },
+  "703d": {
+    "type": 8,
+    "params": {},
+    "deps": {
+      "p1": "f896",
+      "p2": "7ce6"
+    }
+  },
+  "b0e5": {
+    "type": 8,
+    "params": {},
+    "deps": {
+      "p1": "7ce6",
+      "p2": "0d0c"
+    }
+  },
+  "256d": {
+    "type": 17,
+    "params": {},
+    "deps": {
+      "lines": [
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5"
+      ]
+    }
+  },
+  "0e19": {
+    "type": 9,
+    "params": {
+      "value": 6.0
+    },
+    "deps": {}
+  },
+  "841d": {
+    "type": 12,
+    "params": {
+      "value": "XY_frame"
+    },
+    "deps": {}
+  },
+  "b063": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "07e6",
+      "name": "841d",
+      "display": "7876"
+    }
+  },
+  "bb07": {
+    "type": 12,
+    "params": {
+      "value": "XY"
+    },
+    "deps": {}
+  },
+  "3ade": {
+    "type": 5,
+    "params": {},
+    "deps": {
+      "frame": "b063",
+      "name": "bb07",
+      "display": "7876"
+    }
+  },
+  "a3d2": {
+    "type": 13,
+    "params": {},
+    "deps": {
+      "x": "e4cb",
+      "y": "e4cb"
+    }
+  },
+  "feee": {
+    "type": 3,
+    "params": {},
+    "deps": {
+      "plane": "3ade",
+      "origin": "a3d2",
+      "elements": [
+        "a3d2",
+        "0d0c",
+        "f896",
+        "1311",
+        "7ce6",
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5",
+        "256d"
+      ]
+    }
+  },
+  "8871": {
+    "type": 2,
+    "params": {},
+    "deps": {
+      "shape": "256d",
+      "start": "0e19",
+      "end": "b619",
+      "cut": "7876",
+      "sketch": "feee"
+    }
+  },
+  "6bee": {
+    "type": 21,
+    "params": {
+      "name": "Material_264",
+      "painted_node_ids": [],
+      "options": {
+        "diffuse_color": [
+          1,
+          0,
+          0
+        ]
+      }
+    },
+    "deps": {}
+  },
+  "fe57": {
+    "type": 14,
+    "params": {},
+    "deps": {
+      "frame": "07e6",
+      "name": "adf2",
+      "operations": [
+        "8871"
+      ],
+      "material": "6bee",
+      "planes": [
+        "3ade"
+      ]
+    }
+  },
+  "40ed": {
+    "type": 12,
+    "params": {
+      "value": "part3_origin"
+    },
+    "deps": {}
+  },
+  "8e14": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "6589",
+      "name": "40ed",
+      "display": "7876"
+    }
+  },
+  "56ab": {
+    "type": 12,
+    "params": {
+      "value": "part3"
+    },
+    "deps": {}
+  },
+  "377e": {
+    "type": 12,
+    "params": {
+      "value": "YX_frame"
+    },
+    "deps": {}
+  },
+  "f0e7": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        0.0,
+        0.7071067811865475,
+        0.7071067811865476,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "8e14",
+      "name": "377e",
+      "display": "7876"
+    }
+  },
+  "7d7b": {
+    "type": 12,
+    "params": {
+      "value": "YX"
+    },
+    "deps": {}
+  },
+  "e891": {
+    "type": 5,
+    "params": {},
+    "deps": {
+      "frame": "f0e7",
+      "name": "7d7b",
+      "display": "7876"
+    }
+  },
+  "5cb2": {
+    "type": 3,
+    "params": {},
+    "deps": {
+      "plane": "e891",
+      "origin": "a3d2",
+      "elements": [
+        "a3d2",
+        "0d0c",
+        "f896",
+        "1311",
+        "7ce6",
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5",
+        "256d"
+      ]
+    }
+  },
+  "6430": {
+    "type": 2,
+    "params": {},
+    "deps": {
+      "shape": "256d",
+      "start": "0e19",
+      "end": "b619",
+      "cut": "7876",
+      "sketch": "5cb2"
+    }
+  },
+  "cbc8": {
+    "type": 21,
+    "params": {
+      "name": "Material_266",
+      "painted_node_ids": [],
+      "options": {
+        "diffuse_color": [
+          0,
+          1,
+          0
+        ]
+      }
+    },
+    "deps": {}
+  },
+  "4e08": {
+    "type": 14,
+    "params": {},
+    "deps": {
+      "frame": "8e14",
+      "name": "56ab",
+      "operations": [
+        "6430"
+      ],
+      "material": "cbc8",
+      "planes": [
+        "e891"
+      ]
+    }
+  },
+  "8c87": {
+    "type": 12,
+    "params": {
+      "value": "part5_origin"
+    },
+    "deps": {}
+  },
+  "b245": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "6589",
+      "name": "8c87",
+      "display": "7876"
+    }
+  },
+  "01a3": {
+    "type": 12,
+    "params": {
+      "value": "part5"
+    },
+    "deps": {}
+  },
+  "a09b": {
+    "type": 12,
+    "params": {
+      "value": "XZ_frame"
+    },
+    "deps": {}
+  },
+  "95f8": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        0.7071067811865476,
+        0.7071067811865475,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "b245",
+      "name": "a09b",
+      "display": "7876"
+    }
+  },
+  "7eff": {
+    "type": 12,
+    "params": {
+      "value": "XZ"
+    },
+    "deps": {}
+  },
+  "0af4": {
+    "type": 5,
+    "params": {},
+    "deps": {
+      "frame": "95f8",
+      "name": "7eff",
+      "display": "7876"
+    }
+  },
+  "35a6": {
+    "type": 3,
+    "params": {},
+    "deps": {
+      "plane": "0af4",
+      "origin": "a3d2",
+      "elements": [
+        "a3d2",
+        "0d0c",
+        "f896",
+        "1311",
+        "7ce6",
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5",
+        "256d"
+      ]
+    }
+  },
+  "730f": {
+    "type": 2,
+    "params": {},
+    "deps": {
+      "shape": "256d",
+      "start": "0e19",
+      "end": "b619",
+      "cut": "7876",
+      "sketch": "35a6"
+    }
+  },
+  "6fc2": {
+    "type": 21,
+    "params": {
+      "name": "Material_268",
+      "painted_node_ids": [],
+      "options": {
+        "diffuse_color": [
+          0,
+          0,
+          1
+        ]
+      }
+    },
+    "deps": {}
+  },
+  "daa9": {
+    "type": 14,
+    "params": {},
+    "deps": {
+      "frame": "b245",
+      "name": "01a3",
+      "operations": [
+        "730f"
+      ],
+      "material": "6fc2",
+      "planes": [
+        "0af4"
+      ]
+    }
+  },
+  "8edd": {
+    "type": 12,
+    "params": {
+      "value": "part7_origin"
+    },
+    "deps": {}
+  },
+  "92ad": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "6589",
+      "name": "8edd",
+      "display": "7876"
+    }
+  },
+  "12d9": {
+    "type": 12,
+    "params": {
+      "value": "part7"
+    },
+    "deps": {}
+  },
+  "ee02": {
+    "type": 12,
+    "params": {
+      "value": "ZX_frame"
+    },
+    "deps": {}
+  },
+  "f280": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        -0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "deps": {
+      "top_frame": "92ad",
+      "name": "ee02",
+      "display": "7876"
+    }
+  },
+  "45ae": {
+    "type": 12,
+    "params": {
+      "value": "ZX"
+    },
+    "deps": {}
+  },
+  "af1a": {
+    "type": 5,
+    "params": {},
+    "deps": {
+      "frame": "f280",
+      "name": "45ae",
+      "display": "7876"
+    }
+  },
+  "8602": {
+    "type": 3,
+    "params": {},
+    "deps": {
+      "plane": "af1a",
+      "origin": "a3d2",
+      "elements": [
+        "a3d2",
+        "0d0c",
+        "f896",
+        "1311",
+        "7ce6",
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5",
+        "256d"
+      ]
+    }
+  },
+  "4305": {
+    "type": 2,
+    "params": {},
+    "deps": {
+      "shape": "256d",
+      "start": "0e19",
+      "end": "b619",
+      "cut": "7876",
+      "sketch": "8602"
+    }
+  },
+  "2e7f": {
+    "type": 21,
+    "params": {
+      "name": "Material_270",
+      "painted_node_ids": [],
+      "options": {
+        "diffuse_color": [
+          1,
+          1,
+          0
+        ]
+      }
+    },
+    "deps": {}
+  },
+  "ab52": {
+    "type": 14,
+    "params": {},
+    "deps": {
+      "frame": "92ad",
+      "name": "12d9",
+      "operations": [
+        "4305"
+      ],
+      "material": "2e7f",
+      "planes": [
+        "af1a"
+      ]
+    }
+  },
+  "5c4b": {
+    "type": 12,
+    "params": {
+      "value": "part9_origin"
+    },
+    "deps": {}
+  },
+  "2ae1": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "6589",
+      "name": "5c4b",
+      "display": "7876"
+    }
+  },
+  "7e13": {
+    "type": 12,
+    "params": {
+      "value": "part9"
+    },
+    "deps": {}
+  },
+  "3a2e": {
+    "type": 12,
+    "params": {
+      "value": "YZ_frame"
+    },
+    "deps": {}
+  },
+  "23ba": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        0.5,
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    "deps": {
+      "top_frame": "2ae1",
+      "name": "3a2e",
+      "display": "7876"
+    }
+  },
+  "8224": {
+    "type": 12,
+    "params": {
+      "value": "YZ"
+    },
+    "deps": {}
+  },
+  "cfba": {
+    "type": 5,
+    "params": {},
+    "deps": {
+      "frame": "23ba",
+      "name": "8224",
+      "display": "7876"
+    }
+  },
+  "4729": {
+    "type": 3,
+    "params": {},
+    "deps": {
+      "plane": "cfba",
+      "origin": "a3d2",
+      "elements": [
+        "a3d2",
+        "0d0c",
+        "f896",
+        "1311",
+        "7ce6",
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5",
+        "256d"
+      ]
+    }
+  },
+  "a8b3": {
+    "type": 2,
+    "params": {},
+    "deps": {
+      "shape": "256d",
+      "start": "0e19",
+      "end": "b619",
+      "cut": "7876",
+      "sketch": "4729"
+    }
+  },
+  "21af": {
+    "type": 21,
+    "params": {
+      "name": "Material_272",
+      "painted_node_ids": [],
+      "options": {
+        "diffuse_color": [
+          0.5,
+          0,
+          0.5
+        ]
+      }
+    },
+    "deps": {}
+  },
+  "6828": {
+    "type": 14,
+    "params": {},
+    "deps": {
+      "frame": "2ae1",
+      "name": "7e13",
+      "operations": [
+        "a8b3"
+      ],
+      "material": "21af",
+      "planes": [
+        "cfba"
+      ]
+    }
+  },
+  "ecc3": {
+    "type": 12,
+    "params": {
+      "value": "part11_origin"
+    },
+    "deps": {}
+  },
+  "7e9f": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        1.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "6589",
+      "name": "ecc3",
+      "display": "7876"
+    }
+  },
+  "65ff": {
+    "type": 12,
+    "params": {
+      "value": "part11"
+    },
+    "deps": {}
+  },
+  "95b5": {
+    "type": 12,
+    "params": {
+      "value": "ZY_frame"
+    },
+    "deps": {}
+  },
+  "f8d1": {
+    "type": 6,
+    "params": {
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "quaternion": [
+        0.7071067811865476,
+        -0.0,
+        -0.7071067811865475,
+        0.0
+      ]
+    },
+    "deps": {
+      "top_frame": "7e9f",
+      "name": "95b5",
+      "display": "7876"
+    }
+  },
+  "570b": {
+    "type": 12,
+    "params": {
+      "value": "ZY"
+    },
+    "deps": {}
+  },
+  "79ce": {
+    "type": 5,
+    "params": {},
+    "deps": {
+      "frame": "f8d1",
+      "name": "570b",
+      "display": "7876"
+    }
+  },
+  "4d77": {
+    "type": 3,
+    "params": {},
+    "deps": {
+      "plane": "79ce",
+      "origin": "a3d2",
+      "elements": [
+        "a3d2",
+        "0d0c",
+        "f896",
+        "1311",
+        "7ce6",
+        "5539",
+        "5fe8",
+        "703d",
+        "b0e5",
+        "256d"
+      ]
+    }
+  },
+  "7818": {
+    "type": 2,
+    "params": {},
+    "deps": {
+      "shape": "256d",
+      "start": "0e19",
+      "end": "b619",
+      "cut": "7876",
+      "sketch": "4d77"
+    }
+  },
+  "ebc4": {
+    "type": 21,
+    "params": {
+      "name": "Material_274",
+      "painted_node_ids": [],
+      "options": {
+        "diffuse_color": [
+          1,
+          0.5,
+          0
+        ]
+      }
+    },
+    "deps": {}
+  },
+  "cc7a": {
+    "type": 14,
+    "params": {},
+    "deps": {
+      "frame": "7e9f",
+      "name": "65ff",
+      "operations": [
+        "7818"
+      ],
+      "material": "ebc4",
+      "planes": [
+        "79ce"
+      ]
+    }
+  },
+  "5ff8": {
+    "type": 15,
+    "params": {},
+    "deps": {
+      "frame": "6589",
+      "name": "6220",
+      "operations": [],
+      "components": [
+        "fe57",
+        "4e08",
+        "daa9",
+        "ab52",
+        "6828",
+        "cc7a"
+      ],
+      "planes": []
+    }
+  }
+}
