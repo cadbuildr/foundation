@@ -1,0 +1,52 @@
+from __future__ import annotations
+from typing import List, Optional, Any, Dict, Union, Iterable
+from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .float_parameter import FloatParameter
+
+class InterfaceGridSpec(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object InterfaceGridSpec."""
+
+
+    # --- Positional-argument constructor shim --------------------- #
+    def __init__(self, *args, **kwargs):
+        """
+        Allow instantiation like  SugarAmount(12.5)  or  SugarAmount("12.5").
+        If both positional *and* keyword data are supplied we keep Pydantic's
+        normal rules: positional is ignored and Pydantic will raise.
+        """
+        from ..runtime.init_helpers import _init_with_cast
+        use_normal, processed_kwargs = _init_with_cast(
+            self.__class__,
+            args,
+            kwargs,
+            cast_info=None,
+            field_order=['pitch_x', 'pitch_y', 'pitch_z'],
+            list_fields=None,
+        )
+        if use_normal:
+            super().__init__(*args, **kwargs)
+        else:
+            super().__init__(**processed_kwargs)
+
+
+
+
+    def offset(self, n_x: int, n_y: int, n_z: int) -> Optional[List[float]]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'n_x': n_x,
+            'n_y': n_y,
+            'n_z': n_z
+        }
+        return run_method(self, 'interface_grid_offset_method', _locals)
+
+
+    pitch_x: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=8.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=8.0)'}})
+    pitch_y: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=8.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=8.0)'}})
+    pitch_z: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=9.6)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=9.6)'}})
+
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

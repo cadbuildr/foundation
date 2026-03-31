@@ -1,0 +1,22 @@
+from __future__ import annotations
+from typing import List, Optional, Any, Dict, Union, Iterable
+from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .material_options import MaterialOptions
+
+class Material(BaseModel, Computable):
+    """Generated from GraphQL object Material."""
+
+
+
+
+
+
+
+    name: str = Field(default_factory=lambda: _eval_expr({}, '"default"'), json_schema_extra={'default': {'expr': '"default"'}})
+    painted_node_ids: List[str] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    options: MaterialOptions = Field(default_factory=lambda: _eval_expr({}, 'MaterialOptions(diffuse_color=[0.8, 0.8, 0.8])'), json_schema_extra={'default': {'expr': 'MaterialOptions(diffuse_color=[0.8, 0.8, 0.8])'}})
+
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

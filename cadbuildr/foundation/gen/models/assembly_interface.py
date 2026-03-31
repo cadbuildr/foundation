@@ -1,0 +1,76 @@
+from __future__ import annotations
+from typing import List, Optional, Any, Dict, Union, Iterable
+from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .assembly import Assembly
+    from .fixed_translation_constraint import FixedTranslationConstraint
+    from .interface_grid_spec import InterfaceGridSpec
+
+class AssemblyInterface(BaseModel, Computable):
+    """Generated from GraphQL object AssemblyInterface."""
+
+
+    # --- Positional-argument constructor shim --------------------- #
+    def __init__(self, *args, **kwargs):
+        """
+        Allow instantiation like  SugarAmount(12.5)  or  SugarAmount("12.5").
+        If both positional *and* keyword data are supplied we keep Pydantic's
+        normal rules: positional is ignored and Pydantic will raise.
+        """
+        from ..runtime.init_helpers import _init_with_cast
+        use_normal, processed_kwargs = _init_with_cast(
+            self.__class__,
+            args,
+            kwargs,
+            cast_info=None,
+            field_order=['constraints', 'grid'],
+            list_fields={'constraints'},
+        )
+        if use_normal:
+            super().__init__(*args, **kwargs)
+        else:
+            super().__init__(**processed_kwargs)
+
+
+
+
+    def add_constraint(self, component: Any, translation: List[float], quaternion: Optional[List[float]]=[1.0, 0.0, 0.0, 0.0]) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'component': component,
+            'translation': translation,
+            'quaternion': quaternion
+        }
+        return run_method(self, 'interface_add_constraint_method', _locals)
+    def place(self, component: Any, n_x: int, n_y: int, n_z: int) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'component': component,
+            'n_x': n_x,
+            'n_y': n_y,
+            'n_z': n_z
+        }
+        return run_method(self, 'interface_place_method', _locals)
+    def clip(self, component: Any, n_x: int, n_y: int, n_z: int) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'component': component,
+            'n_x': n_x,
+            'n_y': n_y,
+            'n_z': n_z
+        }
+        return run_method(self, 'interface_clip_method', _locals)
+    def apply(self, assembly: Assembly) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'assembly': assembly
+        }
+        return run_method(self, 'interface_apply_method', _locals)
+
+
+    constraints: List[FixedTranslationConstraint] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    grid: InterfaceGridSpec = Field(default_factory=lambda: _eval_expr({}, 'InterfaceGridSpec()'), json_schema_extra={'default': {'expr': 'InterfaceGridSpec()'}})
+
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

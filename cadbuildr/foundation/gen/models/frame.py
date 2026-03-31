@@ -1,0 +1,33 @@
+from __future__ import annotations
+from typing import List, Optional, Any, Dict, Union, Iterable
+from pydantic import BaseModel, Field, model_validator
+from ..runtime import _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .bool_parameter import BoolParameter
+    from .string_parameter import StringParameter
+
+class Frame(ParameterFieldsMixin, BaseModel):
+    """Generated from GraphQL object Frame."""
+
+
+
+
+
+    @staticmethod
+    def make_origin_frame(display=False) -> Optional[Frame]:
+        # Build local namespace with parameters for static method
+        _locals = {
+            'display': display
+        }
+        return _eval_expr(None, "Frame(name=StringParameter(value='origin'), display=BoolParameter(value=display), position=[0.0, 0.0, 0.0], quaternion=[1.0, 0.0, 0.0, 0.0])", _locals)
+
+
+    top_frame: Optional[Frame] = Field(default=None)
+    name: StringParameter = Field(...)
+    display: BoolParameter = Field(...)
+    position: List[float] = Field(...)
+    quaternion: List[float] = Field(...)
+
+    model_config = {"protected_namespaces": ()}  # Pydantic v2 config

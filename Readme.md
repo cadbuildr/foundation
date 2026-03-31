@@ -1,37 +1,38 @@
-# Foundation Python lib
+# CADbuildr Foundation
 
-Foundation is a python library meant to be used as an API for creating 3D objects. Files using this library can be converted to DAG (Directed Acyclic Graph) files which can then be compiled for CAD, analysis, or other purposes.
+## Summary
 
-This is the backbone of [Cadbuildr](https://cadbuildr.com/). See the documentation [here](https://documentation.cadbuildr.com/)
+Schema-driven Python types for CAD modeling, generated from the GraphQL foundation schema.
 
-## Installation
+## Tags
 
-If you plan on contributing to this project, you can install ( after cloning ) the library by running the following command in the root directory of the project:
+cad, python, foundation, schema
 
-```bash
-pip install -e .
-```
+## Status
 
-## Running the tests
+green
 
-The tests are a good place to start to understand how the library works. You can run the tests by running the following command in the root directory of the project:
+## Guidelines
 
-```bash
-pytest
-```
+- Keep generated code deterministic and reproducible across machines.
+- Avoid manual edits in generated modules; change the schema instead.
+- Keep public APIs stable and document migrations when needed.
 
-Moreover there is a folder examples/ in the tests folder which contains some examples of how to use the library for basic parts.
+## Dependencies
 
-## Publishing to PyPI
+### Upstream
 
-Build :
+- (none)
 
-```bash
-poetry build
-```
+### Downstream
 
-Publish :
+All the CAD projects
 
-```bash
-poetry publish
-```
+## Notes
+
+See `/schemas/foundation/` for schema definition.
+
+## Kernel API Contract
+
+- Canonical render endpoint: `POST /v1/kernels/:kernel/render` with `format=json|stl|step`.
+- Foundation direct compile endpoint env: `CAD_COMPILE_API_BASE_URL`.

@@ -1,0 +1,94 @@
+from __future__ import annotations
+from typing import List, Optional, Any, Dict, Union, Iterable
+from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .frame import Frame
+    from .plane import Plane
+    from .string_parameter import StringParameter
+    from .unions import Operation
+
+class Part(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object Part."""
+
+
+
+
+
+    def xy(self) -> Optional[Plane]:
+        return run_method(self, 'get_xy_plane')
+    def yx(self) -> Optional[Plane]:
+        return run_method(self, 'get_yx_plane')
+    def xz(self) -> Optional[Plane]:
+        return run_method(self, 'get_xz_plane')
+    def zx(self) -> Optional[Plane]:
+        return run_method(self, 'get_zx_plane')
+    def yz(self) -> Optional[Plane]:
+        return run_method(self, 'get_yz_plane')
+    def zy(self) -> Optional[Plane]:
+        return run_method(self, 'get_zy_plane')
+    def get_origin_planes(self) -> Optional[List[Plane]]:
+        return run_method(self, 'get_origin_planes_method')
+    def add_operation(self, operation: Operation) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'operation': operation
+        }
+        return run_method(self, 'add_operation_method', _locals)
+    def add_operations(self, operations: List[Operation]) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'operations': operations
+        }
+        return run_method(self, 'add_operations_method', _locals)
+    def paint(self, color: str, transparency: Optional[float]=0.5) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'color': color,
+            'transparency': transparency
+        }
+        return run_method(self, 'paint_method', _locals)
+    def translate(self, translation: List[float]) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'translation': translation
+        }
+        return run_method(self, 'translate_method', _locals)
+    def translate_x(self, x: float) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'x': x
+        }
+        return run_method(self, 'translate_x_method', _locals)
+    def translate_y(self, y: float) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'y': y
+        }
+        return run_method(self, 'translate_y_method', _locals)
+    def translate_z(self, z: float) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'z': z
+        }
+        return run_method(self, 'translate_z_method', _locals)
+    def rotate(self, angle: float, axis: Optional[List[float]]=[0.0, 0.0, 1.0]) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'angle': angle,
+            'axis': axis
+        }
+        return run_method(self, 'rotate_method', _locals)
+    def to_dag(self) -> Optional[Any]:
+        return run_method(self, 'to_dag_method')
+
+
+    frame: Frame = Field(default_factory=lambda: _eval_expr({}, 'Frame.make_origin_frame()'), json_schema_extra={'default': {'expr': 'Frame.make_origin_frame()'}})
+    name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='part0')"), json_schema_extra={'default': {'expr': "StringParameter(value='part0')"}})
+    operations: List[Operation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    planes: List[Plane] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    pf: Optional[Any] = Field(default=None, json_schema_extra={'compute': {'fn': 'get_plane_factory'}})
+
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

@@ -1,0 +1,56 @@
+from __future__ import annotations
+from typing import List, Optional, Any, Dict, Union, Iterable
+from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, Expandable, _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .float_parameter import FloatParameter
+    from .line import Line
+    from .point import Point
+    from .polygon import Polygon
+    from .sketch import Sketch
+
+class Hexagon(ParameterFieldsMixin, BaseModel, Computable, Expandable):
+    """Generated from GraphQL object Hexagon."""
+
+
+    # --- Positional-argument constructor shim --------------------- #
+    def __init__(self, *args, **kwargs):
+        """
+        Allow instantiation like  SugarAmount(12.5)  or  SugarAmount("12.5").
+        If both positional *and* keyword data are supplied we keep Pydantic's
+        normal rules: positional is ignored and Pydantic will raise.
+        """
+        from ..runtime.init_helpers import _init_with_cast
+        use_normal, processed_kwargs = _init_with_cast(
+            self.__class__,
+            args,
+            kwargs,
+            cast_info=None,
+            field_order=['center', 'radius'],
+            list_fields={'lines'},
+        )
+        if use_normal:
+            super().__init__(*args, **kwargs)
+        else:
+            super().__init__(**processed_kwargs)
+
+
+
+
+
+
+    center: Point = Field(...)
+    radius: FloatParameter = Field(...)
+    sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'center.sketch'}})
+    p1: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'expr': 'Point(sketch=sketch, x=FloatParameter(value=center.x.value + radius.value * math.cos(0 * math.pi / 3)), y=FloatParameter(value=center.y.value + radius.value * math.sin(0 * math.pi / 3)))'}})
+    p2: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'expr': 'Point(sketch=sketch, x=FloatParameter(value=center.x.value + radius.value * math.cos(2 * math.pi / 6)), y=FloatParameter(value=center.y.value + radius.value * math.sin(2 * math.pi / 6)))'}})
+    p3: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'expr': 'Point(sketch=sketch, x=FloatParameter(value=center.x.value + radius.value * math.cos(4 * math.pi / 6)), y=FloatParameter(value=center.y.value + radius.value * math.sin(4 * math.pi / 6)))'}})
+    p4: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'expr': 'Point(sketch=sketch, x=FloatParameter(value=center.x.value + radius.value * math.cos(6 * math.pi / 6)), y=FloatParameter(value=center.y.value + radius.value * math.sin(6 * math.pi / 6)))'}})
+    p5: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'expr': 'Point(sketch=sketch, x=FloatParameter(value=center.x.value + radius.value * math.cos(8 * math.pi / 6)), y=FloatParameter(value=center.y.value + radius.value * math.sin(8 * math.pi / 6)))'}})
+    p6: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'expr': 'Point(sketch=sketch, x=FloatParameter(value=center.x.value + radius.value * math.cos(10 * math.pi / 6)), y=FloatParameter(value=center.y.value + radius.value * math.sin(10 * math.pi / 6)))'}})
+    lines: Optional[List[Line]] = Field(default=None, json_schema_extra={'compute': {'expr': '[Line(p1=p1, p2=p2), Line(p1=p2, p2=p3), Line(p1=p3, p2=p4), Line(p1=p4, p2=p5), Line(p1=p5, p2=p6), Line(p1=p6, p2=p1)]'}})
+    result: Optional[Polygon] = Field(default=None, json_schema_extra={'expand': {'into': {'lines': '$lines'}}})
+
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

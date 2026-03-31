@@ -1,34 +1,25 @@
 [tool.poetry]
 name = "cadbuildr-foundation"
-version = "0.0.0.14"
-description = "Python core package for cadbuildr"
-authors = ["Clement Jambou"]
-packages = [
-    { include = "cadbuildr" }
-]
-license = "MIT"
-homepage = "https://cadbuildr.com"
-repository = "https://github.com/cadbuildr/foundation"
-keywords = ["cad", "3d", "modeling"]
-classifiers = [
-    "Development Status :: 4 - Beta",  # Or appropriate status
-    "Programming Language :: Python :: 3.10",
-    "License :: OSI Approved :: MIT License",  # Or your license
-    "Intended Audience :: Developers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-]
-readme = "Readme.md"
+version = "0.2.4"
+description = "Foundation library for CADbuildr - Core types for parametric CAD"
+authors = ["CADbuildr Team"]
+readme = "README.md"
+packages = [{include = "cadbuildr"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+pydantic = "^2.0.0"
+requests = "^2.31.0"
 numpy = "^1.23.4"
-websocket-client = "^1.7.0"
-mypy = "^1.9.0"
 
-[tool.poetry.dev-dependencies]
-pytest = "^8.2.2"
-pytransform3d = "==1.13.0"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+graphql-core = "^3.2.3"
+
+# [tool.poetry.scripts]
+# build = "cadbuildr.foundation.cli:main"
+# get-screenshot = "cadbuildr.foundation.cli:get_screenshot_main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
