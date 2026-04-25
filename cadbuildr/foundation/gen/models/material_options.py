@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
 
-class MaterialOptions(BaseModel):
+class MaterialOptions(BaseModel, Computable):
     """Generated from GraphQL object MaterialOptions."""
 
 
@@ -19,7 +20,7 @@ class MaterialOptions(BaseModel):
             args,
             kwargs,
             cast_info=None,
-            field_order=['diffuse_color'],
+            field_order=['diffuse_color', 'transparency'],
             list_fields={'diffuse_color'},
         )
         if use_normal:
@@ -33,5 +34,6 @@ class MaterialOptions(BaseModel):
 
 
     diffuse_color: List[float] = Field(...)
+    transparency: float = Field(default_factory=lambda: _eval_expr({}, '0.0'), json_schema_extra={'default': {'expr': '0.0'}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

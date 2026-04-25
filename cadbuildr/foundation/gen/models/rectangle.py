@@ -40,7 +40,7 @@ class Rectangle(SketchElementMixin, BaseModel, Computable, Expandable):
 
 
     @staticmethod
-    def from_2_points(p1, p3) -> Optional[Rectangle]:
+    def from_2_points(p1: Point, p3: Point) -> Optional[Rectangle]:
         # Build local namespace with parameters for static method
         _locals = {
             'p1': p1,
@@ -48,7 +48,7 @@ class Rectangle(SketchElementMixin, BaseModel, Computable, Expandable):
         }
         return _eval_expr(None, 'RectangleFrom2Points(p1=p1, p3=p3, sketch=p1.sketch).expand()', _locals)
     @staticmethod
-    def from_center_and_sides(center, length, width) -> Optional[Rectangle]:
+    def from_center_and_sides(center: Point, length: FloatParameter, width: FloatParameter) -> Optional[Rectangle]:
         # Build local namespace with parameters for static method
         _locals = {
             'center': center,

@@ -166,12 +166,14 @@ def show(obj: Any, valid_types: Optional[List[str]] = None) -> Optional[str]:
 
 
 # Backward compatibility aliases
-def has_frame_cycle(dag: Dict[str, Any]) -> tuple[bool, list, dict]:
+def has_frame_cycle(dag: Dict[str, Any]) -> tuple[bool, list[str], dict[str, Any]]:
     """Backward compatibility alias for has_link_cycle with Frame type."""
     return has_link_cycle(dag, "Frame", "top_frame")
 
 
-def print_frame_hierarchy_report(dag: Dict[str, Any], frame_info: dict):
+def print_frame_hierarchy_report(
+    dag: Dict[str, Any], frame_info: Dict[str, Any]
+) -> None:
     """Backward compatibility alias for print_node_hierarchy_report with Frame type."""
     return print_node_hierarchy_report(dag, frame_info, "Frame", "top_frame")
 

@@ -1,25 +1,31 @@
-[tool.poetry]
+[project]
 name = "cadbuildr-foundation"
-version = "0.2.4"
+version = "0.2.5"
 description = "Foundation library for CADbuildr - Core types for parametric CAD"
-authors = ["CADbuildr Team"]
 readme = "README.md"
-packages = [{include = "cadbuildr"}]
+requires-python = ">=3.10.0,<4.0.0"
+authors = [
+    {name = "CADbuildr Team"},
+]
+dependencies = [
+    "pydantic>=2.0.0,<3.0.0",
+    "requests>=2.31.0,<3.0.0",
+    "numpy>=2.2.6,<3.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-pydantic = "^2.0.0"
-requests = "^2.31.0"
-numpy = "^1.23.4"
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0,<9.0.0",
+    "graphql-core>=3.2.3,<4.0.0",
+]
 
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-graphql-core = "^3.2.3"
-
-# [tool.poetry.scripts]
-# build = "cadbuildr.foundation.cli:main"
-# get-screenshot = "cadbuildr.foundation.cli:get_screenshot_main"
+[tool.hatch.build.targets.wheel]
+packages = [
+    "cadbuildr",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = [
+    "hatchling>=1.27.0",
+]
+build-backend = "hatchling.build"

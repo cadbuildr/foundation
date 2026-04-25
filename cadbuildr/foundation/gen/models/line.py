@@ -5,6 +5,7 @@ from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.mixin.sketch_mixin import SketchElementMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .plane import Plane
     from .point import Point
     from .sketch import Sketch
 
@@ -52,6 +53,13 @@ class Line(SketchElementMixin, BaseModel, Computable):
         return run_method(self, 'line_rotate', _locals)
     def tangent(self) -> Optional[List[float]]:
         return run_method(self, 'line_tangent')
+    def get_extrusion_plane(self, extrusion_direction: Optional[List[float]]=[0.0, 0.0, 1.0], name: Optional[str]='line_extrusion_plane') -> Optional[Plane]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'extrusion_direction': extrusion_direction,
+            'name': name
+        }
+        return run_method(self, 'line_get_extrusion_plane_method', _locals)
 
 
     p1: Point = Field(...)

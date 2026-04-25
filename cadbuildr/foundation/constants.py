@@ -1,7 +1,7 @@
 """Constants for foundation schema."""
 
 # Color mapping from old foundation
-DEFAULT_COLORS = {
+DEFAULT_COLORS: dict[str, list[float]] = {
     "red": [1, 0, 0],
     "green": [0, 1, 0],
     "blue": [0, 0, 1],
@@ -53,7 +53,7 @@ DEFAULT_COLORS = {
 }
 
 # Valid types for DAG serialization
-DEFAULT_VALID_TYPES = [
+DEFAULT_VALID_TYPES: list[str] = [
     "Part",
     "Assembly",
     "Extrusion",
@@ -85,6 +85,8 @@ DEFAULT_VALID_TYPES = [
     "Shell",
     "CustomClosedShape",
     "Arc",
+    "EllipseArc",
+    "Spline",
     "SVGShape",
     "Helix3D",
     "Sweep",
@@ -94,13 +96,12 @@ DEFAULT_VALID_TYPES = [
     "AssemblyInterface",
 ]
 
-DEFAULT_TYPE_REGISTRY = {
-    type_name: i for i, type_name in enumerate[str](DEFAULT_VALID_TYPES)
-}  # we use the type_registry to get the valid types
+DEFAULT_TYPE_REGISTRY: dict[str, int] = {
+    type_name: i for i, type_name in enumerate(DEFAULT_VALID_TYPES)
+}
 
 # Plane configurations: maps plane name to (xDir, normal) vectors
-
-PLANES_CONFIG = {
+PLANES_CONFIG: dict[str, tuple[list[int], list[int]]] = {
     "xy": ([1, 0, 0], [0, 0, 1]),
     "yx": ([0, 1, 0], [0, 0, -1]),
     "xz": ([1, 0, 0], [0, -1, 0]),

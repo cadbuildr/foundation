@@ -8,9 +8,11 @@ from .string_parameter import StringParameter
 from .point import Point
 from .line import Line
 from .arc import Arc
+from .spline import Spline
 from .arc_from_two_points_and_radius import ArcFromTwoPointsAndRadius
 from .circle import Circle
 from .ellipse import Ellipse
+from .ellipse_arc import EllipseArc
 from .polygon import Polygon
 from .hexagon import Hexagon
 from .custom_closed_shape import CustomClosedShape
@@ -75,11 +77,15 @@ Line.model_rebuild()
 
 Arc.model_rebuild()
 
+Spline.model_rebuild()
+
 ArcFromTwoPointsAndRadius.model_rebuild()
 
 Circle.model_rebuild()
 
 Ellipse.model_rebuild()
+
+EllipseArc.model_rebuild()
 
 Polygon.model_rebuild()
 
@@ -164,37 +170,24 @@ Assembly.model_rebuild()
 AssemblyRoot.model_rebuild()
 
 from ..runtime import register_type
-register_type("Frame", Frame)
-
-register_type("Material", Material)
-
-register_type("Extrusion", Extrusion)
-
-register_type("SVGShape", SVGShape)
+register_type("EllipseArc", EllipseArc)
+register_type("InterfaceGridSpec", InterfaceGridSpec)
 
 register_type("Arc", Arc)
 
-register_type("InterfaceGridSpec", InterfaceGridSpec)
+register_type("Material", Material)
 
-register_type("Hexagon", Hexagon)
+register_type("Frame", Frame)
 
-register_type("Square", Square)
+register_type("SVGShape", SVGShape)
 
-register_type("Rectangle", Rectangle)
+register_type("Extrusion", Extrusion)
+
+register_type("Helix3D", Helix3D)
 
 register_type("Plane", Plane)
 
 register_type("Hole", Hole)
-
-register_type("Helix3D", Helix3D)
-
-register_type("SquareFromCenterAndSide", SquareFromCenterAndSide)
-
-register_type("RectangleFromCenterAndSides", RectangleFromCenterAndSides)
-
-register_type("RectangleFrom2Points", RectangleFrom2Points)
-
-register_type("Lathe", Lathe)
 
 register_type("InPlaneFinderRule", InPlaneFinderRule)
 
@@ -202,9 +195,23 @@ register_type("Assembly", Assembly)
 
 register_type("Part", Part)
 
+register_type("Thread", Thread)
+
 register_type("AssemblyInterface", AssemblyInterface)
 
-register_type("Thread", Thread)
+register_type("Lathe", Lathe)
+
+register_type("Hexagon", Hexagon)
+
+register_type("Square", Square)
+
+register_type("Rectangle", Rectangle)
+
+register_type("SquareFromCenterAndSide", SquareFromCenterAndSide)
+
+register_type("RectangleFrom2Points", RectangleFrom2Points)
+
+register_type("RectangleFromCenterAndSides", RectangleFromCenterAndSides)
 try:
     from ... import compute_functions  # noqa: F401
 except ImportError:
@@ -220,9 +227,11 @@ __all__ = [
     "Point",
     "Line",
     "Arc",
+    "Spline",
     "ArcFromTwoPointsAndRadius",
     "Circle",
     "Ellipse",
+    "EllipseArc",
     "Polygon",
     "Hexagon",
     "CustomClosedShape",

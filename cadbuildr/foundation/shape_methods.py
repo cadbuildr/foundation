@@ -1,17 +1,25 @@
 """2D Shape transformation methods (rotate, translate) for foundation schema."""
 
 import math
-from .gen.runtime import register_method_fn, register_compute_fn
+from typing import Optional
+from .gen.runtime import register_method_fn
 from .gen.models import (
     Point,
     Line,
     Arc,
+    Spline,
     Circle,
     Ellipse,
+    EllipseArc,
     Polygon,
     CustomClosedShape,
     FloatParameter,
+    Frame,
+    Plane,
+    StringParameter,
+    BoolParameter,
 )
+from .math_utils import rotation_matrix_to_quaternion
 
 
 # =================================================
@@ -20,7 +28,7 @@ from .gen.models import (
 
 
 @register_method_fn("point_translate")
-def point_translate(inst, dx: float, dy: float):
+def point_translate(inst: Point, dx: float, dy: float) -> Point:
     """Translate a point by (dx, dy)."""
     return Point(
         sketch=inst.sketch,
@@ -30,7 +38,7 @@ def point_translate(inst, dx: float, dy: float):
 
 
 @register_method_fn("point_rotate")
-def point_rotate(inst, angle: float, center=None):
+def point_rotate(inst: Point, angle: float, center: Optional[Point] = None) -> Point:
     """Rotate a point around a center point (angle in radians)."""
     if center is None:
         center = inst.sketch.origin
@@ -55,13 +63,13 @@ def point_rotate(inst, angle: float, center=None):
 
 
 @register_method_fn("line_translate")
-def line_translate(inst, dx: float, dy: float):
+def line_translate(inst: Line, dx: float, dy: float) -> Line:
     """Translate a line by (dx, dy)."""
     return Line(p1=inst.p1.translate(dx, dy), p2=inst.p2.translate(dx, dy))
 
 
 @register_method_fn("line_rotate")
-def line_rotate(inst, angle: float, center=None):
+def line_rotate(inst: Line, angle: float, center: Optional[Point] = None) -> Line:
     """Rotate a line around a center point."""
     if center is None:
         center = inst.sketch.origin
@@ -69,7 +77,7 @@ def line_rotate(inst, angle: float, center=None):
 
 
 @register_method_fn("line_tangent")
-def line_tangent(inst):
+def line_tangent(inst: Line) -> list[float]:
     """Calculate the tangent unit vector of the line."""
     import numpy as np
 
@@ -84,13 +92,91 @@ def line_tangent(inst):
     return result.tolist()
 
 
+@register_method_fn("line_get_extrusion_plane_method")
+def line_get_extrusion_plane_method(
+    inst: Line,
+    extrusion_direction: Optional[list[float]] = None,
+    name: str = "line_extrusion_plane",
+) -> Plane:
+    """Build a 3D plane from a 2D sketch line and extrusion direction.
+
+    The resulting plane:
+    - origin is at the line start point (p1) in sketch coordinates
+    - x-axis follows the line direction (p1 -> p2)
+    - y-axis follows the extrusion direction projected orthogonal to x
+    """
+    import numpy as np
+
+    if extrusion_direction is None:
+        extrusion_direction = [0.0, 0.0, 1.0]
+    elif hasattr(extrusion_direction, "tolist"):
+        extrusion_direction = extrusion_direction.tolist()
+
+    if not isinstance(extrusion_direction, (list, tuple)) or len(extrusion_direction) != 3:
+        raise ValueError("extrusion_direction must be a 3D vector")
+
+    # Line direction in sketch-local coordinates.
+    line_vec = np.array(
+        [
+            inst.p2.x.value - inst.p1.x.value,
+            inst.p2.y.value - inst.p1.y.value,
+            0.0,
+        ],
+        dtype=float,
+    )
+    line_norm = np.linalg.norm(line_vec)
+    if line_norm == 0:
+        raise ValueError("Cannot build an extrusion plane from a zero-length line")
+    x_axis = line_vec / line_norm
+
+    y_hint = np.array(extrusion_direction, dtype=float)
+    y_hint_norm = np.linalg.norm(y_hint)
+    if y_hint_norm == 0:
+        raise ValueError("extrusion_direction cannot be the zero vector")
+    y_hint = y_hint / y_hint_norm
+
+    # Remove x component so y is orthogonal to the line direction.
+    y_axis = y_hint - np.dot(y_hint, x_axis) * x_axis
+    y_norm = np.linalg.norm(y_axis)
+    if y_norm < 1e-9:
+        raise ValueError(
+            "extrusion_direction cannot be parallel to the line direction"
+        )
+    y_axis = y_axis / y_norm
+
+    z_axis = np.cross(x_axis, y_axis)
+    z_norm = np.linalg.norm(z_axis)
+    if z_norm < 1e-9:
+        raise ValueError(
+            "Failed to construct a valid plane basis from line and extrusion direction"
+        )
+    z_axis = z_axis / z_norm
+
+    rot_matrix = np.array([x_axis, y_axis, z_axis]).T
+    quaternion = rotation_matrix_to_quaternion(rot_matrix)
+
+    # Line points are sketch-local; this frame is relative to the sketch plane frame.
+    frame = Frame(
+        top_frame=inst.sketch.plane.frame,
+        name=StringParameter(value=f"{name}_frame"),
+        display=BoolParameter(value=False),
+        position=[inst.p1.x.value, inst.p1.y.value, 0.0],
+        quaternion=quaternion,
+    )
+    return Plane(
+        frame=frame,
+        name=StringParameter(value=name),
+        display=BoolParameter(value=False),
+    )
+
+
 # =================================================
 # ARC METHODS
 # =================================================
 
 
 @register_method_fn("arc_translate")
-def arc_translate(inst, dx: float, dy: float):
+def arc_translate(inst: Arc, dx: float, dy: float) -> Arc:
     """Translate an arc by (dx, dy)."""
     return Arc(
         p1=inst.p1.translate(dx, dy),
@@ -100,7 +186,7 @@ def arc_translate(inst, dx: float, dy: float):
 
 
 @register_method_fn("arc_rotate")
-def arc_rotate(inst, angle: float, center=None):
+def arc_rotate(inst: Arc, angle: float, center: Optional[Point] = None) -> Arc:
     """Rotate an arc around a center point."""
     if center is None:
         center = inst.sketch.origin
@@ -112,7 +198,7 @@ def arc_rotate(inst, angle: float, center=None):
 
 
 @register_method_fn("arc_tangent")
-def arc_tangent(inst):
+def arc_tangent(inst: Arc) -> list[float]:
     """Calculate the tangent unit vector at p3 (end point) of the arc."""
     import numpy as np
 
@@ -149,7 +235,7 @@ def arc_tangent(inst):
 
     if center is None:
         # Degenerate case: points are aligned
-        return tangent_line
+        return tangent_line.tolist()
 
     # Calculate tangent at p3
     dx = inst.p3.x.value - center[0]
@@ -180,18 +266,37 @@ def arc_tangent(inst):
 
 
 # =================================================
+# SPLINE METHODS
+# =================================================
+
+
+@register_method_fn("spline_translate")
+def spline_translate(inst: Spline, dx: float, dy: float) -> Spline:
+    """Translate a spline by (dx, dy)."""
+    return Spline(points=[point.translate(dx, dy) for point in inst.points])
+
+
+@register_method_fn("spline_rotate")
+def spline_rotate(inst: Spline, angle: float, center: Optional[Point] = None) -> Spline:
+    """Rotate a spline around a center point."""
+    if center is None:
+        center = inst.sketch.origin
+    return Spline(points=[point.rotate(angle, center) for point in inst.points])
+
+
+# =================================================
 # CIRCLE METHODS
 # =================================================
 
 
 @register_method_fn("circle_translate")
-def circle_translate(inst, dx: float, dy: float):
+def circle_translate(inst: Circle, dx: float, dy: float) -> Circle:
     """Translate a circle by (dx, dy)."""
     return Circle(center=inst.center.translate(dx, dy), radius=inst.radius)
 
 
 @register_method_fn("circle_rotate")
-def circle_rotate(inst, angle: float, center=None):
+def circle_rotate(inst: Circle, angle: float, center: Optional[Point] = None) -> Circle:
     """Rotate a circle around a center point."""
     if center is None:
         center = inst.sketch.origin
@@ -204,17 +309,48 @@ def circle_rotate(inst, angle: float, center=None):
 
 
 @register_method_fn("ellipse_translate")
-def ellipse_translate(inst, dx: float, dy: float):
+def ellipse_translate(inst: Ellipse, dx: float, dy: float) -> Ellipse:
     """Translate an ellipse by (dx, dy)."""
     return Ellipse(center=inst.center.translate(dx, dy), a=inst.a, b=inst.b)
 
 
 @register_method_fn("ellipse_rotate")
-def ellipse_rotate(inst, angle: float, center=None):
+def ellipse_rotate(inst: Ellipse, angle: float, center: Optional[Point] = None) -> Ellipse:
     """Rotate an ellipse around a center point."""
     if center is None:
         center = inst.sketch.origin
     return Ellipse(center=inst.center.rotate(angle, center), a=inst.a, b=inst.b)
+
+
+# =================================================
+# ELLIPSE ARC METHODS
+# =================================================
+
+
+@register_method_fn("ellipse_arc_translate")
+def ellipse_arc_translate(inst, dx: float, dy: float):
+    """Translate an ellipse arc by (dx, dy)."""
+    return EllipseArc(
+        center=inst.center.translate(dx, dy),
+        a=inst.a,
+        b=inst.b,
+        start_angle=inst.start_angle,
+        end_angle=inst.end_angle,
+    )
+
+
+@register_method_fn("ellipse_arc_rotate")
+def ellipse_arc_rotate(inst, angle: float, center=None):
+    """Rotate an ellipse arc around a center point."""
+    if center is None:
+        center = inst.sketch.origin
+    return EllipseArc(
+        center=inst.center.rotate(angle, center),
+        a=inst.a,
+        b=inst.b,
+        start_angle=inst.start_angle,
+        end_angle=inst.end_angle,
+    )
 
 
 # =================================================
@@ -223,13 +359,13 @@ def ellipse_rotate(inst, angle: float, center=None):
 
 
 @register_method_fn("polygon_translate")
-def polygon_translate(inst, dx: float, dy: float):
+def polygon_translate(inst: Polygon, dx: float, dy: float) -> Polygon:
     """Translate a polygon by (dx, dy)."""
     return Polygon(lines=[line.translate(dx, dy) for line in inst.lines])
 
 
 @register_method_fn("polygon_rotate")
-def polygon_rotate(inst, angle: float, center=None):
+def polygon_rotate(inst: Polygon, angle: float, center: Optional[Point] = None) -> Polygon:
     """Rotate a polygon around a center point."""
     if center is None:
         center = inst.sketch.origin
@@ -242,7 +378,7 @@ def polygon_rotate(inst, angle: float, center=None):
 
 
 @register_method_fn("custom_closed_shape_translate")
-def custom_closed_shape_translate(inst, dx: float, dy: float):
+def custom_closed_shape_translate(inst: CustomClosedShape, dx: float, dy: float) -> CustomClosedShape:
     """Translate a custom closed shape by (dx, dy)."""
     return CustomClosedShape(
         primitives=[prim.translate(dx, dy) for prim in inst.primitives]
@@ -250,7 +386,9 @@ def custom_closed_shape_translate(inst, dx: float, dy: float):
 
 
 @register_method_fn("custom_closed_shape_rotate")
-def custom_closed_shape_rotate(inst, angle: float, center=None):
+def custom_closed_shape_rotate(
+    inst: CustomClosedShape, angle: float, center: Optional[Point] = None
+) -> CustomClosedShape:
     """Rotate a custom closed shape around a center point."""
     if center is None:
         center = inst.sketch.origin

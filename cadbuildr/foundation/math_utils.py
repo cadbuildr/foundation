@@ -1,7 +1,10 @@
 """Math utilities for vector and quaternion operations."""
 
 import numpy as np
-from typing import Sequence
+from typing import TYPE_CHECKING, Any, Sequence
+
+if TYPE_CHECKING:
+    from .gen.models import Frame
 
 
 def rotation_matrix_to_quaternion(rot_matrix: np.ndarray) -> list[float]:
@@ -123,8 +126,8 @@ def quaternion_multiply(q1: list[float], q2: list[float]) -> list[float]:
 
 
 def create_frame_from_xdir_and_normal(
-    base_frame, x_dir: list[float], normal: list[float], name: str
-):
+    base_frame: Any, x_dir: list[float], normal: list[float], name: str
+) -> "Frame":
     """Create a new frame from x direction and normal vectors.
 
     Args:

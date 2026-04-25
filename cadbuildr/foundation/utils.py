@@ -3,7 +3,7 @@
 from .dag_utils import show_dag, show
 
 
-def reset_ids():
+def reset_ids() -> None:
     """Reset ID counters (no-op in new foundation since IDs are hash-based)."""
     pass
 

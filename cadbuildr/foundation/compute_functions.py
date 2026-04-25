@@ -1,10 +1,11 @@
 """Compute functions for foundation schema directives."""
 
-from typing import Any, Sequence, Optional
+from typing import Any, Callable, Iterable, Optional, Sequence
 import math
 
-from .gen.runtime import register_compute_fn, register_method_fn, Expandable
+from .gen.runtime import register_compute_fn, register_method_fn
 from .gen.models import (
+    Arc,
     Plane,
     Frame,
     StringParameter,
@@ -12,7 +13,6 @@ from .gen.models import (
     FloatParameter,
     Point,
     Sketch,
-    Line,
     Part,
     PartRoot,
     Assembly,
@@ -29,21 +29,19 @@ from .math_utils import (
 
 
 @register_compute_fn("get_plane_factory")
-def get_plane_factory(inst, field_name: str, meta: dict):
+def get_plane_factory(inst: Any, field_name: str, meta: dict[str, Any]) -> PlaneFactory:
     """Get a PlaneFactory instance for creating derived planes."""
     return PlaneFactory()
 
 
 @register_compute_fn("get_sketch_origin")
-def get_sketch_origin(inst, field_name: str, meta: dict):
+def get_sketch_origin(inst: Sketch, field_name: str, meta: dict[str, Any]) -> Point:
     """Get the origin point of a sketch from its plane."""
-    # Return a Point at (0, 0) in the sketch
-    return Point(sketch=inst, x=FloatParameter(value=0.0), y=FloatParameter(value=0.0))
     return Point(sketch=inst, x=FloatParameter(value=0.0), y=FloatParameter(value=0.0))
 
 
 @register_compute_fn("compute_arc_control_point")
-def compute_arc_control_point(inst, field_name: str, meta: dict):
+def compute_arc_control_point(inst: Arc, field_name: str, meta: dict[str, Any]) -> Point:
     """Compute the control point (p2) for an arc from two points and radius.
 
     Based on old foundation implementation in arc.py:from_two_points_and_radius
@@ -94,7 +92,7 @@ def compute_arc_control_point(inst, field_name: str, meta: dict):
 
 
 @register_method_fn("add_element_method")
-def add_element_method(inst, element):
+def add_element_method(inst: Sketch, element: Any) -> bool:
     """Add an element to the sketch's elements list."""
     # Initialize elements if it doesn't exist (though Pydantic should handle this)
     if not hasattr(inst, "elements") or inst.elements is None:
@@ -108,7 +106,7 @@ def add_element_method(inst, element):
 
 
 @register_compute_fn("get_extrusion_sketch")
-def get_extrusion_sketch(inst, field_name: str, meta: dict):
+def get_extrusion_sketch(inst: Any, field_name: str, meta: dict[str, Any]) -> Sketch:
     """Get the sketch for an extrusion from its shape."""
     # The sketch is derived from the first shape's sketch attribute
     # shape is a list, so we get the first element
@@ -126,7 +124,9 @@ def get_extrusion_sketch(inst, field_name: str, meta: dict):
 
 
 @register_compute_fn("compute_loft_sketches")
-def compute_loft_sketches(inst, field_name: str, meta: dict):
+def compute_loft_sketches(
+    inst: Any, field_name: str, meta: dict[str, Any]
+) -> list[Sketch]:
     """Compute the list of sketches from the loft shapes."""
     sketches = []
     for shape in inst.shapes:
@@ -141,7 +141,7 @@ def compute_loft_sketches(inst, field_name: str, meta: dict):
 
 
 @register_compute_fn("compute_sweep_sketch")
-def compute_sweep_sketch(inst, field_name: str, meta: dict):
+def compute_sweep_sketch(inst: Any, field_name: str, meta: dict[str, Any]) -> Sketch:
     """Compute the sketch used by a sweep operation from its profile."""
     profile = inst.profile
     if hasattr(profile, "sketch"):
@@ -154,7 +154,7 @@ def compute_sweep_sketch(inst, field_name: str, meta: dict):
 
 
 @register_compute_fn("compute_thread_path")
-def compute_thread_path(inst, field_name: str, meta: dict):
+def compute_thread_path(inst: Any, field_name: str, meta: dict[str, Any]) -> Any:
     """Compute the helix path used by a thread macro node."""
     from .gen.models import Helix3D
 
@@ -168,10 +168,13 @@ def compute_thread_path(inst, field_name: str, meta: dict):
     )
 
 
-def _create_plane_method(plane_name, config):
+def _create_plane_method(
+    plane_name: str,
+    config: tuple[list[int], list[int]] | None,
+) -> Callable[[Any], Plane]:
     """Create a plane method function for a given plane name and configuration."""
 
-    def plane_method(inst):
+    def plane_method(inst: Part) -> Plane:
         """Get a plane from a part's frame."""
         # Check if plane already exists in the planes list
         for existing_plane in inst.planes:
@@ -222,13 +225,13 @@ for plane_name, config in PLANES_CONFIG.items():
 
 
 @register_method_fn("get_origin_planes_method")
-def get_origin_planes_method(inst):
+def get_origin_planes_method(inst: Part | Assembly) -> list[Plane]:
     """Get the three main origin planes (xy, xz, yz) as a list."""
     return [inst.xy(), inst.xz(), inst.yz()]
 
 
 @register_method_fn("add_operation_method")
-def add_operation_method(inst, operation):
+def add_operation_method(inst: Part, operation: Any) -> bool:
     """Add an operation to a part."""
     from .gen.runtime import Expandable
 
@@ -241,7 +244,7 @@ def add_operation_method(inst, operation):
 
 
 @register_method_fn("add_operations_method")
-def add_operations_method(inst, operations):
+def add_operations_method(inst: Part, operations: Iterable[Any]) -> bool:
     """Add multiple operations to a part at once."""
     from .gen.runtime import Expandable
 
@@ -254,7 +257,9 @@ def add_operations_method(inst, operations):
 
 
 @register_method_fn("interface_grid_offset_method")
-def interface_grid_offset_method(inst, n_x: int = 0, n_y: int = 0, n_z: int = 0):
+def interface_grid_offset_method(
+    inst: Any, n_x: int = 0, n_y: int = 0, n_z: int = 0
+) -> list[float]:
     """Compute a translation vector from integer grid offsets."""
     return [
         float(n_x) * float(inst.pitch_x.value),
@@ -265,11 +270,11 @@ def interface_grid_offset_method(inst, n_x: int = 0, n_y: int = 0, n_z: int = 0)
 
 @register_method_fn("interface_add_constraint_method")
 def interface_add_constraint_method(
-    inst,
+    inst: Any,
     component: Any,
     translation: Sequence[float],
     quaternion: Sequence[float] = (1.0, 0.0, 0.0, 0.0),
-):
+) -> bool:
     """Append a translation/quaternion-based placement constraint."""
     from .gen.models import FixedTranslationConstraint
 
@@ -282,20 +287,24 @@ def interface_add_constraint_method(
 
 
 @register_method_fn("interface_place_method")
-def interface_place_method(inst, component: Any, n_x: int = 0, n_y: int = 0, n_z: int = 0):
+def interface_place_method(
+    inst: Any, component: Any, n_x: int = 0, n_y: int = 0, n_z: int = 0
+) -> bool:
     """Place a component using this interface's grid spacing."""
     offset = inst.grid.offset(n_x=n_x, n_y=n_y, n_z=n_z)
     return inst.add_constraint(component=component, translation=offset)
 
 
 @register_method_fn("interface_clip_method")
-def interface_clip_method(inst, component: Any, n_x: int = 0, n_y: int = 0, n_z: int = 1):
+def interface_clip_method(
+    inst: Any, component: Any, n_x: int = 0, n_y: int = 0, n_z: int = 1
+) -> bool:
     """Convenience method to place one level above the current grid by default."""
     return interface_place_method(inst, component=component, n_x=n_x, n_y=n_y, n_z=n_z)
 
 
 @register_method_fn("interface_apply_method")
-def interface_apply_method(inst, assembly):
+def interface_apply_method(inst: Any, assembly: Any) -> bool:
     """Apply all stored constraints to the provided assembly."""
     for constraint in inst.constraints:
         assembly.add_component(
@@ -313,7 +322,7 @@ _material_counter = 0
 
 
 @register_method_fn("paint_method")
-def paint_method(inst, color: str, transparency: float = 0.5):
+def paint_method(inst: Part | Assembly, color: str, transparency: float = 0.5) -> bool:
     """Paint a part (creates Material instance)."""
     global _material_counter
     from .gen.models import Material, MaterialOptions
@@ -331,7 +340,7 @@ def paint_method(inst, color: str, transparency: float = 0.5):
     material = Material(
         name=f"Material_{_material_counter}",
         painted_node_ids=[],
-        options=MaterialOptions(diffuse_color=diffuse_color),
+        options=MaterialOptions(diffuse_color=diffuse_color, transparency=float(transparency)),
     )
 
     # Store material on instance
@@ -340,7 +349,7 @@ def paint_method(inst, color: str, transparency: float = 0.5):
 
 
 @register_method_fn("translate_method")
-def translate_method(inst, translation: Sequence[float]):
+def translate_method(inst: Part | Assembly, translation: Sequence[float]) -> bool:
     """Translate a part or assembly by updating its frame position.
 
     For assemblies, only the assembly's frame is moved. Child components don't need
@@ -354,25 +363,25 @@ def translate_method(inst, translation: Sequence[float]):
 
 
 @register_method_fn("translate_x_method")
-def translate_x_method(inst, x: float):
+def translate_x_method(inst: Part | Assembly, x: float) -> bool:
     """Translate a part or assembly along the X axis."""
     return translate_method(inst, [x, 0.0, 0.0])
 
 
 @register_method_fn("translate_y_method")
-def translate_y_method(inst, y: float):
+def translate_y_method(inst: Part | Assembly, y: float) -> bool:
     """Translate a part or assembly along the Y axis."""
     return translate_method(inst, [0.0, y, 0.0])
 
 
 @register_method_fn("translate_z_method")
-def translate_z_method(inst, z: float):
+def translate_z_method(inst: Part | Assembly, z: float) -> bool:
     """Translate a part or assembly along the Z axis."""
     return translate_method(inst, [0.0, 0.0, z])
 
 
 @register_method_fn("rotate_method")
-def rotate_method(inst, angle: float, axis: Sequence[float] = (0.0, 0.0, 1.0)):
+def rotate_method(inst: Part | Assembly, angle: float, axis: Sequence[float] = (0.0, 0.0, 1.0)) -> bool:
     """Rotate a part or assembly around an axis by updating its frame quaternion.
 
     Args:
@@ -397,7 +406,9 @@ def rotate_method(inst, angle: float, axis: Sequence[float] = (0.0, 0.0, 1.0)):
 
 
 @register_method_fn("to_dag_method")
-def to_dag_method(inst, memo=None):
+def to_dag_method(
+    inst: Part | Assembly, memo: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Convert Part or Assembly to raw DAG dictionary (not formatted with version/rootNodeId)."""
     from .foundation_hooks import setup_foundation_hooks
     from .gen.dag import pydantic_to_dag
@@ -415,8 +426,7 @@ def to_dag_method(inst, memo=None):
     if isinstance(inst, (Part, Assembly)):
         inst = _convert_component_to_root(inst)
 
-    # Generate DAG
-    root_id = pydantic_to_dag(inst, memo, type_registry, hooks)
+    pydantic_to_dag(inst, memo, type_registry, hooks)
 
     # Return raw memo dictionary (like old foundation)
     return memo
@@ -424,7 +434,7 @@ def to_dag_method(inst, memo=None):
 
 def make_origin_frame_default_frame(
     frame: Frame, component_id: str, new_top_frame: Optional[Frame]
-):
+) -> None:
     """Update a component's origin frame to point to a parent frame.
 
     This mimics the old foundation's behavior where component frames are updated
@@ -462,8 +472,10 @@ def _format_component_path(path: tuple[int, ...]) -> str:
 
 
 def _convert_component_to_root(
-    component: Any, parent_frame=None, component_path: tuple[int, ...] = ()
-):
+    component: Any,
+    parent_frame: Optional[Frame] = None,
+    component_path: tuple[int, ...] = (),
+) -> Optional[PartRoot | AssemblyRoot]:
     """Convert Part/Assembly instances to their root representations.
 
     Args:
@@ -563,7 +575,7 @@ def _convert_component_to_root(
         )
 
 
-def _translate_component_root(component_root: Any, vector: Sequence[float]):
+def _translate_component_root(component_root: Any, vector: Sequence[float]) -> None:
     """Apply translation to component roots recursively."""
     if isinstance(component_root, PartRoot):
         component_root.frame.position = [
@@ -583,7 +595,7 @@ def _translate_component_root(component_root: Any, vector: Sequence[float]):
 
 
 @register_method_fn("add_component_method")
-def add_component_method(inst, component: Any, tf: Any = None):
+def add_component_method(inst: Assembly, component: Any, tf: Any = None) -> bool:
     """Add a component (part or assembly) to an assembly."""
     # Pass the assembly's frame as parent so child frames become relative to it
     component_root = _convert_component_to_root(component, parent_frame=inst.frame)
@@ -655,7 +667,7 @@ def _normalize_vector(value: Any, expected_len: int) -> list[float]:
 
 
 @register_method_fn("get_parallel_plane_method")
-def get_parallel_plane_method(inst, distance: float, name: str = "parallel"):
+def get_parallel_plane_method(inst: Plane, distance: float, name: str = "parallel") -> Plane:
     """Create a plane parallel to this plane at given distance."""
     # Get normal vector from frame's Z-axis (quaternion's up direction)
     # Quaternion format: [w, x, y, z]
@@ -689,28 +701,30 @@ def get_parallel_plane_method(inst, distance: float, name: str = "parallel"):
 
 
 @register_method_fn("get_plane_x_axis")
-def get_plane_x_axis(inst):
+def get_plane_x_axis(inst: Plane) -> list[float]:
     """Get the X-axis of the plane's frame."""
     x_axis, _, _ = quaternion_to_axes(inst.frame.quaternion)
     return x_axis
 
 
 @register_method_fn("get_plane_y_axis")
-def get_plane_y_axis(inst):
+def get_plane_y_axis(inst: Plane) -> list[float]:
     """Get the Y-axis of the plane's frame."""
     _, y_axis, _ = quaternion_to_axes(inst.frame.quaternion)
     return y_axis
 
 
 @register_method_fn("get_plane_z_axis")
-def get_plane_z_axis(inst):
+def get_plane_z_axis(inst: Plane) -> list[float]:
     """Get the Z-axis of the plane's frame."""
     _, _, z_axis = quaternion_to_axes(inst.frame.quaternion)
     return z_axis
 
 
 @register_method_fn("get_angle_plane_from_axis_method")
-def get_angle_plane_from_axis_method(inst, axis, angle: float, name: str = "rotated"):
+def get_angle_plane_from_axis_method(
+    inst: Plane, axis: Sequence[float], angle: float, name: str = "rotated"
+) -> Plane:
     """Create a plane rotated around the given axis by the given angle."""
     # Convert axis-angle to quaternion
     rotation_quat = axis_angle_to_quaternion(axis, angle)

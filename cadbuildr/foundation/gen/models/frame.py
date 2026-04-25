@@ -16,7 +16,7 @@ class Frame(ParameterFieldsMixin, BaseModel):
 
 
     @staticmethod
-    def make_origin_frame(display=False) -> Optional[Frame]:
+    def make_origin_frame(display: Optional[bool]=False) -> Optional[Frame]:
         # Build local namespace with parameters for static method
         _locals = {
             'display': display

@@ -1,10 +1,17 @@
 """Helper functions and methods for foundation API compatibility."""
 
-from typing import Any, Iterable, Sequence
+from __future__ import annotations
+
+import numpy as np
+from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
+
+if TYPE_CHECKING:
+    from .draw import Draw
 
 from .gen.models import (
     Part,
     Plane,
+    Line,
     Assembly,
     BoolParameter,
     Sketch,
@@ -17,7 +24,7 @@ from .draw import Draw
 from .constants import DEFAULT_COLORS
 
 
-def _enable_auto_init(base_cls):
+def _enable_auto_init(base_cls: type) -> None:
     """Ensure subclasses run BaseModel __init__ even if super().__init__ isn't called."""
 
     def _auto_init_subclass(cls, **kwargs):
@@ -76,7 +83,7 @@ class PlaneFactory:
         return plane.get_parallel_plane(distance=distance, name=self._get_name(name))
 
     def get_angle_plane_from_axis(
-        self, plane: Plane, axis, angle: float, name: str | None = None
+        self, plane: Plane, axis: Sequence[float], angle: float, name: str | None = None
     ) -> Plane | None:
         """Create a plane rotated around the given axis by the given angle."""
         # Convert axis to list if it's a numpy array
@@ -88,7 +95,9 @@ class PlaneFactory:
             axis=axis, angle=angle, name=self._get_name(name)
         )
 
-    def get_plane_from_3_points(self, origin_frame, points, name: str | None = None):
+    def get_plane_from_3_points(
+        self, origin_frame: Any, points: list[Point3D], name: str | None = None
+    ) -> Plane:
         """Create a plane from 3 points.
 
         The frame will be oriented using [P1, P2] as the x axis and P1 as the origin.
@@ -100,7 +109,7 @@ class PlaneFactory:
             name: str - optional name for the plane
         """
         import numpy as np
-        from .gen.models import Plane, Frame, StringParameter, BoolParameter, Point3D
+        from .gen.models import Plane, Frame, StringParameter, BoolParameter
         from .math_utils import rotation_matrix_to_quaternion
 
         if len(points) != 3:
@@ -156,7 +165,7 @@ class PlaneFactory:
 
 
 # Add children property to Plane for backward compatibility
-def _plane_children_property(self):
+def _plane_children_property(self: Plane) -> PlaneChildrenCompat:
     """Return compatibility layer for Plane.children API."""
     return PlaneChildrenCompat(self)
 
@@ -164,8 +173,26 @@ def _plane_children_property(self):
 setattr(Plane, "children", property(_plane_children_property))
 
 
+# Add line helper for a short extrusion-plane API
+def _line_extrusion_plane(
+    self: Line,
+    extrusion_direction: Sequence[float] = (0.0, 0.0, 1.0),
+    name: str = "line_extrusion_plane",
+) -> Optional[Plane]:
+    """Shortcut for Line.get_extrusion_plane with tuple/ndarray friendly input."""
+    if hasattr(extrusion_direction, "tolist"):
+        extrusion_direction = extrusion_direction.tolist()
+    return self.get_extrusion_plane(
+        extrusion_direction=list(extrusion_direction),
+        name=name,
+    )
+
+
+setattr(Line, "extrusion_plane", _line_extrusion_plane)
+
+
 # Add pencil property to Sketch for backward compatibility
-def _sketch_pencil_property(self):
+def _sketch_pencil_property(self: "Sketch") -> "Draw":
     """Return Draw instance (pencil API) for Sketch."""
     pencil = getattr(self, "_pencil", None)
     if pencil is None:
@@ -195,7 +222,7 @@ class PartHeadCompat:
         return self._part.frame
 
 
-def _part_head_property(self):
+def _part_head_property(self: Part) -> PartHeadCompat:
     """Return compatibility layer for Part.head API."""
     head_compat = getattr(self, "_head_compat", None)
     if head_compat is None:
@@ -225,7 +252,7 @@ class AssemblyHeadCompat:
         return self._assembly.frame
 
 
-def _assembly_head_property(self):
+def _assembly_head_property(self: Assembly) -> AssemblyHeadCompat:
     """Return compatibility layer for Assembly.head API."""
     head_compat = getattr(self, "_head_compat", None)
     if head_compat is None:
@@ -238,7 +265,7 @@ setattr(Assembly, "head", property(_assembly_head_property))
 
 
 # Add set_diffuse_color method to Material for backward compatibility
-def _material_set_diffuse_color(self, color):
+def _material_set_diffuse_color(self: Material, color: str | list[float]) -> bool:
     """Set the diffuse color on a Material (backward compatible API)."""
     if isinstance(color, str):
         if color not in DEFAULT_COLORS:
@@ -251,7 +278,14 @@ def _material_set_diffuse_color(self, color):
         if len(diffuse_color) != 3:
             raise ValueError("Diffuse color must have 3 components")
 
-    self.options = MaterialOptions(diffuse_color=diffuse_color)
+    current_transparency = 0.0
+    if getattr(self, "options", None) is not None:
+        current_transparency = float(getattr(self.options, "transparency", 0.0))
+
+    self.options = MaterialOptions(
+        diffuse_color=diffuse_color,
+        transparency=current_transparency,
+    )
     return True
 
 
@@ -259,7 +293,7 @@ setattr(Material, "set_diffuse_color", _material_set_diffuse_color)
 
 
 # Add set_material method to Part/Assembly for backward compatibility
-def _set_component_material(self, material):
+def _set_component_material(self: Any, material: Material) -> bool:
     """Attach a Material to a component for serialization."""
     object.__setattr__(self, "_material", material)
     return True
@@ -355,7 +389,7 @@ class TFHelper:
         return self
 
 
-def _assembly_add_component(self, component: Any, tf: Any = None):
+def _assembly_add_component(self: Assembly, component: Any, tf: Any = None) -> Any:
     _locals = {"component": component, "tf": tf}
     return run_method(self, "add_component_method", _locals)
 
@@ -364,7 +398,7 @@ setattr(Assembly, "add_component", _assembly_add_component)
 
 
 # Add to_array() method to Point3D for backward compatibility
-def _point3d_to_array(self):
+def _point3d_to_array(self: Point3D) -> "np.ndarray":
     """Convert the Point3D to a NumPy array."""
     import numpy as np
 

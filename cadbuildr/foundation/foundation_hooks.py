@@ -40,6 +40,7 @@ def setup_foundation_hooks(registry: Optional[HookRegistry] = None) -> HookRegis
             "Line",
             "Circle",
             "Arc",
+            "EllipseArc",
             "Spline",
             "Ellipse",
             "Polygon",

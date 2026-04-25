@@ -1,4 +1,4 @@
-from cadbuildr.foundation import Frame, Plane, Sketch, Square, show, Point
+from cadbuildr.foundation import Frame, Plane, Sketch, Square, show, Point, show_dag  # pragma: allowlist secret
 import pytest
 
 
@@ -33,9 +33,7 @@ def test_auto_registration():
     ), "Square (or its result) was not automatically added to sketch elements"
     assert len(s.elements) > 0, "Sketch elements list is empty"
 
-    # Verify DAG generation doesn't crash or explode
-    from cadbuildr.foundation.dag_utils import show_dag
-
+    # Verify top-level show_dag re-export and DAG generation both work.
     dag = show_dag(s)
     print(f"DAG generated successfully. Nodes: {len(dag['DAG'])}")
 

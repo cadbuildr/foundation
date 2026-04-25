@@ -5,9 +5,17 @@ from typing import TYPE_CHECKING, List
 import numpy as np
 
 if TYPE_CHECKING:
-    from .gen.models import Sketch, Point, Line, Arc, Polygon, CustomClosedShape
+    from .gen.models import (
+        Sketch,
+        Point,
+        Line,
+        Arc,
+        Spline,
+        Polygon,
+        CustomClosedShape,
+    )
 
-from .gen.models import Point, Line, Arc, Polygon, CustomClosedShape
+from .gen.models import Point, Line, Arc, Spline, Polygon, CustomClosedShape
 
 
 class Draw:
@@ -20,9 +28,9 @@ class Draw:
         self.point_added = False
         self.point_idx = 0
         self.points: List[Point] = []
-        self.primitives: List[Line | Arc] = []
+        self.primitives: List[Line | Arc | Spline] = []
 
-    def reset(self):
+    def reset(self) -> None:
         self.x = 0.0
         self.y = 0.0
         self.point_added = False
@@ -30,19 +38,19 @@ class Draw:
         self.points = []
         self.primitives = []
 
-    def move_to(self, x: float, y: float):
+    def move_to(self, x: float, y: float) -> None:
         """Move to absolute position"""
         self.x = x
         self.y = y
         self.point_added = False
 
-    def move(self, dx: float, dy: float):
+    def move(self, dx: float, dy: float) -> None:
         """Relative move"""
         self.x += dx
         self.y += dy
         self.point_added = False
 
-    def add_point(self):
+    def add_point(self) -> None:
         if self.x == 0.0 and self.y == 0.0:
             point = self.sketch.origin
         else:
@@ -57,7 +65,7 @@ class Draw:
         dy = p1.y.value - p2.y.value
         return abs(dx) <= tol and abs(dy) <= tol
 
-    def line_to(self, x: float, y: float):
+    def line_to(self, x: float, y: float) -> None:
         """Draw a line to absolute position (x, y)."""
         if not self.point_added:
             self.add_point()
@@ -68,7 +76,7 @@ class Draw:
         self.primitives.append(Line(self.points[-2], self.points[-1]))
         return
 
-    def line(self, dx: float, dy: float):
+    def line(self, dx: float, dy: float) -> None:
         """Draw a line with relative move (dx, dy)."""
         if not self.point_added:
             self.add_point()
@@ -79,7 +87,7 @@ class Draw:
         self.primitives.append(Line(self.points[-2], self.points[-1]))
         return
 
-    def arc_to(self, x: float, y: float, radius: float):
+    def arc_to(self, x: float, y: float, radius: float) -> None:
         """Draw arc to absolute position (x, y) with given radius"""
         if not self.point_added:
             self.add_point()
@@ -98,7 +106,7 @@ class Draw:
         self.primitives.append(arc)
         return
 
-    def arc(self, dx: float, dy: float, radius: float):
+    def arc(self, dx: float, dy: float, radius: float) -> None:
         """Draw arc with relative movement (dx, dy) and given radius"""
         if not self.point_added:
             self.add_point()
@@ -117,7 +125,7 @@ class Draw:
         self.primitives.append(arc)
         return
 
-    def back_one_point(self):
+    def back_one_point(self) -> None:
         self.point_idx -= 1
         if self.point_idx < 0:
             self.point_idx = 0
@@ -160,7 +168,7 @@ class Draw:
         start_point = self.points[0]
         end_point = self.points[-1]
 
-        mirrored_primitives: List[Line | Arc] = []
+        mirrored_primitives: List[Line | Arc | Spline] = []
 
         for primitive in self.primitives:
             if hasattr(primitive, "mirror"):
@@ -173,11 +181,11 @@ class Draw:
 
         return CustomClosedShape(all_primitives)
 
-    def tangent_arc(self, dx: float, dy: float):
+    def tangent_arc(self, dx: float, dy: float) -> None:
         """Draw an arc tangentially to the last primitive, relative move."""
         self.tangent_arc_to(self.x + dx, self.y + dy)
 
-    def tangent_arc_to(self, x: float, y: float):
+    def tangent_arc_to(self, x: float, y: float) -> None:
         """Draw an arc tangentially to the last primitive, ending at (x, y)."""
         if not self.point_added:
             self.add_point()
@@ -233,8 +241,6 @@ class Draw:
 
     def _calculate_perpendicular_bisector(self, p1: Point, p2: Point) -> Line:
         """Calculate the perpendicular bisector of the line segment connecting p1 and p2."""
-        from .gen.models import FloatParameter
-
         midpoint_x = (p1.x.value + p2.x.value) / 2
         midpoint_y = (p1.y.value + p2.y.value) / 2
         midpoint = Point(self.sketch, midpoint_x, midpoint_y)
@@ -276,7 +282,7 @@ class Draw:
             ),
         )
 
-    def _line_intersection(self, line1: Line, line2: Line):
+    def _line_intersection(self, line1: Line, line2: Line) -> "Point | None":
         """Calculate the intersection point of two lines."""
         p1, p2 = line1.p1, line1.p2
         p3, p4 = line2.p1, line2.p2
@@ -305,11 +311,11 @@ class Draw:
         self.primitives.append(arc)
         self.point_added = True
 
-    def rounded_corner_then_line(self, dx: float, dy: float, radius: float):
+    def rounded_corner_then_line(self, dx: float, dy: float, radius: float) -> None:
         """Draw a rounded corner followed by a line, relative move."""
         self.rounded_corner_then_line_to(self.x + dx, self.y + dy, radius)
 
-    def rounded_corner_then_line_to(self, x: float, y: float, radius: float):
+    def rounded_corner_then_line_to(self, x: float, y: float, radius: float) -> None:
         """Draw a rounded corner followed by a line, ending at (x, y)."""
         if not self.point_added:
             self.add_point()

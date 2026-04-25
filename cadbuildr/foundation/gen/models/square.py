@@ -40,7 +40,7 @@ class Square(SketchElementMixin, BaseModel, Computable, Expandable):
 
 
     @staticmethod
-    def from_center_and_side(center, size) -> Optional[Square]:
+    def from_center_and_side(center: Point, size: FloatParameter) -> Optional[Square]:
         # Build local namespace with parameters for static method
         _locals = {
             'center': center,

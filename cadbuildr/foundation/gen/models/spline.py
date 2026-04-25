@@ -2,13 +2,14 @@ from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
 from ..runtime import Computable, _eval_expr, run_method
+from cadbuildr.foundation.mixin.sketch_mixin import SketchElementMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .point import Point
     from .sketch import Sketch
-    from .unions import ClosedShape2D
 
-class Loft(BaseModel, Computable):
-    """Generated from GraphQL object Loft."""
+class Spline(SketchElementMixin, BaseModel, Computable):
+    """Generated from GraphQL object Spline."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -24,8 +25,8 @@ class Loft(BaseModel, Computable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['shapes'],
-            list_fields={'shapes', 'sketchs'},
+            field_order=['points'],
+            list_fields={'points'},
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -35,9 +36,23 @@ class Loft(BaseModel, Computable):
 
 
 
+    def translate(self, dx: float, dy: float) -> Optional[Spline]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'dx': dx,
+            'dy': dy
+        }
+        return run_method(self, 'spline_translate', _locals)
+    def rotate(self, angle: float, center: Optional[Point]=None) -> Optional[Spline]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'angle': angle,
+            'center': center
+        }
+        return run_method(self, 'spline_rotate', _locals)
 
 
-    shapes: List[ClosedShape2D] = Field(...)
-    sketchs: Optional[List[Sketch]] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_loft_sketches', 'includeInDag': True}})
+    points: List[Point] = Field(...)
+    sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'points[0].sketch if points else None'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

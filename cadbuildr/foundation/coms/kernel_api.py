@@ -36,7 +36,7 @@ class KernelApiClient:
 
     def __post_init__(self) -> None:
         self.base_url = self.base_url.rstrip("/")
-        self.api_token = self.api_token or os.getenv("KERNEL_API_TOKEN", "").strip() or None
+        self.api_token = self.api_token or os.getenv("CADBUILDR_API_KEY", "").strip() or None
         self._session = requests.Session()
 
     def close(self) -> None:

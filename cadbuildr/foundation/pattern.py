@@ -1,7 +1,7 @@
 """Pattern classes for creating repeated geometric elements."""
 
 import numpy as np
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .gen.models import Point
@@ -24,7 +24,7 @@ class CircularPattern:
         self.center = center
         self.n_instances = n_instances
 
-    def run(self, sketch_component):
+    def run(self, sketch_component: Any) -> list[Any]:
         """
         Create circular pattern by rotating sketch component.
 
@@ -34,7 +34,7 @@ class CircularPattern:
         Returns:
             List of rotated copies (excluding the original)
         """
-        output = []
+        output: list[Any] = []
         d_angle = 2 * np.pi / self.n_instances
 
         for i in range(1, self.n_instances):
@@ -63,7 +63,7 @@ class RectangularPattern:
         self.n_rows = n_rows
         self.n_cols = n_cols
 
-    def run(self, sketch_component):
+    def run(self, sketch_component: Any) -> list[list[Any]]:
         """
         Create rectangular pattern by translating sketch component.
 
@@ -73,10 +73,10 @@ class RectangularPattern:
         Returns:
             2D list of translated copies
         """
-        output = []
+        output: list[list[Any]] = []
 
         for i in range(self.n_rows):
-            row = []
+            row: list[Any] = []
             for j in range(self.n_cols):
                 translated = sketch_component.translate(self.width * j, self.height * i)
                 row.append(translated)

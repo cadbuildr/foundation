@@ -38,7 +38,7 @@ class Arc(SketchElementMixin, BaseModel, Computable):
 
 
     @staticmethod
-    def from_two_points_and_radius(p1, p2, radius) -> Optional[Arc]:
+    def from_two_points_and_radius(p1: Point, p2: Point, radius: FloatParameter) -> Optional[Arc]:
         # Build local namespace with parameters for static method
         _locals = {
             'p1': p1,
