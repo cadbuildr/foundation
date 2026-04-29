@@ -140,6 +140,56 @@ def compute_loft_sketches(
     return sketches
 
 
+@register_compute_fn("compute_sheet_metal_base_sketch")
+def compute_sheet_metal_base_sketch(
+    inst: Any, field_name: str, meta: dict[str, Any]
+) -> Sketch:
+    """Compute the sketch used by a SheetMetalBaseFlange from its profile."""
+    profile = inst.profile
+    if hasattr(profile, "sketch"):
+        sketch = profile.sketch
+        if sketch is None and hasattr(profile, "compute"):
+            sketch = profile.compute("sketch")
+        if sketch is not None:
+            return sketch
+    raise ValueError(
+        f"Profile {profile} does not provide a valid sketch for SheetMetalBaseFlange"
+    )
+
+
+@register_compute_fn("compute_sheet_metal_contour_sketch")
+def compute_sheet_metal_contour_sketch(
+    inst: Any, field_name: str, meta: dict[str, Any]
+) -> Sketch:
+    """Compute the sketch used by a SheetMetalContourFlange from its profile."""
+    profile = inst.profile
+    if hasattr(profile, "sketch"):
+        sketch = profile.sketch
+        if sketch is None and hasattr(profile, "compute"):
+            sketch = profile.compute("sketch")
+        if sketch is not None:
+            return sketch
+    raise ValueError(
+        f"Profile {profile} does not provide a valid sketch for SheetMetalContourFlange"
+    )
+
+
+@register_compute_fn("compute_multi_section_sweep_sketches")
+def compute_multi_section_sweep_sketches(
+    inst: Any, field_name: str, meta: dict[str, Any]
+) -> list[Sketch]:
+    """Compute the list of sketches from the multi-section sweep profiles."""
+    sketches = []
+    for profile in inst.profiles:
+        if hasattr(profile, "sketch"):
+            sketch = profile.sketch
+            if sketch is None and hasattr(profile, "compute"):
+                sketch = profile.compute("sketch")
+            if sketch is not None:
+                sketches.append(sketch)
+    return sketches
+
+
 @register_compute_fn("compute_sweep_sketch")
 def compute_sweep_sketch(inst: Any, field_name: str, meta: dict[str, Any]) -> Sketch:
     """Compute the sketch used by a sweep operation from its profile."""

@@ -13,6 +13,7 @@ from .gen.models import (
     EllipseArc,
     Polygon,
     CustomClosedShape,
+    CustomOpenShape,
     FloatParameter,
     Frame,
     Plane,
@@ -393,5 +394,30 @@ def custom_closed_shape_rotate(
     if center is None:
         center = inst.sketch.origin
     return CustomClosedShape(
+        primitives=[prim.rotate(angle, center) for prim in inst.primitives]
+    )
+
+
+# =================================================
+# CUSTOM OPEN SHAPE METHODS
+# =================================================
+
+
+@register_method_fn("custom_open_shape_translate")
+def custom_open_shape_translate(inst: CustomOpenShape, dx: float, dy: float) -> CustomOpenShape:
+    """Translate a custom open shape by (dx, dy)."""
+    return CustomOpenShape(
+        primitives=[prim.translate(dx, dy) for prim in inst.primitives]
+    )
+
+
+@register_method_fn("custom_open_shape_rotate")
+def custom_open_shape_rotate(
+    inst: CustomOpenShape, angle: float, center: Optional[Point] = None
+) -> CustomOpenShape:
+    """Rotate a custom open shape around a center point."""
+    if center is None:
+        center = inst.sketch.origin
+    return CustomOpenShape(
         primitives=[prim.rotate(angle, center) for prim in inst.primitives]
     )

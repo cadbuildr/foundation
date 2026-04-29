@@ -1,6 +1,6 @@
 [project]
 name = "cadbuildr-foundation"
-version = "0.2.5"
+version = "0.2.6"
 description = "Foundation library for CADbuildr - Core types for parametric CAD"
 readme = "README.md"
 requires-python = ">=3.10.0,<4.0.0"
