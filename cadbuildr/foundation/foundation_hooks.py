@@ -10,6 +10,7 @@ from cadbuildr.foundation.gen.dag.hooks import (
     register_hook,
     _global_registry,
 )
+from cadbuildr.foundation.mixin.sketch_mixin import SketchElementMixin
 
 
 def setup_foundation_hooks(registry: Optional[HookRegistry] = None) -> HookRegistry:
@@ -33,26 +34,10 @@ def setup_foundation_hooks(registry: Optional[HookRegistry] = None) -> HookRegis
         if field_name != "sketch":
             return False
 
-        # List of types that should NOT have their sketch field serialized
-        # These are typically elements INSIDE a sketch
-        sketch_element_types = {
-            "Point",
-            "Line",
-            "Circle",
-            "Arc",
-            "EllipseArc",
-            "Spline",
-            "Ellipse",
-            "Polygon",
-            "Rectangle",
-            "Square",
-            "CustomClosedShape",
-            "Fillet",
-            "Chamfer",
-            "SketchOrigin",
-        }
-
-        return obj.__class__.__name__ in sketch_element_types
+        # All SketchElementMixin types self-register into sketch.elements via
+        # model_post_init, creating a back-reference that would cause a cycle.
+        # Skipping the sketch field on these types breaks the cycle.
+        return isinstance(obj, SketchElementMixin)
 
     reg.register("should_skip_field", "*", skip_sketch_field)
 
