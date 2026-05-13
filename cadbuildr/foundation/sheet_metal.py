@@ -105,7 +105,15 @@ def edge_flange(
     flange_position: str = "material-inside",
     relief: str = "none",
 ) -> SheetMetalEdgeFlange:
-    """Add an edge flange (bend + flange wall) to a sheet-metal body."""
+    """Add an edge flange (bend + flange wall) to a sheet-metal body.
+
+    Note on rendering: in the current 3D preview the bend is drawn as a sharp
+    corner — `bend_radius` and `k_factor` are recorded on the body for the
+    downstream unfold / flat-pattern computation, but the 3D shape itself is a
+    boolean union of the parent flange and the new wall, with no curved bend
+    region. A future revision will round the bend in 3D; until then, treat the
+    preview as a topology check, not a manufacturable corner.
+    """
     return SheetMetalEdgeFlange(
         body=body,
         edge_finder=edge_finder,
@@ -154,7 +162,12 @@ def bend(
     k_factor: Optional[float] = None,
     bend_position: str = "centered",
 ) -> SheetMetalBend:
-    """Bend a flat region around an in-plane line."""
+    """Bend a flat region around an in-plane line.
+
+    Same v1 caveat as :func:`edge_flange`: the 3D preview shows a sharp
+    corner; ``radius`` / ``k_factor`` are recorded for unfold but do not
+    round the rendered geometry yet.
+    """
     return SheetMetalBend(
         body=body,
         bend_line=bend_line,

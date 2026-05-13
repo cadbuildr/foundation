@@ -32,7 +32,7 @@ class Loft(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['shapes'],
-            list_fields={'shapes', 'sketchs', 'guides'},
+            list_fields={'shapes', 'guides', 'sketchs'},
         )
         if use_normal:
             super().__init__(*args, **kwargs)

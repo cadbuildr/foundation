@@ -15,9 +15,28 @@ from .spline import Spline
 from .arc_from_two_points_and_radius import ArcFromTwoPointsAndRadius
 from .circle import Circle
 from .ellipse import Ellipse
+from .helix2_d import Helix2D
+from .three_point_arc import ThreePointArc
+from .radius_arc import RadiusArc
+from .center_arc import CenterArc
+from .tangent_arc import TangentArc
+from .jern_arc import JernArc
+from .sagitta_arc import SagittaArc
+from .elliptical_center_arc import EllipticalCenterArc
 from .ellipse_arc import EllipseArc
 from .polygon import Polygon
+from .slot_center_to_center import SlotCenterToCenter
+from .slot_center_point import SlotCenterPoint
+from .slot_overall import SlotOverall
+from .polyline import Polyline
+from .fillet_polyline import FilletPolyline
+from .triangle import Triangle
+from .trapezoid import Trapezoid
+from .rectangle_rounded import RectangleRounded
+from .regular_polygon import RegularPolygon
 from .hexagon import Hexagon
+from .bezier import Bezier
+from .b_spline import BSpline
 from .custom_closed_shape import CustomClosedShape
 from .custom_open_shape import CustomOpenShape
 from .svg_shape import SVGShape
@@ -33,8 +52,29 @@ from .helix3_d import Helix3D
 from .spline3_d import Spline3D
 from .sketch import Sketch
 from .extrusion import Extrusion
+from .tapped_hole import TappedHole
 from .hole import Hole
+from .draft import Draft
+from .convex_hull import ConvexHull
+from .trace import Trace
+from .full_round import FullRound
+from .section import Section
+from .split import Split
+from .project import Project
+from .offset2_d import Offset2D
+from .scale import Scale
+from .mirror import Mirror
+from .bounding_box import BoundingBox
+from .text import Text
+from .wedge import Wedge
+from .sphere import Sphere
+from .cylinder import Cylinder
+from .cone import Cone
+from .torus import Torus
+from .box import Box
 from .axis import Axis
+from .counter_bore_hole import CounterBoreHole
+from .counter_sink_hole import CounterSinkHole
 from .lathe import Lathe
 from .loft import Loft
 from .sweep import Sweep
@@ -60,6 +100,13 @@ from .in_box_finder_rule import InBoxFinderRule
 from .in_direction_finder_rule import InDirectionFinderRule
 from .and_finder_rule import AndFinderRule
 from .either_finder_rule import EitherFinderRule
+from .is_circle_rule import IsCircleRule
+from .of_type_rule import OfTypeRule
+from .length_range_rule import LengthRangeRule
+from .radius_range_rule import RadiusRangeRule
+from .parallel_to_axis_rule import ParallelToAxisRule
+from .on_face_rule import OnFaceRule
+from .sort_by_rule import SortByRule
 from .edge_finder import EdgeFinder
 from .fillet import Fillet
 from .chamfer import Chamfer
@@ -107,11 +154,49 @@ Circle.model_rebuild()
 
 Ellipse.model_rebuild()
 
+Helix2D.model_rebuild()
+
+ThreePointArc.model_rebuild()
+
+RadiusArc.model_rebuild()
+
+CenterArc.model_rebuild()
+
+TangentArc.model_rebuild()
+
+JernArc.model_rebuild()
+
+SagittaArc.model_rebuild()
+
+EllipticalCenterArc.model_rebuild()
+
 EllipseArc.model_rebuild()
 
 Polygon.model_rebuild()
 
+SlotCenterToCenter.model_rebuild()
+
+SlotCenterPoint.model_rebuild()
+
+SlotOverall.model_rebuild()
+
+Polyline.model_rebuild()
+
+FilletPolyline.model_rebuild()
+
+Triangle.model_rebuild()
+
+Trapezoid.model_rebuild()
+
+RectangleRounded.model_rebuild()
+
+RegularPolygon.model_rebuild()
+
 Hexagon.model_rebuild()
+
+Bezier.model_rebuild()
+
+BSpline.model_rebuild()
 
 CustomClosedShape.model_rebuild()
 
@@ -143,9 +228,51 @@ Sketch.model_rebuild()
 
 Extrusion.model_rebuild()
 
+TappedHole.model_rebuild()
+
 Hole.model_rebuild()
 
+Draft.model_rebuild()
+
+ConvexHull.model_rebuild()
+
+Trace.model_rebuild()
+
+FullRound.model_rebuild()
+
+Section.model_rebuild()
+
+Split.model_rebuild()
+
+Project.model_rebuild()
+
+Offset2D.model_rebuild()
+
+Scale.model_rebuild()
+
+Mirror.model_rebuild()
+
+BoundingBox.model_rebuild()
+
+Text.model_rebuild()
+
+Wedge.model_rebuild()
+
+Sphere.model_rebuild()
+
+Cylinder.model_rebuild()
+
+Cone.model_rebuild()
+
+Torus.model_rebuild()
+
+Box.model_rebuild()
+
 Axis.model_rebuild()
+
+CounterBoreHole.model_rebuild()
+
+CounterSinkHole.model_rebuild()
 
 Lathe.model_rebuild()
 
@@ -197,6 +324,20 @@ AndFinderRule.model_rebuild()
 
 EitherFinderRule.model_rebuild()
 
+IsCircleRule.model_rebuild()
+
+OfTypeRule.model_rebuild()
+
+LengthRangeRule.model_rebuild()
+
+RadiusRangeRule.model_rebuild()
+
+ParallelToAxisRule.model_rebuild()
+
+OnFaceRule.model_rebuild()
+
+SortByRule.model_rebuild()
+
 EdgeFinder.model_rebuild()
 
 Fillet.model_rebuild()
@@ -222,67 +363,105 @@ Assembly.model_rebuild()
 AssemblyRoot.model_rebuild()
 
 from ..runtime import register_type
-register_type("Arc", Arc)
+register_type("Split", Split)
 
-register_type("InterfaceGridSpec", InterfaceGridSpec)
+register_type("BSpline", BSpline)
+
+register_type("SortByRule", SortByRule)
+
+register_type("IsCircleRule", IsCircleRule)
+
+register_type("Frame", Frame)
+
+register_type("MultiSectionSweep", MultiSectionSweep)
+
+register_type("SurfaceLoft", SurfaceLoft)
 
 register_type("Material", Material)
+
+register_type("Arc", Arc)
 
 register_type("Stitch", Stitch)
 
 register_type("Sweep", Sweep)
 
-register_type("MultiSectionSweep", MultiSectionSweep)
-
-register_type("Thicken", Thicken)
-
-register_type("Extrusion", Extrusion)
-
-register_type("SurfaceLoft", SurfaceLoft)
+register_type("Text", Text)
 
 register_type("SVGShape", SVGShape)
 
+register_type("Thicken", Thicken)
+
+register_type("InterfaceGridSpec", InterfaceGridSpec)
+
+register_type("Sphere", Sphere)
+
 register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
 
-register_type("Frame", Frame)
+register_type("SheetMetalEdgeFlange", SheetMetalEdgeFlange)
+
+register_type("SheetMetalCornerSeam", SheetMetalCornerSeam)
+
+register_type("SheetMetalBend", SheetMetalBend)
+
+register_type("Plane", Plane)
+
+register_type("CenterArc", CenterArc)
+
+register_type("Extrusion", Extrusion)
 
 register_type("Helix3D", Helix3D)
 
 register_type("Loft", Loft)
 
-register_type("SheetMetalBend", SheetMetalBend)
+register_type("EllipticalCenterArc", EllipticalCenterArc)
 
-register_type("SheetMetalCornerSeam", SheetMetalCornerSeam)
-
-register_type("SheetMetalEdgeFlange", SheetMetalEdgeFlange)
-
-register_type("Hole", Hole)
-
-register_type("Plane", Plane)
-
-register_type("Thread", Thread)
+register_type("SlotOverall", SlotOverall)
 
 register_type("Part", Part)
 
+register_type("Assembly", Assembly)
+
 register_type("InPlaneFinderRule", InPlaneFinderRule)
 
-register_type("Assembly", Assembly)
+register_type("Box", Box)
+
+register_type("Hole", Hole)
+
+register_type("Thread", Thread)
 
 register_type("AssemblyInterface", AssemblyInterface)
 
-register_type("Lathe", Lathe)
-
-register_type("Square", Square)
+register_type("TappedHole", TappedHole)
 
 register_type("Hexagon", Hexagon)
 
+register_type("Square", Square)
+
+register_type("RegularPolygon", RegularPolygon)
+
+register_type("Triangle", Triangle)
+
 register_type("Rectangle", Rectangle)
+
+register_type("Trapezoid", Trapezoid)
+
+register_type("Lathe", Lathe)
 
 register_type("SquareFromCenterAndSide", SquareFromCenterAndSide)
 
 register_type("RectangleFromCenterAndSides", RectangleFromCenterAndSides)
 
 register_type("RectangleFrom2Points", RectangleFrom2Points)
+
+register_type("Torus", Torus)
+
+register_type("CounterBoreHole", CounterBoreHole)
+
+register_type("Cone", Cone)
+
+register_type("Cylinder", Cylinder)
+
+register_type("CounterSinkHole", CounterSinkHole)
 try:
     from ... import compute_functions  # noqa: F401
 except ImportError:
@@ -302,9 +481,28 @@ __all__ = [
     "ArcFromTwoPointsAndRadius",
     "Circle",
     "Ellipse",
+    "Helix2D",
+    "ThreePointArc",
+    "RadiusArc",
+    "CenterArc",
+    "TangentArc",
+    "JernArc",
+    "SagittaArc",
+    "EllipticalCenterArc",
     "EllipseArc",
     "Polygon",
+    "SlotCenterToCenter",
+    "SlotCenterPoint",
+    "SlotOverall",
+    "Polyline",
+    "FilletPolyline",
+    "Triangle",
+    "Trapezoid",
+    "RectangleRounded",
+    "RegularPolygon",
     "Hexagon",
+    "Bezier",
+    "BSpline",
     "CustomClosedShape",
     "CustomOpenShape",
     "SVGShape",
@@ -320,8 +518,29 @@ __all__ = [
     "Spline3D",
     "Sketch",
     "Extrusion",
+    "TappedHole",
     "Hole",
+    "Draft",
+    "ConvexHull",
+    "Trace",
+    "FullRound",
+    "Section",
+    "Split",
+    "Project",
+    "Offset2D",
+    "Scale",
+    "Mirror",
+    "BoundingBox",
+    "Text",
+    "Wedge",
+    "Sphere",
+    "Cylinder",
+    "Cone",
+    "Torus",
+    "Box",
     "Axis",
+    "CounterBoreHole",
+    "CounterSinkHole",
     "Lathe",
     "Loft",
     "Sweep",
@@ -347,6 +566,13 @@ __all__ = [
     "InDirectionFinderRule",
     "AndFinderRule",
     "EitherFinderRule",
+    "IsCircleRule",
+    "OfTypeRule",
+    "LengthRangeRule",
+    "RadiusRangeRule",
+    "ParallelToAxisRule",
+    "OnFaceRule",
+    "SortByRule",
     "EdgeFinder",
     "Fillet",
     "Chamfer",

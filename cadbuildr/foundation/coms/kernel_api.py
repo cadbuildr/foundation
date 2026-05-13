@@ -35,7 +35,15 @@ class KernelApiClient:
     api_token: str | None = None
 
     def __post_init__(self) -> None:
-        self.base_url = self.base_url.rstrip("/")
+        # Prefer explicit CAD_COMPILE_API_BASE_URL (used across dev/tests) then CADBUILDR_KERNEL_API_BASE_URL.
+        env_base = (
+            os.getenv("CAD_COMPILE_API_BASE_URL", "").strip()
+            or os.getenv("CADBUILDR_KERNEL_API_BASE_URL", "").strip()
+        )
+        if env_base:
+            self.base_url = env_base.rstrip("/")
+        else:
+            self.base_url = self.base_url.rstrip("/")
         self.api_token = self.api_token or os.getenv("CADBUILDR_API_KEY", "").strip() or None
         self._session = requests.Session()
 

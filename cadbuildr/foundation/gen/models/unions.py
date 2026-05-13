@@ -8,33 +8,52 @@ from .arc import Arc
 from .assembly_root import AssemblyRoot
 from .at_angle_finder_rule import AtAngleFinderRule
 from .at_distance_finder_rule import AtDistanceFinderRule
+from .b_spline import BSpline
+from .bezier import Bezier
+from .bounding_box import BoundingBox
 from .chamfer import Chamfer
 from .circle import Circle
 from .contains_point_finder_rule import ContainsPointFinderRule
+from .convex_hull import ConvexHull
 from .custom_closed_shape import CustomClosedShape
 from .custom_open_shape import CustomOpenShape
+from .draft import Draft
 from .either_finder_rule import EitherFinderRule
 from .ellipse import Ellipse
 from .ellipse_arc import EllipseArc
 from .extrusion import Extrusion
 from .fillet import Fillet
+from .full_round import FullRound
 from .helix3_d import Helix3D
 from .hexagon import Hexagon
 from .hole import Hole
 from .in_box_finder_rule import InBoxFinderRule
 from .in_direction_finder_rule import InDirectionFinderRule
 from .in_plane_finder_rule import InPlaneFinderRule
+from .is_circle_rule import IsCircleRule
 from .lathe import Lathe
+from .length_range_rule import LengthRangeRule
 from .line import Line
 from .loft import Loft
+from .mirror import Mirror
 from .multi_section_sweep import MultiSectionSweep
+from .of_type_rule import OfTypeRule
+from .offset2_d import Offset2D
+from .on_face_rule import OnFaceRule
+from .parallel_to_axis_rule import ParallelToAxisRule
 from .part_root import PartRoot
 from .point import Point
 from .polygon import Polygon
+from .project import Project
+from .radius_range_rule import RadiusRangeRule
 from .rectangle import Rectangle
 from .rectangle_from2_points import RectangleFrom2Points
 from .rectangle_from_center_and_sides import RectangleFromCenterAndSides
+from .rectangle_rounded import RectangleRounded
+from .regular_polygon import RegularPolygon
 from .svg_shape import SVGShape
+from .scale import Scale
+from .section import Section
 from .sheet_metal_base_flange import SheetMetalBaseFlange
 from .sheet_metal_bend import SheetMetalBend
 from .sheet_metal_contour_flange import SheetMetalContourFlange
@@ -42,24 +61,34 @@ from .sheet_metal_corner_seam import SheetMetalCornerSeam
 from .sheet_metal_edge_flange import SheetMetalEdgeFlange
 from .sheet_metal_to_solid import SheetMetalToSolid
 from .shell import Shell
+from .slot_center_point import SlotCenterPoint
+from .slot_center_to_center import SlotCenterToCenter
+from .slot_overall import SlotOverall
+from .sort_by_rule import SortByRule
+from .sphere import Sphere
 from .spline import Spline
 from .spline3_d import Spline3D
+from .split import Split
 from .square import Square
 from .square_from_center_and_side import SquareFromCenterAndSide
 from .stitch import Stitch
 from .surface_loft import SurfaceLoft
 from .sweep import Sweep
+from .text import Text
 from .thicken import Thicken
 from .thread import Thread
+from .trapezoid import Trapezoid
+from .triangle import Triangle
 from .unfold import Unfold
-BoundaryElement2D = Union[Line, Arc, EllipseArc, Spline]
-ClosedShape2D = Union[Circle, Ellipse, Polygon, Hexagon, CustomClosedShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
-LoftSection2D = Union[Circle, Ellipse, Polygon, Hexagon, CustomClosedShape, CustomOpenShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
-Shape2D = Union[Circle, Ellipse, Polygon, CustomClosedShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides, Line, Arc, EllipseArc, Spline, Point]
+from .wedge import Wedge
+BoundaryElement2D = Union[Line, Arc, EllipseArc, Spline, Bezier, BSpline]
+ClosedShape2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, RectangleRounded, Trapezoid, Triangle, SlotCenterToCenter, SlotOverall, SlotCenterPoint, Offset2D, Text, ConvexHull, CustomClosedShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
+LoftSection2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, CustomClosedShape, CustomOpenShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
+Shape2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, CustomClosedShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides, Line, Arc, EllipseArc, Spline, Point]
 Path3D = Union[Helix3D, Spline3D]
-SolidOperation = Union[Extrusion, Lathe, Loft, Sweep, MultiSectionSweep, Thicken, Stitch, Shell, SheetMetalToSolid]
+SolidOperation = Union[Extrusion, Lathe, Loft, Sweep, MultiSectionSweep, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere]
 SurfaceOperation = Union[SurfaceLoft]
 SheetMetalOperation = Union[SheetMetalBaseFlange, SheetMetalEdgeFlange, SheetMetalContourFlange, SheetMetalBend, SheetMetalCornerSeam, Unfold]
-FinderRule = Union[InPlaneFinderRule, AtAngleFinderRule, AtDistanceFinderRule, ContainsPointFinderRule, InBoxFinderRule, InDirectionFinderRule, AndFinderRule, EitherFinderRule]
-Operation = Union[Extrusion, Hole, Lathe, Loft, Sweep, Thread, Fillet, Chamfer, MultiSectionSweep, SurfaceLoft, Thicken, Stitch, Shell, SheetMetalToSolid]
+FinderRule = Union[InPlaneFinderRule, AtAngleFinderRule, AtDistanceFinderRule, ContainsPointFinderRule, InBoxFinderRule, InDirectionFinderRule, AndFinderRule, EitherFinderRule, IsCircleRule, OfTypeRule, LengthRangeRule, RadiusRangeRule, ParallelToAxisRule, OnFaceRule, SortByRule]
+Operation = Union[Extrusion, Hole, Lathe, Loft, Sweep, Thread, Fillet, Chamfer, MultiSectionSweep, SurfaceLoft, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere, Mirror, BoundingBox, Scale, Wedge, Section, Split, Project, Draft, FullRound]
 ComponentRoot = Union[PartRoot, AssemblyRoot]

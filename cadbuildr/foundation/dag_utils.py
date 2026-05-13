@@ -29,9 +29,13 @@ def show_dag(obj: Any, valid_types: Optional[List[str]] = None) -> Dict[str, Any
     # Convert Part/Assembly subclasses to their root representations
     # This ensures custom Part/Assembly classes get converted to PartRoot/AssemblyRoot
     if isinstance(obj, (Part, Assembly)):
-        from cadbuildr.foundation.compute_functions import _convert_component_to_root
+        from cadbuildr.foundation.compute_functions import (  # pragma: allowlist secret
+            _convert_component_to_root,
+            _finalize_root_names,
+        )
 
         obj = _convert_component_to_root(obj)
+        _finalize_root_names(obj)
 
     # Set up foundation-specific hooks
     hooks = setup_foundation_hooks()
@@ -73,21 +77,25 @@ def show(obj: Any, valid_types: Optional[List[str]] = None) -> Optional[str]:
 
         # Convert Part to PartRoot for viewer compatibility
         if isinstance(obj, Part):
-            from cadbuildr.foundation.compute_functions import (
+            from cadbuildr.foundation.compute_functions import (  # pragma: allowlist secret
                 _convert_component_to_root,
+                _finalize_root_names,
             )
 
             obj = _convert_component_to_root(obj)
+            _finalize_root_names(obj)
 
         # Convert Assembly to AssemblyRoot
         if isinstance(obj, Assembly):
             # Import here to avoid circular dependency
-            from cadbuildr.foundation.compute_functions import (
+            from cadbuildr.foundation.compute_functions import (  # pragma: allowlist secret
                 _convert_component_to_root,
+                _finalize_root_names,
             )
 
             # Use _convert_component_to_root which handles frame hierarchy correctly
             obj = _convert_component_to_root(obj)
+            _finalize_root_names(obj)
 
         dag = show_dag(obj, valid_types)
 

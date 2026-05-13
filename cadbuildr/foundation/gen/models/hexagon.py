@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
 from ..runtime import Computable, Expandable, _eval_expr, run_method
+from cadbuildr.foundation.mixin.sketch_mixin import SketchElementMixin
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from .polygon import Polygon
     from .sketch import Sketch
 
-class Hexagon(ParameterFieldsMixin, BaseModel, Computable, Expandable):
+class Hexagon(SketchElementMixin, ParameterFieldsMixin, BaseModel, Computable, Expandable):
     """Generated from GraphQL object Hexagon."""
 
 

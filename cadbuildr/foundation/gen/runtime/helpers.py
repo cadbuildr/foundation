@@ -157,10 +157,10 @@ def _eval_expr(root, expr: str, local_vars: Optional[Dict[str, Any]] = None):
                             # This will be something like 'smoothies.gen.runtime.helpers'
                             current_module = __name__
                             if current_module and '.gen.runtime.helpers' in current_module:
-                                # Replace .gen.runtime.helpers with .gen.models
+                                # Replace.gen.runtime.helpers with.gen.models
                                 models_module_name = current_module.replace('.gen.runtime.helpers', '.gen.models')
                             elif current_module and '.gen.runtime' in current_module:
-                                # Replace .gen.runtime with .gen.models (handles .gen.runtime.something)
+                                # Replace.gen.runtime with.gen.models (handles.gen.runtime.something)
                                 models_module_name = current_module.replace('.gen.runtime', '.gen.models').rsplit('.', 1)[0]
                             elif current_module and 'runtime' in current_module:
                                 # Fallback: try to replace 'runtime' with 'models' in module path
@@ -184,12 +184,30 @@ def _eval_expr(root, expr: str, local_vars: Optional[Dict[str, Any]] = None):
             if isinstance(root, dict):
                 namespace.update(root)
             elif root is not None:
-                # Add the current object and its attributes to the namespace
-                namespace.update(vars(root) if hasattr(root, '__dict__') else {})
-                # For pydantic models, also include the field values
-                if hasattr(root, '__dict__'):
-                    for key, value in root.__dict__.items():
-                        namespace[key] = value
+                # Build the namespace through `getattr`, not `vars(root)` /
+                # `root.__dict__`. The raw-dict path bypasses any custom
+                # `__getattribute__` (Computable's lazy-compute hook in
+                # particular), which means @compute fields read as None when
+                # one @compute references another. Going through getattr lets
+                # Computable trigger and cache the dependent fields before
+                # this expression evaluates.
+                #
+                # Pydantic v2 model fields live on `__class__.model_fields`;
+                # iterate those when available, falling back to `__dict__`
+                # keys for plain objects.
+                model_cls = type(root)
+                if hasattr(model_cls, "model_fields"):
+                    for field_name in model_cls.model_fields.keys():
+                        try:
+                            namespace[field_name] = getattr(root, field_name)
+                        except (AttributeError, ValueError):
+                            namespace[field_name] = None
+                elif hasattr(root, "__dict__"):
+                    for key in list(root.__dict__.keys()):
+                        try:
+                            namespace[key] = getattr(root, key)
+                        except (AttributeError, ValueError):
+                            namespace[key] = None
             # If root is None (static methods), just use registry namespace + local_vars
             
             # Add method parameters to evaluation context

@@ -57,5 +57,7 @@ class Spline(SketchElementMixin, BaseModel, Computable):
 
     points: List[Point] = Field(...)
     sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'points[0].sketch if points else None'}})
+    start_tangent: Optional[Point] = Field(default=None)
+    end_tangent: Optional[Point] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

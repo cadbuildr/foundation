@@ -94,6 +94,20 @@ DEFAULT_VALID_TYPES: list[str] = [
     "FixedTranslationConstraint",
     "InterfaceGridSpec",
     "AssemblyInterface",
+    "Sphere",
+    "Mirror",
+    "BoundingBox",
+    "Scale",
+    "Offset2D",
+    "Bezier",
+    "BSpline",
+    "Wedge",
+    "Section",
+    "Split",
+    "Project",
+    "Text",
+    "Draft",
+    "FullRound",
 ]
 
 DEFAULT_TYPE_REGISTRY: dict[str, int] = {

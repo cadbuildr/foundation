@@ -106,18 +106,80 @@ def get_screenshot_main(argv: List[str] | None = None) -> int:
         "--output",
         help="Output file path (default: stdout). If provided, decodes base64 and saves as PNG.",
     )
+    parser.add_argument(
+        "--view",
+        choices=sorted(
+            {
+                "iso",
+                "current",
+                "top",
+                "bottom",
+                "left",
+                "right",
+                "front",
+                "back",
+            }
+        ),
+        default="iso",
+        help="Camera preset before capture (default: iso).",
+    )
+    parser.add_argument(
+        "--plane",
+        help="Legacy alias for --view (case-insensitive).",
+    )
+    parser.add_argument(
+        "--zoom",
+        type=float,
+        help="Framing zoom scale (>1 zooms out, <1 zooms in).",
+    )
+    parser.add_argument(
+        "--camera",
+        nargs=3,
+        type=float,
+        metavar=("X", "Y", "Z"),
+        help="World-space camera position (use with --target or an existing model bbox).",
+    )
+    parser.add_argument(
+        "--target",
+        nargs=3,
+        type=float,
+        metavar=("X", "Y", "Z"),
+        help="World-space look-at point (defaults to model center when bounds exist).",
+    )
+    parser.add_argument(
+        "--up",
+        nargs=3,
+        type=float,
+        metavar=("X", "Y", "Z"),
+        help="World-space camera up vector (optional).",
+    )
 
     args = parser.parse_args(argv)
 
     try:
-        # Request current viewer screenshot
+        from .coms.screenshot_framing import build_screenshot_framing
+
         import requests
 
         broker_url = args.broker_url or "http://localhost:5050"
 
-        # Request screenshot from viewer - broker will wait synchronously for response
+        try:
+            framing = build_screenshot_framing(
+                view=args.view,
+                plane=args.plane,
+                zoom=args.zoom,
+                camera_position=args.camera,
+                target=args.target,
+                up=args.up,
+            )
+        except ValueError as exc:
+            print(f"Error: {exc}")
+            return 1
+
         response = requests.post(
-            f"{broker_url}/screenshot/request", json={}, timeout=15.0
+            f"{broker_url.rstrip('/')}/screenshot/request",
+            json={"format": "png", "framing": framing},
+            timeout=15.0,
         )
 
         if response.status_code != 200:

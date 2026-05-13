@@ -1,27 +1,35 @@
 """CADbuildr Foundation - Core types for parametric CAD (auto-generated from GraphQL schema)."""
 
 # Re-export all generated types dynamically
-from .gen.models import *
-from .gen.runtime import *
+from.gen.models import *
+from.gen.runtime import *
 
 # Import compute functions to register them
-from . import compute_functions  # noqa: F401
+from. import compute_functions  # noqa: F401
 
 # Import shape transformation methods to register them
-from . import shape_methods  # noqa: F401
+from. import shape_methods  # noqa: F401
 
 # Import helpers to add monkey-patched methods
-from . import helpers  # noqa: F401
+from. import helpers  # noqa: F401
 
 # Export PlaneFactory for backward compatibility
-from .helpers import PlaneFactory, TFHelper
+from.helpers import PlaneFactory, TFHelper
 
 # Export pattern classes
-from .pattern import CircularPattern, RectangularPattern
+from.pattern import (
+    CircularPattern,
+    RectangularPattern,
+    GridLocations,
+    HexLocations,
+    PolarLocations,
+    Locations,
+)
 
 # DAG and WebRTC utilities
-from .dag_utils import show, show_dag
-from .coms.utils_webrtc import (
+from.dag_utils import show, show_dag
+from.coms.screenshot_framing import build_screenshot_framing, request_viewer_screenshot
+from.coms.utils_webrtc import (
     set_port,
     set_broker_url,
     get_build_status,
@@ -29,7 +37,7 @@ from .coms.utils_webrtc import (
     wait_for_feedback,
     collect_and_display_feedback,
 )
-from .coms.kernel_api import KernelApiClient, KernelApiError
+from.coms.kernel_api import KernelApiClient, KernelApiError
 
 
 # Helpful error hints for unknown-symbol imports (PEP 562).
