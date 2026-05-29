@@ -9,9 +9,8 @@ from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFie
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .bool_parameter import BoolParameter
+    from .extrusion import Extrusion
     from .float_parameter import FloatParameter
-    from .lathe import Lathe
-    from .line import Line
     from .point import Point
 
 class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
@@ -32,7 +31,7 @@ class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['center', 'radius', 'height'],
-            list_fields={'profile_lines'},
+            list_fields=None,
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -48,8 +47,8 @@ class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
     radius: FloatParameter = Field(...)
     height: FloatParameter = Field(...)
     cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
-    profile_lines: Optional[List[Line]] = Field(default=None, json_schema_extra={'compute': {'expr': '[Line(p1=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value), y=FloatParameter(value=center.y.value - height.value / 2)), p2=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value + radius.value), y=FloatParameter(value=center.y.value - height.value / 2))), Line(p1=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value + radius.value), y=FloatParameter(value=center.y.value - height.value / 2)), p2=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value + radius.value), y=FloatParameter(value=center.y.value + height.value / 2))), Line(p1=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value + radius.value), y=FloatParameter(value=center.y.value + height.value / 2)), p2=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value), y=FloatParameter(value=center.y.value + height.value / 2))), Line(p1=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value), y=FloatParameter(value=center.y.value + height.value / 2)), p2=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value), y=FloatParameter(value=center.y.value - height.value / 2)))]'}})
-    axis_line: Optional[Line] = Field(default=None, json_schema_extra={'compute': {'expr': 'Line(p1=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value), y=FloatParameter(value=center.y.value + height.value / 2)), p2=Point(sketch=center.sketch, x=FloatParameter(value=center.x.value), y=FloatParameter(value=center.y.value - height.value / 2)))'}})
-    result: Optional[Lathe] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': {'__typename': 'Polygon', 'lines': '$profile_lines'}, 'axis': {'__typename': 'Axis', 'line': '$axis_line'}, 'cut': '$cut'}}})
+    half_height: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=height.value / 2.0)'}})
+    neg_half_height: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=-height.value / 2.0)'}})
+    result: Optional[Extrusion] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': [{'__typename': 'Circle', 'center': '$center', 'radius': '$radius'}], 'start': '$neg_half_height', 'end': '$half_height', 'cut': '$cut'}}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

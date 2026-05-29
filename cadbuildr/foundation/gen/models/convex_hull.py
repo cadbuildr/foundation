@@ -30,7 +30,7 @@ class ConvexHull(BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['points'],
-            list_fields={'hull_lines', 'points'},
+            list_fields={'points', 'hull_lines'},
         )
         if use_normal:
             super().__init__(*args, **kwargs)

@@ -1,10 +1,10 @@
 """Cut-field plumbing for Box / Cylinder / Sphere.
 
-Box and Cylinder @expand into Extrusion / Lathe respectively; the cut
-flag must propagate through the expansion. Sphere is native and exposes
-the field directly. PartRoot consumes `.cut` on each operation node to
-choose fuse vs. cut at part-build time, so all three primitives can act
-as subtractive operations once they ship cut=True."""
+Box and Cylinder both @expand into Extrusion; the cut flag must propagate
+through the expansion. Sphere is native and exposes the field directly.
+PartRoot consumes `.cut` on each operation node to choose fuse vs. cut at
+part-build time, so all three primitives can act as subtractive operations
+once they ship cut=True."""
 
 from cadbuildr.foundation.gen.models import (
     Part, Sketch, Box, Cylinder, Sphere, BoolParameter,
@@ -65,13 +65,13 @@ def test_box_with_cut_true_propagates_to_extrusion():
     assert False in bools
 
 
-def test_cylinder_with_cut_true_propagates_to_lathe():
-    """Cylinder(cut=True) → its expanded Lathe must carry cut=True."""
+def test_cylinder_with_cut_true_propagates_to_extrusion():
+    """Cylinder(cut=True) → its expanded Extrusion must carry cut=True."""
 
     class P(Part):
         def __init__(self):
             s = Sketch(self.xy())
-            self.add_operation(Box(center=s.origin, w=10, h=10, d=10))
+            self.add_operation(Box(center=s.origin, w=10, d=10, h=10))
             self.add_operation(
                 Cylinder(
                     center=s.origin, radius=2, height=10,
@@ -80,7 +80,7 @@ def test_cylinder_with_cut_true_propagates_to_lathe():
             )
 
     dag = show_dag(P())
-    assert _dag_has_type(dag, "Lathe")
+    assert _dag_has_type(dag, "Extrusion")
     assert True in _bool_values_in_dag(dag)
 
 

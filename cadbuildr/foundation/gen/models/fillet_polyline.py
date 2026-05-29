@@ -32,7 +32,7 @@ class FilletPolyline(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['points', 'radius'],
-            list_fields={'points', 'primitives'},
+            list_fields={'primitives', 'points'},
         )
         if use_normal:
             super().__init__(*args, **kwargs)

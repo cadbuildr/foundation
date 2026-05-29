@@ -1259,8 +1259,11 @@ def _translate_component_root(component_root: Any, vector: Sequence[float]) -> N
 @register_method_fn("add_component_method")
 def add_component_method(inst: Assembly, component: Any, tf: Any = None) -> bool:
     """Add a component (part or assembly) to an assembly."""
-    # Pass the assembly's frame as parent so child frames become relative to it
-    component_root = _convert_component_to_root(component, parent_frame=inst.frame)
+    component_root = _convert_component_to_root(
+        component,
+        parent_frame=inst.frame,
+        component_path=(len(inst.components),),
+    )
     translation, quaternion = _parse_component_tf(tf)
     if translation is not None:
         _apply_translation_to_root(component_root, translation)

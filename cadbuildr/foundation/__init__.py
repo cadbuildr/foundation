@@ -26,6 +26,17 @@ from.pattern import (
     Locations,
 )
 
+# SDK parameter schema decorators
+from .parameters import (
+    Bool,
+    Color,
+    Enum,
+    Float,
+    Int,
+    ParameterDescriptor,
+    cadbuildr_project,
+)
+
 # DAG and WebRTC utilities
 from.dag_utils import show, show_dag
 from.coms.screenshot_framing import build_screenshot_framing, request_viewer_screenshot

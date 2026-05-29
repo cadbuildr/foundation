@@ -363,39 +363,41 @@ Assembly.model_rebuild()
 AssemblyRoot.model_rebuild()
 
 from ..runtime import register_type
-register_type("Split", Split)
-
 register_type("BSpline", BSpline)
-
-register_type("SortByRule", SortByRule)
 
 register_type("IsCircleRule", IsCircleRule)
 
 register_type("Frame", Frame)
 
+register_type("SortByRule", SortByRule)
+
+register_type("Material", Material)
+
+register_type("Split", Split)
+
 register_type("MultiSectionSweep", MultiSectionSweep)
 
 register_type("SurfaceLoft", SurfaceLoft)
 
-register_type("Material", Material)
+register_type("Stitch", Stitch)
+
+register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
 
 register_type("Arc", Arc)
 
-register_type("Stitch", Stitch)
-
-register_type("Sweep", Sweep)
-
 register_type("Text", Text)
-
-register_type("SVGShape", SVGShape)
 
 register_type("Thicken", Thicken)
 
-register_type("InterfaceGridSpec", InterfaceGridSpec)
-
 register_type("Sphere", Sphere)
 
-register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
+register_type("Sweep", Sweep)
+
+register_type("InterfaceGridSpec", InterfaceGridSpec)
+
+register_type("SVGShape", SVGShape)
+
+register_type("Plane", Plane)
 
 register_type("SheetMetalEdgeFlange", SheetMetalEdgeFlange)
 
@@ -403,63 +405,61 @@ register_type("SheetMetalCornerSeam", SheetMetalCornerSeam)
 
 register_type("SheetMetalBend", SheetMetalBend)
 
-register_type("Plane", Plane)
-
 register_type("CenterArc", CenterArc)
-
-register_type("Extrusion", Extrusion)
-
-register_type("Helix3D", Helix3D)
-
-register_type("Loft", Loft)
 
 register_type("EllipticalCenterArc", EllipticalCenterArc)
 
-register_type("SlotOverall", SlotOverall)
+register_type("Loft", Loft)
 
-register_type("Part", Part)
+register_type("Helix3D", Helix3D)
+
+register_type("Extrusion", Extrusion)
 
 register_type("Assembly", Assembly)
 
+register_type("Part", Part)
+
 register_type("InPlaneFinderRule", InPlaneFinderRule)
 
-register_type("Box", Box)
+register_type("SlotOverall", SlotOverall)
+
+register_type("Thread", Thread)
+
+register_type("Cylinder", Cylinder)
 
 register_type("Hole", Hole)
 
-register_type("Thread", Thread)
+register_type("Box", Box)
+
+register_type("Cone", Cone)
 
 register_type("AssemblyInterface", AssemblyInterface)
 
 register_type("TappedHole", TappedHole)
 
-register_type("Hexagon", Hexagon)
-
-register_type("Square", Square)
-
-register_type("RegularPolygon", RegularPolygon)
+register_type("Rectangle", Rectangle)
 
 register_type("Triangle", Triangle)
 
-register_type("Rectangle", Rectangle)
+register_type("RegularPolygon", RegularPolygon)
 
 register_type("Trapezoid", Trapezoid)
 
+register_type("Square", Square)
+
+register_type("Hexagon", Hexagon)
+
 register_type("Lathe", Lathe)
 
-register_type("SquareFromCenterAndSide", SquareFromCenterAndSide)
+register_type("RectangleFrom2Points", RectangleFrom2Points)
 
 register_type("RectangleFromCenterAndSides", RectangleFromCenterAndSides)
 
-register_type("RectangleFrom2Points", RectangleFrom2Points)
+register_type("SquareFromCenterAndSide", SquareFromCenterAndSide)
 
 register_type("Torus", Torus)
 
 register_type("CounterBoreHole", CounterBoreHole)
-
-register_type("Cone", Cone)
-
-register_type("Cylinder", Cylinder)
 
 register_type("CounterSinkHole", CounterSinkHole)
 try:

@@ -6,12 +6,12 @@ from cadbuildr.foundation.foundation_hooks import setup_foundation_hooks
 
 
 def test_box_construction_and_expansion():
-    """Box(center, w, h, d) should auto-expand into an Extrusion at DAG time."""
+    """Box(center, w, d, h) should auto-expand into an Extrusion at DAG time."""
 
     class BoxPart(Part):
-        def __init__(self, w=10, h=20, d=30):
+        def __init__(self, w=10, d=20, h=30):
             s = Sketch(self.xy())
-            box = Box(s.origin, w=w, h=h, d=d)
+            box = Box(s.origin, w=w, d=d, h=h)
             self.add_operation(box)
 
     part = BoxPart()
@@ -20,7 +20,6 @@ def test_box_construction_and_expansion():
     hooks = setup_foundation_hooks()
     pydantic_to_dag(part, memo=memo, type_registry=type_registry, hooks=hooks)
 
-    # Box is not in DEFAULT_VALID_TYPES, so it must auto-expand to Extrusion.
     extrusion_nodes = [
         n for n in memo.values() if n["type"] == type_registry.get("Extrusion")
     ]
@@ -31,12 +30,12 @@ def test_box_construction_and_expansion():
 
 
 def test_box_extrusion_shape_is_rectangle():
-    """The expanded Extrusion's shape must be a Rectangle/Polygon (closed)."""
+    """The expanded Extrusion's shape must be a Rectangle."""
 
     class BoxPart(Part):
         def __init__(self):
             s = Sketch(self.xy())
-            self.add_operation(Box(s.origin, w=10, h=20, d=30))
+            self.add_operation(Box(s.origin, w=10, d=20, h=30))
 
     dag = show_dag(BoxPart())
     serializable = dag["serializableNodes"]
@@ -45,9 +44,6 @@ def test_box_extrusion_shape_is_rectangle():
     extrusions = [n for n in dag["DAG"].values() if n["type"] == extrusion_type]
     assert len(extrusions) == 1, "Box should expand to exactly one Extrusion"
 
-    # Box → RectangleFromCenterAndSides → Rectangle. Rectangle is in
-    # DEFAULT_VALID_TYPES so it persists in the DAG (the further expansion
-    # to Polygon would only happen if Rectangle were not a valid type).
     rectangle_type = serializable["Rectangle"]
     extrusion = extrusions[0]
     shape_ids = extrusion["deps"].get("shape", [])
@@ -59,14 +55,14 @@ def test_box_extrusion_shape_is_rectangle():
 
 
 def test_box_dimensions_propagate_into_dag():
-    """Box dimensions should reach the DAG: depth as Extrusion.end, width/height
-    as the corner offsets of the underlying Rectangle (RectangleFromCenterAndSides
-    consumes w/h to produce ±w/2, ±h/2 corner coordinates)."""
+    """Box dimensions should reach the DAG: h as Extrusion ±start/end, w and d
+    as corner offsets of the underlying Rectangle."""
 
     class BoxPart(Part):
         def __init__(self):
             s = Sketch(self.xy())
-            self.add_operation(Box(s.origin, w=12.5, h=7.0, d=42.0))
+            # w=12.5 (X), d=7.0 (Y), h=42.0 (Z / sketch normal)
+            self.add_operation(Box(s.origin, w=12.5, d=7.0, h=42.0))
 
     dag = show_dag(BoxPart())
     fp_type = dag["serializableNodes"]["FloatParameter"]
@@ -76,12 +72,15 @@ def test_box_dimensions_propagate_into_dag():
         if n["type"] == fp_type and isinstance(n["params"].get("value"), (int, float))
     )
 
-    # Depth lands directly on Extrusion.end.
-    assert 42.0 in fp_values, f"Expected depth 42.0 in DAG; got {fp_values}"
-    # w=12.5 → ±6.25 and h=7.0 → ±3.5 on the four rectangle corners.
+    # h=42.0 → ±21.0 as Extrusion start/end (box is centered on Z).
+    assert 21.0 in fp_values and -21.0 in fp_values, (
+        f"Expected ±h/2 (±21.0) as start/end from h=42.0; got {fp_values}"
+    )
+    # w=12.5 → ±6.25 as Rectangle corner X offsets.
     assert 6.25 in fp_values and -6.25 in fp_values, (
         f"Expected ±w/2 (±6.25) corner coords from w=12.5; got {fp_values}"
     )
+    # d=7.0 → ±3.5 as Rectangle corner Y offsets.
     assert 3.5 in fp_values and -3.5 in fp_values, (
-        f"Expected ±h/2 (±3.5) corner coords from h=7.0; got {fp_values}"
+        f"Expected ±d/2 (±3.5) corner coords from d=7.0; got {fp_values}"
     )

@@ -5,7 +5,7 @@ from cadbuildr.foundation.dag_utils import show_dag
 
 
 def test_cylinder_construction_and_expansion():
-    """Cylinder(center, radius, height) should auto-expand into a Lathe."""
+    """Cylinder(center, radius, height) should auto-expand into an Extrusion."""
 
     class CylPart(Part):
         def __init__(self):
@@ -14,16 +14,16 @@ def test_cylinder_construction_and_expansion():
 
     dag = show_dag(CylPart())
     serializable = dag["serializableNodes"]
-    lathe_type = serializable["Lathe"]
-    lathes = [n for n in dag["DAG"].values() if n["type"] == lathe_type]
-    assert len(lathes) == 1, "Cylinder must expand to exactly one Lathe"
+    extrusion_type = serializable["Extrusion"]
+    extrusions = [n for n in dag["DAG"].values() if n["type"] == extrusion_type]
+    assert len(extrusions) == 1, "Cylinder must expand to exactly one Extrusion"
     assert "Cylinder" not in serializable, (
         "Cylinder must auto-expand at DAG time; no literal Cylinder type in registry"
     )
 
 
-def test_cylinder_lathe_uses_polygon_profile_and_axis():
-    """The Lathe inside a Cylinder should reference a Polygon profile and an Axis."""
+def test_cylinder_extrusion_uses_circle_profile():
+    """The Extrusion inside a Cylinder should reference a Circle shape."""
 
     class CylPart(Part):
         def __init__(self):
@@ -32,21 +32,22 @@ def test_cylinder_lathe_uses_polygon_profile_and_axis():
 
     dag = show_dag(CylPart())
     serializable = dag["serializableNodes"]
-    polygon_type = serializable["Polygon"]
-    axis_type = serializable["Axis"]
+    circle_type = serializable["Circle"]
+    extrusion_type = serializable["Extrusion"]
 
-    lathes = [n for n in dag["DAG"].values() if n["type"] == serializable["Lathe"]]
-    assert len(lathes) == 1
-    lathe = lathes[0]
+    extrusions = [n for n in dag["DAG"].values() if n["type"] == extrusion_type]
+    assert len(extrusions) == 1
+    extrusion = extrusions[0]
 
-    shape_id = lathe["deps"]["shape"]
-    axis_id = lathe["deps"]["axis"]
-    assert dag["DAG"][shape_id]["type"] == polygon_type
-    assert dag["DAG"][axis_id]["type"] == axis_type
+    shape_ids = extrusion["deps"].get("shape", [])
+    assert len(shape_ids) == 1
+    assert dag["DAG"][shape_ids[0]]["type"] == circle_type, (
+        "Cylinder's extruded shape should be a Circle"
+    )
 
 
 def test_cylinder_dimensions_propagate():
-    """radius should appear as a corner X coordinate; ±height/2 as corner Y coords."""
+    """radius and ±height/2 should appear in the DAG as FloatParameter values."""
 
     class CylPart(Part):
         def __init__(self):
@@ -61,6 +62,6 @@ def test_cylinder_dimensions_propagate():
         if n["type"] == fp_type and isinstance(n["params"].get("value"), (int, float))
     )
 
-    assert 4.0 in fp_values, f"Expected radius 4.0 as corner X; got {fp_values}"
-    for y in (-7.0, 7.0):
-        assert y in fp_values, f"Expected ±height/2 ({y}) as corner Y; got {fp_values}"
+    assert 4.0 in fp_values, f"Expected radius 4.0 in DAG; got {fp_values}"
+    for z in (-7.0, 7.0):
+        assert z in fp_values, f"Expected ±height/2 ({z}) as start/end; got {fp_values}"

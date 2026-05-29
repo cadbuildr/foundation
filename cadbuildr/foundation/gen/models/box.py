@@ -31,7 +31,7 @@ class Box(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['center', 'w', 'h', 'd'],
+            field_order=['center', 'w', 'd', 'h'],
             list_fields=None,
         )
         if use_normal:
@@ -46,10 +46,12 @@ class Box(ParameterFieldsMixin, BaseModel, Computable, Expandable):
 
     center: Point = Field(...)
     w: FloatParameter = Field(...)
-    h: FloatParameter = Field(...)
     d: FloatParameter = Field(...)
+    h: FloatParameter = Field(...)
     cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
     sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'center.sketch'}})
-    result: Optional[Extrusion] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': [{'__typename': 'RectangleFromCenterAndSides', 'center': '$center', 'length': '$w', 'width': '$h', 'sketch': '$sketch'}], 'end': '$d', 'cut': '$cut'}}})
+    half_h: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=h.value / 2.0)'}})
+    neg_half_h: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=-h.value / 2.0)'}})
+    result: Optional[Extrusion] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': [{'__typename': 'RectangleFromCenterAndSides', 'center': '$center', 'length': '$w', 'width': '$d', 'sketch': '$sketch'}], 'start': '$neg_half_h', 'end': '$half_h', 'cut': '$cut'}}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config
