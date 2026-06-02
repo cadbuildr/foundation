@@ -32,7 +32,7 @@ class RectangleRounded(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['center', 'w', 'h', 'radius'],
-            list_fields={'primitives'},
+            list_fields=['primitives'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

@@ -29,7 +29,7 @@ class Sketch(BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['plane'],
-            list_fields={'elements'},
+            list_fields=['elements'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

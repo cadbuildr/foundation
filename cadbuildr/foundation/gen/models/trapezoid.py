@@ -32,7 +32,7 @@ class Trapezoid(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['center', 'w_top', 'w_bottom', 'h'],
-            list_fields={'lines'},
+            list_fields=['lines'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

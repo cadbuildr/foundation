@@ -4,15 +4,16 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
-from ..runtime import Expandable
+from ..runtime import Computable, Expandable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .float_parameter import FloatParameter
     from .point import Point
+    from .sketch import Sketch
     from .slot_center_to_center import SlotCenterToCenter
 
-class SlotCenterPoint(ParameterFieldsMixin, BaseModel, Expandable):
+class SlotCenterPoint(ParameterFieldsMixin, BaseModel, Computable, Expandable):
     """Generated from GraphQL object SlotCenterPoint."""
 
 
@@ -45,6 +46,7 @@ class SlotCenterPoint(ParameterFieldsMixin, BaseModel, Expandable):
     center: Point = Field(...)
     point: Point = Field(...)
     height: FloatParameter = Field(...)
+    sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'center.sketch'}})
     result: Optional[SlotCenterToCenter] = Field(default=None, json_schema_extra={'expand': {'into': {'p1': '$center', 'p2': '$point', 'height': '$height'}}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

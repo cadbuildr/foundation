@@ -24,7 +24,7 @@ class FixedTranslationConstraint(BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['component', 'translation', 'quaternion'],
-            list_fields={'quaternion', 'translation'},
+            list_fields=['quaternion', 'translation'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

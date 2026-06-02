@@ -29,7 +29,7 @@ class Stitch(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['surfaces'],
-            list_fields={'surfaces'},
+            list_fields=['surfaces'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

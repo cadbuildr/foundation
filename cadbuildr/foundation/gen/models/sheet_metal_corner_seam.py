@@ -30,7 +30,7 @@ class SheetMetalCornerSeam(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['body'],
-            list_fields={'edge_finders'},
+            list_fields=['edge_finders'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

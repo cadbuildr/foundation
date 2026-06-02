@@ -31,7 +31,7 @@ class CounterBoreHole(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['point', 'radius', 'depth', 'cbore_radius', 'cbore_depth'],
-            list_fields={'primitives'},
+            list_fields=['primitives'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -49,7 +49,7 @@ class CounterBoreHole(ParameterFieldsMixin, BaseModel, Computable, Expandable):
     cbore_radius: FloatParameter = Field(...)
     cbore_depth: FloatParameter = Field(...)
     primitives: Optional[List[Line]] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_counterbore_profile_lines'}})
-    axis_line: Optional[Line] = Field(default=None, json_schema_extra={'compute': {'expr': 'Line(p1=Point(sketch=point.sketch, x=FloatParameter(value=point.x.value), y=FloatParameter(value=point.y.value + 1.0)), p2=Point(sketch=point.sketch, x=FloatParameter(value=point.x.value), y=FloatParameter(value=point.y.value - 1.0)))'}})
+    axis_line: Optional[Line] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_hole_axis_line'}})
     result: Optional[Lathe] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': {'__typename': 'Polygon', 'lines': '$primitives'}, 'axis': {'__typename': 'Axis', 'line': '$axis_line'}, 'cut': {'__typename': 'BoolParameter', 'value': True}}}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

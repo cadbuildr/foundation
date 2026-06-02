@@ -29,7 +29,7 @@ class CustomOpenShape(BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['primitives'],
-            list_fields={'primitives'},
+            list_fields=['primitives'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

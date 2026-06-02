@@ -30,7 +30,7 @@ class Polygon(SketchElementMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['lines'],
-            list_fields={'lines'},
+            list_fields=['lines'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

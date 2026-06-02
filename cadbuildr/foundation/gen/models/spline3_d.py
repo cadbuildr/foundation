@@ -26,7 +26,7 @@ class Spline3D(BaseModel):
             kwargs,
             cast_info=None,
             field_order=['points'],
-            list_fields={'points'},
+            list_fields=['points'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

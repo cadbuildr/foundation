@@ -70,9 +70,14 @@ def test_tapped_hole_expands_to_hole_with_half_diameter_radius():
 
 
 def test_tapped_hole_lands_in_dag_via_hole_chain():
-    """End-to-end: TappedHole inside a part should reach the DAG as a
-    Hole node (which the kernel treats as Extrusion(cut=true)).
-    Hole IS in DEFAULT_VALID_TYPES so it stays as a Hole node."""
+    """End-to-end: TappedHole inside a part must FULLY reduce.
+
+    TappedHole expands into a Hole, which itself expands into an
+    Extrusion(cut=true). `add_operation` expands transitively, so no raw Hole
+    node survives in the DAG. (A leftover Hole node crashed the replicad kernel
+    — it routes Hole through the Extrusion handler, whose deps don't match —
+    which is what broke the documentation /Foundation/Parts/Primitives/holes
+    page.)"""
 
     class _Part(Part):
         def __init__(self):
@@ -82,10 +87,13 @@ def test_tapped_hole_lands_in_dag_via_hole_chain():
 
     dag = show_dag(_Part())
     serializable = dag["serializableNodes"]
-    holes = [n for n in dag["DAG"].values() if n["type"] == serializable["Hole"]]
-    # Box → Extrusion (no Hole). TappedHole → Hole.
-    assert len(holes) == 1
-    # The Hole's radius FloatParameter should be 2.5 (M5 → 5/2).
+    # No bespoke Hole node should remain — it must expand to an Extrusion.
+    holes = [n for n in dag["DAG"].values() if n["type"] == serializable.get("Hole")]
+    assert len(holes) == 0
+    # Box → Extrusion plus TappedHole → Hole → Extrusion = two Extrusions.
+    extrusions = [n for n in dag["DAG"].values() if n["type"] == serializable["Extrusion"]]
+    assert len(extrusions) == 2
+    # The bore radius FloatParameter should be 2.5 (M5 → 5/2).
     fp_type = serializable["FloatParameter"]
     fp_values = [
         n["params"]["value"]

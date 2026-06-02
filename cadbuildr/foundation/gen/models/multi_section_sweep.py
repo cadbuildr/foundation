@@ -31,7 +31,7 @@ class MultiSectionSweep(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['profiles', 'path'],
-            list_fields={'sketches', 'guides', 'profiles'},
+            list_fields=['guides', 'profiles', 'sketches'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

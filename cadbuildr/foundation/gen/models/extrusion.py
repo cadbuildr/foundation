@@ -32,7 +32,7 @@ class Extrusion(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['shape', 'end', 'start'],
-            list_fields={'shape'},
+            list_fields=['shape'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

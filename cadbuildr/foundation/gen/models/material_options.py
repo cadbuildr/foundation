@@ -24,7 +24,7 @@ class MaterialOptions(BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['diffuse_color', 'transparency'],
-            list_fields={'diffuse_color'},
+            list_fields=['diffuse_color'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

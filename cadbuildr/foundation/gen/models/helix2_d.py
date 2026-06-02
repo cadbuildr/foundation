@@ -31,7 +31,7 @@ class Helix2D(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['center', 'pitch', 'radius_outer', 'n_turns'],
-            list_fields={'spiral_points'},
+            list_fields=['spiral_points'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

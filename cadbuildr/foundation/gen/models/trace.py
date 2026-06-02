@@ -30,7 +30,7 @@ class Trace(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['path_points', 'width'],
-            list_fields={'path_points'},
+            list_fields=['path_points'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

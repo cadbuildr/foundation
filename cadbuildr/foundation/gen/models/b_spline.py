@@ -30,7 +30,7 @@ class BSpline(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['points', 'degree'],
-            list_fields={'points'},
+            list_fields=['points'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

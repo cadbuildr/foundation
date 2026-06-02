@@ -30,7 +30,7 @@ class Triangle(BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['p1', 'p2', 'p3'],
-            list_fields={'lines'},
+            list_fields=['lines'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

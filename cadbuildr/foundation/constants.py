@@ -1,5 +1,8 @@
 """Constants for foundation schema."""
 
+import re
+from typing import Sequence, Union
+
 # Color mapping from old foundation
 DEFAULT_COLORS: dict[str, list[float]] = {
     "red": [1, 0, 0],
@@ -51,6 +54,59 @@ DEFAULT_COLORS: dict[str, list[float]] = {
     "dark_turquoise": [0.00, 0.56, 0.61],
     "olive_green": [0.43, 0.48, 0.26],
 }
+
+# A color spec is either a name / hex string, or an (r, g, b) sequence.
+ColorSpec = Union[str, Sequence[float]]
+
+_HEX_RE = re.compile(r"^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+
+
+def _hex_to_rgb(value: str) -> list[float]:
+    """Convert ``#rrggbb`` / ``#rgb`` (with or without ``#``) to ``[r, g, b]`` in [0, 1]."""
+    h = value.strip().lstrip("#")
+    if len(h) == 3:
+        h = "".join(ch * 2 for ch in h)
+    return [int(h[i : i + 2], 16) / 255.0 for i in (0, 2, 4)]
+
+
+def resolve_color(color: ColorSpec) -> list[float]:
+    """Resolve a color spec to an ``[r, g, b]`` list of floats in ``[0, 1]``.
+
+    Accepts:
+
+    * a named color from :data:`DEFAULT_COLORS` (e.g. ``"orange"``), case-insensitive;
+    * a hex string — ``"#212121"``, ``"212121"``, or shorthand ``"#abc"``;
+    * an RGB sequence of three numbers, given either as floats in ``[0, 1]`` or
+      as integers in ``[0, 255]`` (auto-detected when any component is > 1).
+
+    Raises :class:`ValueError` with the list of valid names for unrecognized input.
+    """
+    if isinstance(color, str):
+        name = color.strip()
+        # Named colors take precedence over hex parsing.
+        if name.lower() in DEFAULT_COLORS:
+            return list(DEFAULT_COLORS[name.lower()])
+        if _HEX_RE.match(name):
+            return _hex_to_rgb(name)
+        raise ValueError(
+            f"Unknown color {color!r}. Pass a named color (one of "
+            f"{list(DEFAULT_COLORS.keys())}), a hex string like '#212121', "
+            f"or an [r, g, b] list."
+        )
+
+    try:
+        components = [float(c) for c in color]
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"Invalid color {color!r}. Expected a named color, a hex string "
+            f"like '#212121', or an [r, g, b] sequence."
+        )
+    if len(components) != 3:
+        raise ValueError("RGB color must have exactly 3 components")
+    # Auto-detect the 0-255 range and normalize to 0-1.
+    if any(c > 1.0 for c in components):
+        components = [c / 255.0 for c in components]
+    return [min(1.0, max(0.0, c)) for c in components]
 
 # Valid types for DAG serialization
 DEFAULT_VALID_TYPES: list[str] = [

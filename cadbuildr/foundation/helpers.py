@@ -21,7 +21,7 @@ from .gen.models import (
 )
 from .gen.runtime import run_method
 from .draw import Draw
-from .constants import DEFAULT_COLORS
+from .constants import ColorSpec, resolve_color
 
 
 def _enable_auto_init(base_cls: type) -> None:
@@ -265,18 +265,13 @@ setattr(Assembly, "head", property(_assembly_head_property))
 
 
 # Add set_diffuse_color method to Material for backward compatibility
-def _material_set_diffuse_color(self: Material, color: str | list[float]) -> bool:
-    """Set the diffuse color on a Material (backward compatible API)."""
-    if isinstance(color, str):
-        if color not in DEFAULT_COLORS:
-            raise ValueError(
-                f"Unknown color '{color}'. Available colors: {list(DEFAULT_COLORS.keys())}"
-            )
-        diffuse_color = DEFAULT_COLORS[color]
-    else:
-        diffuse_color = list(color)
-        if len(diffuse_color) != 3:
-            raise ValueError("Diffuse color must have 3 components")
+def _material_set_diffuse_color(self: Material, color: ColorSpec) -> bool:
+    """Set the diffuse color on a Material (backward compatible API).
+
+    Accepts a named color, a hex string (e.g. ``"#212121"``), or an
+    ``[r, g, b]`` sequence (floats in [0, 1] or ints in [0, 255]).
+    """
+    diffuse_color = resolve_color(color)
 
     current_transparency = 0.0
     if getattr(self, "options", None) is not None:

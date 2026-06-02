@@ -29,7 +29,7 @@ class AssemblyInterface(BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['constraints', 'grid'],
-            list_fields={'constraints'},
+            list_fields=['constraints'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

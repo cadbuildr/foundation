@@ -26,7 +26,7 @@ class EitherFinderRule(BaseModel):
             kwargs,
             cast_info=None,
             field_order=['rules'],
-            list_fields={'rules'},
+            list_fields=['rules'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

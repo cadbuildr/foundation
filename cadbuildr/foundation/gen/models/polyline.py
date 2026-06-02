@@ -30,7 +30,7 @@ class Polyline(BaseModel, Computable, Expandable):
             kwargs,
             cast_info=None,
             field_order=['points'],
-            list_fields={'primitives', 'points'},
+            list_fields=['points', 'primitives'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

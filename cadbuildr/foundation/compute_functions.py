@@ -20,7 +20,7 @@ from.gen.models import (
     AssemblyRoot,
 )
 from.helpers import PlaneFactory
-from.constants import DEFAULT_COLORS, PLANES_CONFIG
+from.constants import ColorSpec, PLANES_CONFIG, resolve_color
 from.math_utils import (
     quaternion_to_axes,
     axis_angle_to_quaternion,
@@ -360,27 +360,78 @@ def compute_fillet_polyline_primitives(
     return primitives
 
 
+def _hole_revolve_sketch(point: Point) -> Sketch:
+    """Return a Sketch on a plane through ``point`` that is perpendicular to the
+    hole's host sketch, oriented so the new sketch's local **Y axis maps to the
+    host sketch normal** (the bore axis).
+
+    Counterbore / countersink profiles are revolved with a ``Lathe`` about the
+    new sketch's Y axis. Drawing the profile here — radial along local X, axial
+    along local Y — means the revolution axis coincides with the host normal, so
+    the bore is drilled *into the face* (along the normal), exactly like the
+    plain :class:`Hole` (which extrudes a circle along the normal). This is the
+    same trick the ``Torus`` docs describe: put the profile on a sketch whose Y
+    maps to the desired world revolution axis.
+
+    The host frame is rotated +90° about its local X axis (so local Y → host
+    normal, local Z → −host Y) and translated to the hole point, so a profile
+    point ``(u, v)`` lands at ``host_point + u·host_X + v·host_normal``.
+    """
+    host_frame = point.sketch.plane.frame
+    rot_quat = axis_angle_to_quaternion([1.0, 0.0, 0.0], math.pi / 2.0)
+    frame = Frame(
+        top_frame=host_frame,
+        name=StringParameter(value="hole_revolve_frame"),
+        display=BoolParameter(value=False),
+        position=[point.x.value, point.y.value, 0.0],
+        quaternion=rot_quat,
+    )
+    plane = Plane(
+        frame=frame,
+        name=StringParameter(value="hole_revolve"),
+        display=BoolParameter(value=False),
+    )
+    return Sketch(plane=plane)
+
+
+@register_compute_fn("compute_hole_axis_line")
+def compute_hole_axis_line(inst: Any, field_name: str, meta: dict[str, Any]) -> Any:
+    """Revolution axis for CounterBoreHole / CounterSinkHole.
+
+    The axis is the local-Y line of the perpendicular revolve sketch (see
+    :func:`_hole_revolve_sketch`), which maps to the host sketch normal — so the
+    bore is drilled along the face normal, matching the plain ``Hole``."""
+    from.gen.models import Line
+
+    sketch = _hole_revolve_sketch(inst.point)
+    return Line(
+        p1=Point(sketch=sketch, x=FloatParameter(value=0.0), y=FloatParameter(value=-1.0)),
+        p2=Point(sketch=sketch, x=FloatParameter(value=0.0), y=FloatParameter(value=1.0)),
+    )
+
+
 @register_compute_fn("compute_counterbore_profile_lines")
 def compute_counterbore_profile_lines(
     inst: Any, field_name: str, meta: dict[str, Any]
 ) -> list:
-    """L-shaped revolution profile for CounterBoreHole. Sketch coordinates:
-    sketch X is the radial direction, sketch Y is the depth axis (0 = top
-    surface, negative = into the material). Six corners CCW:
-        (0,0) → (cbore_radius, 0) → (cbore_radius, -cbore_depth) →
-        (radius, -cbore_depth) → (radius, -depth) → (0, -depth) → close to (0,0).
+    """L-shaped revolution profile for CounterBoreHole, drawn on the
+    perpendicular revolve sketch (local X = radial, local Y = depth along the
+    host face normal; 0 = entry surface, increasing = into the material). Six
+    corners CCW:
+        (0,0) → (cbore_radius,0) → (cbore_radius,cbore_depth) →
+        (radius,cbore_depth) → (radius,depth) → (0,depth) → close to (0,0).
+    The wide counterbore step sits at the entry surface (depth 0); the narrow
+    bore continues to ``depth``.
     """
     from.gen.models import Line
 
-    cx = inst.point.x.value
-    cy = inst.point.y.value
-    sketch = inst.point.sketch
+    sketch = _hole_revolve_sketch(inst.point)
     rad = inst.radius.value
     depth = inst.depth.value
     cb_rad = inst.cbore_radius.value
     cb_depth = inst.cbore_depth.value
 
-    if cb_radius_le_radius := (cb_rad <= rad):
+    if cb_rad <= rad:
         raise ValueError("CounterBoreHole.cbore_radius must exceed radius")
     if cb_depth >= depth:
         raise ValueError("CounterBoreHole.cbore_depth must be less than depth")
@@ -388,12 +439,12 @@ def compute_counterbore_profile_lines(
     def pt(x: float, y: float) -> Point:
         return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
 
-    p0 = pt(cx, cy)
-    p1 = pt(cx + cb_rad, cy)
-    p2 = pt(cx + cb_rad, cy - cb_depth)
-    p3 = pt(cx + rad, cy - cb_depth)
-    p4 = pt(cx + rad, cy - depth)
-    p5 = pt(cx, cy - depth)
+    p0 = pt(0.0, 0.0)
+    p1 = pt(cb_rad, 0.0)
+    p2 = pt(cb_rad, cb_depth)
+    p3 = pt(rad, cb_depth)
+    p4 = pt(rad, depth)
+    p5 = pt(0.0, depth)
 
     return [
         Line(p1=p0, p2=p1),
@@ -409,17 +460,18 @@ def compute_counterbore_profile_lines(
 def compute_countersink_profile_lines(
     inst: Any, field_name: str, meta: dict[str, Any]
 ) -> list:
-    """Stepped-chamfer profile for CounterSinkHole. Cone geometry:
-    The countersink is a cone of half-angle `csink_angle_deg/2` blending
-    from `csink_radius` at the top to `radius` at depth
-    `cs_depth = (csink_radius - radius) / tan(half_angle)`. After the
-    chamfer, a straight cylindrical section of radius `radius` continues
-    down to total `depth`."""
+    """Stepped-chamfer profile for CounterSinkHole, drawn on the perpendicular
+    revolve sketch (local X = radial, local Y = depth along the host face
+    normal; 0 = entry surface, increasing = into the material).
+
+    The countersink is a cone of half-angle `csink_angle_deg/2` blending from
+    `csink_radius` at the entry surface to `radius` at depth
+    `cs_depth = (csink_radius - radius) / tan(half_angle)`. After the chamfer, a
+    straight cylindrical section of radius `radius` continues to total `depth`.
+    """
     from.gen.models import Line
 
-    cx = inst.point.x.value
-    cy = inst.point.y.value
-    sketch = inst.point.sketch
+    sketch = _hole_revolve_sketch(inst.point)
     rad = inst.radius.value
     depth = inst.depth.value
     cs_rad = inst.csink_radius.value
@@ -441,11 +493,11 @@ def compute_countersink_profile_lines(
     def pt(x: float, y: float) -> Point:
         return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
 
-    p0 = pt(cx, cy)
-    p1 = pt(cx + cs_rad, cy)
-    p2 = pt(cx + rad, cy - cs_depth)  # bottom of chamfer (on inner radius)
-    p3 = pt(cx + rad, cy - depth)
-    p4 = pt(cx, cy - depth)
+    p0 = pt(0.0, 0.0)
+    p1 = pt(cs_rad, 0.0)
+    p2 = pt(rad, cs_depth)  # bottom of chamfer (on inner radius)
+    p3 = pt(rad, depth)
+    p4 = pt(0.0, depth)
 
     return [
         Line(p1=p0, p2=p1),
@@ -796,14 +848,34 @@ def get_origin_planes_method(inst: Part | Assembly) -> list[Plane]:
     return [inst.xy(), inst.xz(), inst.yz()]
 
 
+def _fully_expand_operation(operation: Any) -> Any:
+    """Expand an operation transitively until it reaches a non-expandable node.
+
+    Expansion is one level per ``expand()`` call, but some sugar nodes expand
+    into other sugar nodes (e.g. ``TappedHole`` -> ``Hole`` -> ``Extrusion``).
+    A single expand would leave a ``Hole`` node in the operations list; because
+    ``Hole`` is a registered (valid) type, the DAG serializer would not expand
+    it either, and the kernel — which has no real ``Hole`` handler — fails to
+    build the geometry. Loop until the result is no longer expandable.
+    """
+    from.gen.runtime import Expandable
+
+    # Guard against a pathological expand() that never reaches a terminal node.
+    for _ in range(100):
+        if not isinstance(operation, Expandable):
+            return operation
+        operation = operation.expand()
+    raise ValueError(
+        f"Operation {type(operation).__name__} did not reduce to a "
+        f"non-expandable node after 100 expansions; possible expansion cycle."
+    )
+
+
 @register_method_fn("add_operation_method")
 def add_operation_method(inst: Part, operation: Any) -> bool:
     """Add an operation to a part."""
-    from.gen.runtime import Expandable
-
-    # If the operation is expandable (like Hole), expand it first
-    if isinstance(operation, Expandable):
-        operation = operation.expand()
+    # If the operation is expandable (like Hole), expand it first.
+    operation = _fully_expand_operation(operation)
 
     inst.operations.append(operation)
     return True
@@ -812,12 +884,9 @@ def add_operation_method(inst: Part, operation: Any) -> bool:
 @register_method_fn("add_operations_method")
 def add_operations_method(inst: Part, operations: Iterable[Any]) -> bool:
     """Add multiple operations to a part at once."""
-    from.gen.runtime import Expandable
-
     for operation in operations:
-        # If the operation is expandable (like Hole), expand it first
-        if isinstance(operation, Expandable):
-            operation = operation.expand()
+        # If the operation is expandable (like Hole), expand it first.
+        operation = _fully_expand_operation(operation)
         inst.operations.append(operation)
     return True
 
@@ -888,18 +957,17 @@ _material_counter = 0
 
 
 @register_method_fn("paint_method")
-def paint_method(inst: Part | Assembly, color: str, transparency: float = 0.5) -> bool:
-    """Paint a part (creates Material instance)."""
+def paint_method(inst: Part | Assembly, color: ColorSpec, transparency: float = 0.5) -> bool:
+    """Paint a part (creates Material instance).
+
+    ``color`` may be a named color, a hex string (e.g. ``"#212121"``), or an
+    ``[r, g, b]`` sequence; see :func:`cadbuildr.foundation.constants.resolve_color`.
+    """
     global _material_counter
     from.gen.models import Material, MaterialOptions
 
-    # Get RGB color from name
-    if color not in DEFAULT_COLORS:
-        raise ValueError(
-            f"Unknown color '{color}'. Available colors: {list(DEFAULT_COLORS.keys())}"
-        )
-
-    diffuse_color = DEFAULT_COLORS[color]
+    # Resolve named color / hex string / [r, g, b] to an RGB triple.
+    diffuse_color = resolve_color(color)
 
     # Create Material instance
     _material_counter += 1

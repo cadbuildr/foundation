@@ -31,7 +31,7 @@ class SurfaceLoft(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['shapes'],
-            list_fields={'sketchs', 'shapes', 'guides'},
+            list_fields=['guides', 'shapes', 'sketchs'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

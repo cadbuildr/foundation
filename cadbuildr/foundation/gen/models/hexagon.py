@@ -33,7 +33,7 @@ class Hexagon(SketchElementMixin, ParameterFieldsMixin, BaseModel, Computable, E
             kwargs,
             cast_info=None,
             field_order=['center', 'radius'],
-            list_fields={'lines'},
+            list_fields=['lines'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)

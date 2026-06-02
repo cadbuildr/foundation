@@ -32,7 +32,7 @@ class SlotCenterToCenter(ParameterFieldsMixin, BaseModel, Computable, Expandable
             kwargs,
             cast_info=None,
             field_order=['p1', 'p2', 'height'],
-            list_fields={'primitives'},
+            list_fields=['primitives'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
