@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .float_parameter import FloatParameter
     from .sketch import Sketch
-    from .string_parameter import StringParameter
     from .unions import ClosedShape2D
+from .enums import SheetDirection
 
 class SheetMetalBaseFlange(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object SheetMetalBaseFlange."""
@@ -48,6 +48,6 @@ class SheetMetalBaseFlange(ParameterFieldsMixin, BaseModel, Computable):
     sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_sheet_metal_base_sketch', 'includeInDag': True}})
     default_bend_radius: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=1.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=1.0)'}})
     default_k_factor: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.44)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.44)'}})
-    direction: StringParameter = Field(default_factory=lambda: _eval_expr({}, 'StringParameter(value="positive")'), json_schema_extra={'default': {'expr': 'StringParameter(value="positive")'}})
+    direction: SheetDirection = Field(default_factory=lambda: _eval_expr({}, 'SheetDirection.POSITIVE'), json_schema_extra={'default': {'expr': 'SheetDirection.POSITIVE'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

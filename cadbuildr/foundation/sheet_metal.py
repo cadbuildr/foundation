@@ -31,17 +31,38 @@ from typing import Optional, Sequence
 
 from .gen.models import (
     BoolParameter,
+    CustomOpenShape,
     EdgeFinder,
+    EdgeRef,
     FloatParameter,
+    Line,
+    Plane,
+    Point3D,
     Sketch,
-    SheetMetalBaseFlange,
-    SheetMetalBend,
-    SheetMetalContourFlange,
-    SheetMetalCornerSeam,
-    SheetMetalEdgeFlange,
-    SheetMetalToSolid,
     StringParameter,
     Unfold,
+    # sheet-metal operation nodes
+    SheetMetalBaseFlange,
+    SheetMetalClosedCorner,
+    SheetMetalCornerRelief,
+    SheetMetalEdgeFlange,
+    SheetMetalFold,
+    SheetMetalHem,
+    SheetMetalJog,
+    SheetMetalLoftedBend,
+    SheetMetalMiterFlange,
+    SheetMetalSketchedBend,
+    SheetMetalTab,
+    SheetMetalToSolid,
+    # enums
+    BendPosition,
+    CornerReliefType,
+    CornerType,
+    DimensionPosition,
+    FlangePosition,
+    HemType,
+    ReliefType,
+    SheetDirection,
 )
 from .sheet_metal_materials import (  # re-export for convenience
     MATERIALS,
@@ -170,192 +191,17 @@ def get_default_config() -> SheetMetalConfig:
     return _DEFAULT_CONFIG
 
 
-def _f(value) -> FloatParameter:
-    return value if isinstance(value, FloatParameter) else FloatParameter(value=float(value))
-
-
-def _s(value) -> StringParameter:
-    return value if isinstance(value, StringParameter) else StringParameter(value=str(value))
-
-
-def _b(value) -> BoolParameter:
-    return value if isinstance(value, BoolParameter) else BoolParameter(value=bool(value))
-
-
-def base_flange(
-    profile,
-    sketch: Sketch,
-    *,
-    thickness: Optional[float] = None,
-    bend_radius: Optional[float] = None,
-    k_factor: Optional[float] = None,
-    direction: str = "positive",
-    config: Optional[SheetMetalConfig] = None,
-) -> SheetMetalBaseFlange:
-    """Create a sheet-metal base flange (the foundational flat plate).
-
-    ``profile`` is a ClosedShape2D; ``sketch`` is the Sketch it is drawn on.
-    Per-call ``thickness`` / ``bend_radius`` / ``k_factor`` override the
-    config; values left as ``None`` fall back to the active config (which
-    in turn may have been built from a stock material via
-    :meth:`SheetMetalConfig.from_material`).
-    """
-    cfg = config or _DEFAULT_CONFIG
-    t = thickness if thickness is not None else cfg.thickness
-    r, k = cfg.resolve_bend(radius=bend_radius, k_factor=k_factor)
-    return SheetMetalBaseFlange(
-        profile=profile,
-        sketch=sketch,
-        thickness=_f(t),
-        default_bend_radius=_f(r),
-        default_k_factor=_f(k),
-        direction=_s(direction),
-    )
-
-
-def edge_flange(
-    body,
-    edge_finder: EdgeFinder,
-    length: float,
-    *,
-    bend_angle: float = 90.0,
-    bend_radius: Optional[float] = None,
-    k_factor: Optional[float] = None,
-    flange_position: str = "material-inside",
-    relief: str = "none",
-    config: Optional[SheetMetalConfig] = None,
-) -> SheetMetalEdgeFlange:
-    """Add an edge flange (bend + flange wall) to a sheet-metal body.
-
-    ``bend_radius`` and ``k_factor`` default to the body's own defaults
-    when omitted at the op level; pass a ``config`` to resolve against
-    a material here instead.
-
-    ``flange_position`` is one of ``"material-inside"`` /
-    ``"material-outside"`` / ``"bend-from-virtual-sharp"`` and matches
-    the SolidWorks convention. ``relief`` is one of ``"none"`` /
-    ``"rectangular"`` / ``"obround"`` / ``"tear"``.
-    """
-    if config is not None:
-        r, k = config.resolve_bend(radius=bend_radius, k_factor=k_factor)
-    else:
-        r = bend_radius
-        k = k_factor
-    return SheetMetalEdgeFlange(
-        body=body,
-        edge_finder=edge_finder,
-        length=_f(length),
-        bend_angle=_f(bend_angle),
-        bend_radius=_f(r) if r is not None else None,
-        k_factor=_f(k) if k is not None else None,
-        flange_position=_s(flange_position),
-        relief=_s(relief),
-    )
-
-
-def contour_flange(
-    body,
-    edge_finder: EdgeFinder,
-    profile,
-    sketch: Sketch,
-    length: float,
-    *,
-    bend_radius: Optional[float] = None,
-    k_factor: Optional[float] = None,
-    config: Optional[SheetMetalConfig] = None,
-) -> SheetMetalContourFlange:
-    """Add a sketch-driven contour flange (e.g. a lipped edge).
-
-    ``profile`` is the cross-section drawn on ``sketch`` (perpendicular to
-    the body edge selected by ``edge_finder``); it is swept along the edge
-    for ``length``.
-    """
-    if config is not None:
-        r, k = config.resolve_bend(radius=bend_radius, k_factor=k_factor)
-    else:
-        r = bend_radius
-        k = k_factor
-    return SheetMetalContourFlange(
-        body=body,
-        edge_finder=edge_finder,
-        profile=profile,
-        sketch=sketch,
-        length=_f(length),
-        bend_radius=_f(r) if r is not None else None,
-        k_factor=_f(k) if k is not None else None,
-    )
-
-
-def bend(
-    body,
-    bend_line: EdgeFinder,
-    angle: float,
-    *,
-    radius: Optional[float] = None,
-    k_factor: Optional[float] = None,
-    bend_position: str = "centered",
-    config: Optional[SheetMetalConfig] = None,
-) -> SheetMetalBend:
-    """Bend a region of an existing sheet-metal body around an in-plane line.
-
-    ``bend_position`` controls which side of the bend line is rotated and
-    where the bend region sits relative to the line:
-    ``"centered"`` (default), ``"material-inside"``, ``"material-outside"``.
-    """
-    if config is not None:
-        r, k = config.resolve_bend(radius=radius, k_factor=k_factor)
-    else:
-        r = radius
-        k = k_factor
-    return SheetMetalBend(
-        body=body,
-        bend_line=bend_line,
-        angle=_f(angle),
-        radius=_f(r) if r is not None else None,
-        k_factor=_f(k) if k is not None else None,
-        bend_position=_s(bend_position),
-    )
-
-
-def corner_seam(
-    body,
-    edge_finders: Sequence[EdgeFinder],
-    *,
-    gap: float = 0.0,
-) -> SheetMetalCornerSeam:
-    """Close mitered corners between adjacent flanges, optionally with a gap."""
-    return SheetMetalCornerSeam(
-        body=body,
-        edge_finders=list(edge_finders),
-        gap=_f(gap),
-    )
-
-
-def to_solid(body) -> SheetMetalToSolid:
-    """Bridge a sheet-metal body into the regular solid pipeline.
-
-    Use this on the chain's tail to add the result to a Part's operations.
-    """
-    return SheetMetalToSolid(body=body)
-
-
-def unfold(
-    body,
-    fixed_face: Optional[EdgeFinder] = None,
-) -> Unfold:
-    """Compute the flat pattern of a sheet-metal body.
-
-    The result is itself a sheet-metal body whose bend regions have been
-    replaced by neutral-fiber arc-length flat strips. Bend lines are
-    preserved on the unfolded body as marked edges so downstream DXF
-    export can lay them out on a dedicated layer.
-    """
-    return (
-        Unfold(body=body, fixed_face=fixed_face)
-        if fixed_face is not None
-        else Unfold(body=body)
-    )
-
+# ---------------------------------------------------------------------------
+# Sheet-metal OPERATIONS are nodes, not helper functions: construct the
+# generated classes directly (like Extrusion / Lathe) —
+#   SheetMetalBaseFlange, SheetMetalTab, SheetMetalEdgeFlange,
+#   SheetMetalMiterFlange, SheetMetalHem, SheetMetalSketchedBend,
+#   SheetMetalJog, SheetMetalClosedCorner, SheetMetalCornerRelief,
+#   SheetMetalLoftedBend, SheetMetalToSolid, Unfold, SheetMetalFold.
+# Ergonomics are declared in the schema: enum fields accept their string value,
+# and an EdgeRef field accepts a bare Line (or EdgeFinder) via @cast. This
+# module now only carries material/config data, not operation wrappers.
+# ---------------------------------------------------------------------------
 
 __all__ = [
     "SheetMetalConfig",
@@ -364,11 +210,4 @@ __all__ = [
     "get_material",
     "set_default_config",
     "get_default_config",
-    "base_flange",
-    "edge_flange",
-    "contour_flange",
-    "bend",
-    "corner_seam",
-    "to_solid",
-    "unfold",
 ]

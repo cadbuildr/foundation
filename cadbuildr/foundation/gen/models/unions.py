@@ -55,10 +55,16 @@ from .svg_shape import SVGShape
 from .scale import Scale
 from .section import Section
 from .sheet_metal_base_flange import SheetMetalBaseFlange
-from .sheet_metal_bend import SheetMetalBend
-from .sheet_metal_contour_flange import SheetMetalContourFlange
-from .sheet_metal_corner_seam import SheetMetalCornerSeam
+from .sheet_metal_closed_corner import SheetMetalClosedCorner
+from .sheet_metal_corner_relief import SheetMetalCornerRelief
 from .sheet_metal_edge_flange import SheetMetalEdgeFlange
+from .sheet_metal_fold import SheetMetalFold
+from .sheet_metal_hem import SheetMetalHem
+from .sheet_metal_jog import SheetMetalJog
+from .sheet_metal_lofted_bend import SheetMetalLoftedBend
+from .sheet_metal_miter_flange import SheetMetalMiterFlange
+from .sheet_metal_sketched_bend import SheetMetalSketchedBend
+from .sheet_metal_tab import SheetMetalTab
 from .sheet_metal_to_solid import SheetMetalToSolid
 from .shell import Shell
 from .slot_center_point import SlotCenterPoint
@@ -88,7 +94,7 @@ Shape2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, CustomClosedS
 Path3D = Union[Helix3D, Spline3D]
 SolidOperation = Union[Extrusion, Lathe, Loft, Sweep, MultiSectionSweep, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere]
 SurfaceOperation = Union[SurfaceLoft]
-SheetMetalOperation = Union[SheetMetalBaseFlange, SheetMetalEdgeFlange, SheetMetalContourFlange, SheetMetalBend, SheetMetalCornerSeam, Unfold]
+SheetMetalOperation = Union[SheetMetalBaseFlange, SheetMetalTab, SheetMetalEdgeFlange, SheetMetalMiterFlange, SheetMetalHem, SheetMetalSketchedBend, SheetMetalJog, SheetMetalClosedCorner, SheetMetalCornerRelief, SheetMetalLoftedBend, SheetMetalFold, Unfold]
 FinderRule = Union[InPlaneFinderRule, AtAngleFinderRule, AtDistanceFinderRule, ContainsPointFinderRule, InBoxFinderRule, InDirectionFinderRule, AndFinderRule, EitherFinderRule, IsCircleRule, OfTypeRule, LengthRangeRule, RadiusRangeRule, ParallelToAxisRule, OnFaceRule, SortByRule]
 Operation = Union[Extrusion, Hole, Lathe, Loft, Sweep, Thread, Fillet, Chamfer, MultiSectionSweep, SurfaceLoft, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere, Mirror, BoundingBox, Scale, Wedge, Section, Split, Project, Draft, FullRound]
 ComponentRoot = Union[PartRoot, AssemblyRoot]

@@ -4,13 +4,14 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import _CAST_CUSTOM
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .plane import Plane
-    from .unions import SheetMetalOperation
+    from .edge_finder import EdgeFinder
+    from .line import Line
 
-class Unfold(BaseModel):
-    """Generated from GraphQL object Unfold."""
+class EdgeRef(BaseModel):
+    """Generated from GraphQL object EdgeRef."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -25,8 +26,8 @@ class Unfold(BaseModel):
             self.__class__,
             args,
             kwargs,
-            cast_info=None,
-            field_order=['body'],
+            cast_info={'field': 'line', 'scalars': ['Float', 'Int', 'String', 'Boolean', 'ID'], 'expr': None, 'fn': 'cast_edge_ref'},
+            field_order=['line'],
             list_fields=None,
         )
         if use_normal:
@@ -35,11 +36,16 @@ class Unfold(BaseModel):
             super().__init__(**processed_kwargs)
 
 
+    @model_validator(mode="before")
+    @classmethod
+    def _cast(cls, v):
+        from ..runtime.cast_helpers import _cast_with_fn
+        return _cast_with_fn(cls, v, 'line', 'cast_edge_ref')
 
 
 
 
-    body: SheetMetalOperation = Field(...)
-    fixed_face: Optional[Plane] = Field(default=None)
+    line: Optional[Line] = Field(default=None)
+    finder: Optional[EdgeFinder] = Field(default=None)
 
     model_config = {"protected_namespaces": ()}  # Pydantic v2 config

@@ -4,13 +4,15 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .plane import Plane
+    from .string_parameter import StringParameter
     from .unions import SheetMetalOperation
 
-class Unfold(BaseModel):
-    """Generated from GraphQL object Unfold."""
+class SheetMetalFold(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object SheetMetalFold."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -27,7 +29,7 @@ class Unfold(BaseModel):
             kwargs,
             cast_info=None,
             field_order=['body'],
-            list_fields=None,
+            list_fields=['bend_ids'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -40,6 +42,6 @@ class Unfold(BaseModel):
 
 
     body: SheetMetalOperation = Field(...)
-    fixed_face: Optional[Plane] = Field(default=None)
+    bend_ids: List[StringParameter] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

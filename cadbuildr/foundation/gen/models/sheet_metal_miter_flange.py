@@ -10,12 +10,14 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .edge_ref import EdgeRef
     from .float_parameter import FloatParameter
+    from .sketch import Sketch
+    from .unions import ClosedShape2D
     from .unions import SheetMetalOperation
 from .enums import FlangePosition
 from .enums import ReliefType
 
-class SheetMetalEdgeFlange(ParameterFieldsMixin, BaseModel, Computable):
-    """Generated from GraphQL object SheetMetalEdgeFlange."""
+class SheetMetalMiterFlange(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object SheetMetalMiterFlange."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -31,8 +33,8 @@ class SheetMetalEdgeFlange(ParameterFieldsMixin, BaseModel, Computable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['body', 'edge', 'length'],
-            list_fields=None,
+            field_order=['body', 'edges', 'profile'],
+            list_fields=['edges'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -45,14 +47,15 @@ class SheetMetalEdgeFlange(ParameterFieldsMixin, BaseModel, Computable):
 
 
     body: SheetMetalOperation = Field(...)
-    edge: EdgeRef = Field(...)
-    length: FloatParameter = Field(...)
-    bend_angle: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=90.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=90.0)'}})
+    edges: List[EdgeRef] = Field(...)
+    profile: ClosedShape2D = Field(...)
+    sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'profile.sketch', 'includeInDag': True}})
+    flange_position: FlangePosition = Field(default_factory=lambda: _eval_expr({}, 'FlangePosition.MATERIAL_INSIDE'), json_schema_extra={'default': {'expr': 'FlangePosition.MATERIAL_INSIDE'}})
+    gap: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
+    relief: ReliefType = Field(default_factory=lambda: _eval_expr({}, 'ReliefType.NONE'), json_schema_extra={'default': {'expr': 'ReliefType.NONE'}})
+    start_offset: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
+    end_offset: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
     bend_radius: Optional[FloatParameter] = Field(default=None)
     k_factor: Optional[FloatParameter] = Field(default=None)
-    flange_position: FlangePosition = Field(default_factory=lambda: _eval_expr({}, 'FlangePosition.MATERIAL_INSIDE'), json_schema_extra={'default': {'expr': 'FlangePosition.MATERIAL_INSIDE'}})
-    relief: ReliefType = Field(default_factory=lambda: _eval_expr({}, 'ReliefType.NONE'), json_schema_extra={'default': {'expr': 'ReliefType.NONE'}})
-    relief_ratio: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.5)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.5)'}})
-    gap: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

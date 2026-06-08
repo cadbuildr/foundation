@@ -4,16 +4,14 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
-from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .edge_finder import EdgeFinder
+    from .custom_open_shape import CustomOpenShape
     from .float_parameter import FloatParameter
-    from .unions import SheetMetalOperation
 
-class SheetMetalCornerSeam(ParameterFieldsMixin, BaseModel, Computable):
-    """Generated from GraphQL object SheetMetalCornerSeam."""
+class SheetMetalLoftedBend(ParameterFieldsMixin, BaseModel):
+    """Generated from GraphQL object SheetMetalLoftedBend."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -29,8 +27,8 @@ class SheetMetalCornerSeam(ParameterFieldsMixin, BaseModel, Computable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['body'],
-            list_fields=['edge_finders'],
+            field_order=['profile_start', 'profile_end', 'thickness'],
+            list_fields=None,
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -42,8 +40,9 @@ class SheetMetalCornerSeam(ParameterFieldsMixin, BaseModel, Computable):
 
 
 
-    body: SheetMetalOperation = Field(...)
-    edge_finders: List[EdgeFinder] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
-    gap: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
+    profile_start: CustomOpenShape = Field(...)
+    profile_end: CustomOpenShape = Field(...)
+    thickness: FloatParameter = Field(...)
+    bend_radius: Optional[FloatParameter] = Field(default=None)
 
-    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config
+    model_config = {"protected_namespaces": ()}  # Pydantic v2 config

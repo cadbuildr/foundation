@@ -4,13 +4,16 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .plane import Plane
+    from .float_parameter import FloatParameter
     from .unions import SheetMetalOperation
+from .enums import CornerReliefType
 
-class Unfold(BaseModel):
-    """Generated from GraphQL object Unfold."""
+class SheetMetalCornerRelief(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object SheetMetalCornerRelief."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -40,6 +43,7 @@ class Unfold(BaseModel):
 
 
     body: SheetMetalOperation = Field(...)
-    fixed_face: Optional[Plane] = Field(default=None)
+    relief_type: CornerReliefType = Field(default_factory=lambda: _eval_expr({}, 'CornerReliefType.RECTANGULAR'), json_schema_extra={'default': {'expr': 'CornerReliefType.RECTANGULAR'}})
+    size: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=2.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=2.0)'}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

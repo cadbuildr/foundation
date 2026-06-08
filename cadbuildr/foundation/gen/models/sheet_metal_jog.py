@@ -4,13 +4,18 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
+from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .float_parameter import FloatParameter
+    from .line import Line
     from .plane import Plane
     from .unions import SheetMetalOperation
+from .enums import DimensionPosition
 
-class Unfold(BaseModel):
-    """Generated from GraphQL object Unfold."""
+class SheetMetalJog(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object SheetMetalJog."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -26,7 +31,7 @@ class Unfold(BaseModel):
             args,
             kwargs,
             cast_info=None,
-            field_order=['body'],
+            field_order=['body', 'line', 'offset'],
             list_fields=None,
         )
         if use_normal:
@@ -40,6 +45,12 @@ class Unfold(BaseModel):
 
 
     body: SheetMetalOperation = Field(...)
+    line: Line = Field(...)
+    offset: FloatParameter = Field(...)
     fixed_face: Optional[Plane] = Field(default=None)
+    dimension_position: DimensionPosition = Field(default_factory=lambda: _eval_expr({}, 'DimensionPosition.OUTSIDE'), json_schema_extra={'default': {'expr': 'DimensionPosition.OUTSIDE'}})
+    jog_angle: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=90.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=90.0)'}})
+    bend_radius: Optional[FloatParameter] = Field(default=None)
+    k_factor: Optional[FloatParameter] = Field(default=None)
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

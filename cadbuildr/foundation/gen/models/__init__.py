@@ -4,6 +4,16 @@
 """Generated GraphQL types for foundation."""
 
 from __future__ import annotations
+from .enums import (
+    SheetDirection,
+    FlangePosition,
+    BendPosition,
+    ReliefType,
+    HemType,
+    CornerType,
+    CornerReliefType,
+    DimensionPosition
+)
 from .float_parameter import FloatParameter
 from .int_parameter import IntParameter
 from .bool_parameter import BoolParameter
@@ -84,14 +94,21 @@ from .thicken import Thicken
 from .stitch import Stitch
 from .shell import Shell
 from .thread import Thread
+from .edge_ref import EdgeRef
 from .sheet_metal_body import SheetMetalBody
 from .sheet_metal_base_flange import SheetMetalBaseFlange
+from .sheet_metal_tab import SheetMetalTab
 from .sheet_metal_edge_flange import SheetMetalEdgeFlange
-from .sheet_metal_contour_flange import SheetMetalContourFlange
-from .sheet_metal_bend import SheetMetalBend
-from .sheet_metal_corner_seam import SheetMetalCornerSeam
+from .sheet_metal_miter_flange import SheetMetalMiterFlange
+from .sheet_metal_hem import SheetMetalHem
+from .sheet_metal_sketched_bend import SheetMetalSketchedBend
+from .sheet_metal_jog import SheetMetalJog
+from .sheet_metal_closed_corner import SheetMetalClosedCorner
+from .sheet_metal_corner_relief import SheetMetalCornerRelief
+from .sheet_metal_lofted_bend import SheetMetalLoftedBend
 from .sheet_metal_to_solid import SheetMetalToSolid
 from .unfold import Unfold
+from .sheet_metal_fold import SheetMetalFold
 from .in_plane_finder_rule import InPlaneFinderRule
 from .at_angle_finder_rule import AtAngleFinderRule
 from .at_distance_finder_rule import AtDistanceFinderRule
@@ -292,21 +309,35 @@ Shell.model_rebuild()
 
 Thread.model_rebuild()
 
+EdgeRef.model_rebuild()
+
 SheetMetalBody.model_rebuild()
 
 SheetMetalBaseFlange.model_rebuild()
 
+SheetMetalTab.model_rebuild()
+
 SheetMetalEdgeFlange.model_rebuild()
 
-SheetMetalContourFlange.model_rebuild()
+SheetMetalMiterFlange.model_rebuild()
 
-SheetMetalBend.model_rebuild()
+SheetMetalHem.model_rebuild()
 
-SheetMetalCornerSeam.model_rebuild()
+SheetMetalSketchedBend.model_rebuild()
+
+SheetMetalJog.model_rebuild()
+
+SheetMetalClosedCorner.model_rebuild()
+
+SheetMetalCornerRelief.model_rebuild()
+
+SheetMetalLoftedBend.model_rebuild()
 
 SheetMetalToSolid.model_rebuild()
 
 Unfold.model_rebuild()
+
+SheetMetalFold.model_rebuild()
 
 InPlaneFinderRule.model_rebuild()
 
@@ -393,7 +424,11 @@ register_type("Hole", Hole)
 
 register_type("Loft", Loft)
 
-register_type("SheetMetalCornerSeam", SheetMetalCornerSeam)
+register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
+
+register_type("SheetMetalClosedCorner", SheetMetalClosedCorner)
+
+register_type("SheetMetalCornerRelief", SheetMetalCornerRelief)
 
 register_type("SlotOverall", SlotOverall)
 
@@ -425,11 +460,15 @@ register_type("RegularPolygon", RegularPolygon)
 
 register_type("SVGShape", SVGShape)
 
-register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
-
-register_type("SheetMetalBend", SheetMetalBend)
-
 register_type("SheetMetalEdgeFlange", SheetMetalEdgeFlange)
+
+register_type("SheetMetalHem", SheetMetalHem)
+
+register_type("SheetMetalJog", SheetMetalJog)
+
+register_type("SheetMetalMiterFlange", SheetMetalMiterFlange)
+
+register_type("SheetMetalSketchedBend", SheetMetalSketchedBend)
 
 register_type("SortByRule", SortByRule)
 
@@ -466,6 +505,14 @@ except ImportError:
 
 
 __all__ = [
+    "SheetDirection",
+    "FlangePosition",
+    "BendPosition",
+    "ReliefType",
+    "HemType",
+    "CornerType",
+    "CornerReliefType",
+    "DimensionPosition",
     "FloatParameter",
     "IntParameter",
     "BoolParameter",
@@ -546,14 +593,21 @@ __all__ = [
     "Stitch",
     "Shell",
     "Thread",
+    "EdgeRef",
     "SheetMetalBody",
     "SheetMetalBaseFlange",
+    "SheetMetalTab",
     "SheetMetalEdgeFlange",
-    "SheetMetalContourFlange",
-    "SheetMetalBend",
-    "SheetMetalCornerSeam",
+    "SheetMetalMiterFlange",
+    "SheetMetalHem",
+    "SheetMetalSketchedBend",
+    "SheetMetalJog",
+    "SheetMetalClosedCorner",
+    "SheetMetalCornerRelief",
+    "SheetMetalLoftedBend",
     "SheetMetalToSolid",
     "Unfold",
+    "SheetMetalFold",
     "InPlaneFinderRule",
     "AtAngleFinderRule",
     "AtDistanceFinderRule",

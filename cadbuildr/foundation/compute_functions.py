@@ -5,6 +5,19 @@ import math
 import re
 
 from.gen.runtime import register_compute_fn, register_method_fn
+from.gen.runtime.helpers import register_cast_fn
+
+
+@register_cast_fn("cast_edge_ref")
+def _cast_edge_ref(v):
+    """Route a bare value passed for an EdgeRef field: an EdgeFinder becomes a
+    query reference, anything else (a Line) becomes a constructed reference."""
+    from.gen.models import EdgeFinder
+    if isinstance(v, EdgeFinder):
+        return {"finder": v}
+    return {"line": v}
+
+
 from.gen.models import (
     Arc,
     Plane,

@@ -8,14 +8,14 @@ from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .edge_finder import EdgeFinder
+    from .edge_ref import EdgeRef
     from .float_parameter import FloatParameter
-    from .sketch import Sketch
-    from .unions import ClosedShape2D
     from .unions import SheetMetalOperation
+from .enums import FlangePosition
+from .enums import HemType
 
-class SheetMetalContourFlange(ParameterFieldsMixin, BaseModel, Computable):
-    """Generated from GraphQL object SheetMetalContourFlange."""
+class SheetMetalHem(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object SheetMetalHem."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -31,7 +31,7 @@ class SheetMetalContourFlange(ParameterFieldsMixin, BaseModel, Computable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['body', 'edge_finder', 'profile', 'length'],
+            field_order=['body', 'edge', 'hem_type'],
             list_fields=None,
         )
         if use_normal:
@@ -45,10 +45,11 @@ class SheetMetalContourFlange(ParameterFieldsMixin, BaseModel, Computable):
 
 
     body: SheetMetalOperation = Field(...)
-    edge_finder: EdgeFinder = Field(...)
-    profile: ClosedShape2D = Field(...)
-    length: FloatParameter = Field(...)
-    sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_sheet_metal_contour_sketch', 'includeInDag': True}})
+    edge: EdgeRef = Field(...)
+    hem_type: HemType = Field(default_factory=lambda: _eval_expr({}, 'HemType.CLOSED'), json_schema_extra={'default': {'expr': 'HemType.CLOSED'}})
+    length: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=5.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=5.0)'}})
+    gap_or_radius: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
+    flange_position: FlangePosition = Field(default_factory=lambda: _eval_expr({}, 'FlangePosition.MATERIAL_INSIDE'), json_schema_extra={'default': {'expr': 'FlangePosition.MATERIAL_INSIDE'}})
     bend_radius: Optional[FloatParameter] = Field(default=None)
     k_factor: Optional[FloatParameter] = Field(default=None)
 

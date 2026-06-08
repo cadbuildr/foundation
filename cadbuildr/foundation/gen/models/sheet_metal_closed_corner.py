@@ -8,13 +8,12 @@ from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .edge_finder import EdgeFinder
     from .float_parameter import FloatParameter
-    from .string_parameter import StringParameter
     from .unions import SheetMetalOperation
+from .enums import CornerType
 
-class SheetMetalBend(ParameterFieldsMixin, BaseModel, Computable):
-    """Generated from GraphQL object SheetMetalBend."""
+class SheetMetalClosedCorner(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object SheetMetalClosedCorner."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -30,7 +29,7 @@ class SheetMetalBend(ParameterFieldsMixin, BaseModel, Computable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['body', 'bend_line', 'angle'],
+            field_order=['body'],
             list_fields=None,
         )
         if use_normal:
@@ -44,10 +43,8 @@ class SheetMetalBend(ParameterFieldsMixin, BaseModel, Computable):
 
 
     body: SheetMetalOperation = Field(...)
-    bend_line: EdgeFinder = Field(...)
-    angle: FloatParameter = Field(...)
-    bend_radius: Optional[FloatParameter] = Field(default=None)
-    k_factor: Optional[FloatParameter] = Field(default=None)
-    bend_position: StringParameter = Field(default_factory=lambda: _eval_expr({}, 'StringParameter(value="material-inside")'), json_schema_extra={'default': {'expr': 'StringParameter(value="material-inside")'}})
+    corner_type: CornerType = Field(default_factory=lambda: _eval_expr({}, 'CornerType.BUTT'), json_schema_extra={'default': {'expr': 'CornerType.BUTT'}})
+    gap: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
+    overlap_ratio: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.5)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.5)'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config
