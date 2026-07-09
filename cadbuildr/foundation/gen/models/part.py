@@ -8,6 +8,7 @@ from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .anchor import Anchor
     from .frame import Frame
     from .plane import Plane
     from .string_parameter import StringParameter
@@ -20,6 +21,18 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
 
 
 
+    def add_anchor(self, anchor: Anchor) -> Optional[Anchor]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'anchor': anchor
+        }
+        return run_method(self, 'add_anchor_method', _locals)
+    def anchor(self, name: str) -> Optional[Anchor]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'name': name
+        }
+        return run_method(self, 'get_anchor_method', _locals)
     def xy(self) -> Optional[Plane]:
         return run_method(self, 'get_xy_plane')
     def yx(self) -> Optional[Plane]:
@@ -92,6 +105,7 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
     name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='part0')"), json_schema_extra={'default': {'expr': "StringParameter(value='part0')"}})
     operations: List[Operation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     planes: List[Plane] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     pf: Optional[Any] = Field(default=None, json_schema_extra={'compute': {'fn': 'get_plane_factory'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

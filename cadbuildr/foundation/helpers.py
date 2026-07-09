@@ -401,3 +401,46 @@ def _point3d_to_array(self: Point3D) -> "np.ndarray":
 
 
 setattr(Point3D, "to_array", _point3d_to_array)
+
+
+def anchor_plane(anchor: Any, name: Optional[str] = None) -> Plane:
+    """Sketching plane at an anchor (XY = the anchor plane, Z = mate axis).
+
+    Lets Connection modifiers sketch geometry (clearance holes, mortises...)
+    directly at the connection point.
+    """
+    from .gen.models import StringParameter
+
+    return Plane(
+        frame=anchor.frame,
+        name=StringParameter(value=name or f"{anchor.name.value}_plane"),
+    )
+
+
+def make_anchor(
+    name: str,
+    position: Sequence[float] = (0.0, 0.0, 0.0),
+    quaternion: Optional[Sequence[float]] = None,
+    z_down: bool = False,
+) -> Any:
+    """Convenience Anchor constructor (+Z = mate axis / outward normal).
+
+    ``z_down=True`` flips the anchor 180° about X so its outward normal points
+    along local -Z — the usual convention for a bottom/underside mating face.
+    Attach the result with ``part.add_anchor(...)``; its frame roots under the
+    part frame at that point.
+    """
+    from .gen.models import Anchor, Frame, StringParameter
+
+    if quaternion is None:
+        quaternion = (0.0, 1.0, 0.0, 0.0) if z_down else (1.0, 0.0, 0.0, 0.0)
+    return Anchor(
+        frame=Frame(
+            top_frame=None,
+            name=StringParameter(value=f"anchor_{name}_frame"),
+            display=BoolParameter(value=False),
+            position=[float(p) for p in position],
+            quaternion=[float(q) for q in quaternion],
+        ),
+        name=StringParameter(value=name),
+    )

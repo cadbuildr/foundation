@@ -9,6 +9,7 @@ from .assembly_root import AssemblyRoot
 from .at_angle_finder_rule import AtAngleFinderRule
 from .at_distance_finder_rule import AtDistanceFinderRule
 from .b_spline import BSpline
+from .ball_joint import BallJoint
 from .bezier import Bezier
 from .bounding_box import BoundingBox
 from .chamfer import Chamfer
@@ -17,6 +18,7 @@ from .contains_point_finder_rule import ContainsPointFinderRule
 from .convex_hull import ConvexHull
 from .custom_closed_shape import CustomClosedShape
 from .custom_open_shape import CustomOpenShape
+from .cylindrical_joint import CylindricalJoint
 from .draft import Draft
 from .either_finder_rule import EitherFinderRule
 from .ellipse import Ellipse
@@ -42,6 +44,8 @@ from .offset2_d import Offset2D
 from .on_face_rule import OnFaceRule
 from .parallel_to_axis_rule import ParallelToAxisRule
 from .part_root import PartRoot
+from .pin_slot_joint import PinSlotJoint
+from .planar_joint import PlanarJoint
 from .point import Point
 from .polygon import Polygon
 from .project import Project
@@ -51,8 +55,11 @@ from .rectangle_from2_points import RectangleFrom2Points
 from .rectangle_from_center_and_sides import RectangleFromCenterAndSides
 from .rectangle_rounded import RectangleRounded
 from .regular_polygon import RegularPolygon
+from .revolute_joint import RevoluteJoint
+from .rigid_joint import RigidJoint
 from .svg_shape import SVGShape
 from .scale import Scale
+from .screw_joint import ScrewJoint
 from .section import Section
 from .sheet_metal_base_flange import SheetMetalBaseFlange
 from .sheet_metal_closed_corner import SheetMetalClosedCorner
@@ -67,6 +74,7 @@ from .sheet_metal_sketched_bend import SheetMetalSketchedBend
 from .sheet_metal_tab import SheetMetalTab
 from .sheet_metal_to_solid import SheetMetalToSolid
 from .shell import Shell
+from .slider_joint import SliderJoint
 from .slot_center_point import SlotCenterPoint
 from .slot_center_to_center import SlotCenterToCenter
 from .slot_overall import SlotOverall
@@ -97,4 +105,5 @@ SurfaceOperation = Union[SurfaceLoft]
 SheetMetalOperation = Union[SheetMetalBaseFlange, SheetMetalTab, SheetMetalEdgeFlange, SheetMetalMiterFlange, SheetMetalHem, SheetMetalSketchedBend, SheetMetalJog, SheetMetalClosedCorner, SheetMetalCornerRelief, SheetMetalLoftedBend, SheetMetalFold, Unfold]
 FinderRule = Union[InPlaneFinderRule, AtAngleFinderRule, AtDistanceFinderRule, ContainsPointFinderRule, InBoxFinderRule, InDirectionFinderRule, AndFinderRule, EitherFinderRule, IsCircleRule, OfTypeRule, LengthRangeRule, RadiusRangeRule, ParallelToAxisRule, OnFaceRule, SortByRule]
 Operation = Union[Extrusion, Hole, Lathe, Loft, Sweep, Thread, Fillet, Chamfer, MultiSectionSweep, SurfaceLoft, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere, Mirror, BoundingBox, Scale, Wedge, Section, Split, Project, Draft, FullRound]
+Joint = Union[RigidJoint, RevoluteJoint, SliderJoint, CylindricalJoint, PlanarJoint, BallJoint, PinSlotJoint, ScrewJoint]
 ComponentRoot = Union[PartRoot, AssemblyRoot]

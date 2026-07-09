@@ -125,6 +125,83 @@ def quaternion_multiply(q1: list[float], q2: list[float]) -> list[float]:
     ]
 
 
+def quaternion_conjugate(q: Sequence[float]) -> list[float]:
+    """Conjugate of quaternion [w, x, y, z]."""
+    return [q[0], -q[1], -q[2], -q[3]]
+
+
+def quaternion_inverse(q: Sequence[float]) -> list[float]:
+    """Inverse of quaternion [w, x, y, z]."""
+    norm_sq = q[0] ** 2 + q[1] ** 2 + q[2] ** 2 + q[3] ** 2
+    if norm_sq == 0:
+        raise ValueError("Cannot invert a zero quaternion")
+    conj = quaternion_conjugate(q)
+    return [c / norm_sq for c in conj]
+
+
+def quaternion_rotate_vector(q: Sequence[float], v: Sequence[float]) -> list[float]:
+    """Rotate vector [x, y, z] by quaternion [w, x, y, z]."""
+    qv = [0.0, float(v[0]), float(v[1]), float(v[2])]
+    rotated = quaternion_multiply(quaternion_multiply(list(q), qv), quaternion_conjugate(q))
+    return [rotated[1], rotated[2], rotated[3]]
+
+
+def compose_tf(
+    t1: Sequence[float],
+    q1: Sequence[float],
+    t2: Sequence[float],
+    q2: Sequence[float],
+) -> tuple[list[float], list[float]]:
+    """Compose two rigid transforms: result = T1 ∘ T2 (apply T2, then T1).
+
+    Matches the viewer's frame-chain composition (rotate then translate per
+    frame walking up the ``top_frame`` chain): ``p_out = R(q1)·(R(q2)·p + t2) + t1``.
+    """
+    rotated_t2 = quaternion_rotate_vector(q1, t2)
+    translation = [float(t1[i]) + rotated_t2[i] for i in range(3)]
+    quaternion = quaternion_multiply(list(q1), list(q2))
+    return translation, quaternion
+
+
+def invert_tf(
+    t: Sequence[float], q: Sequence[float]
+) -> tuple[list[float], list[float]]:
+    """Invert a rigid transform (translation, quaternion)."""
+    q_inv = quaternion_inverse(q)
+    t_inv = quaternion_rotate_vector(q_inv, [-float(t[0]), -float(t[1]), -float(t[2])])
+    return t_inv, q_inv
+
+
+def tf_relative_to_frame(
+    frame: Any, ancestor_frame: Any = None
+) -> tuple[list[float], list[float]]:
+    """Transform of ``frame`` expressed in ``ancestor_frame`` coordinates.
+
+    Walks the ``top_frame`` chain from ``frame`` up to (excluding)
+    ``ancestor_frame``, composing local transforms. With ``ancestor_frame=None``
+    the walk continues to the root frame. Identity comparison (``is``) is used
+    on purpose: structurally equal frames at different tree positions must not
+    terminate the walk.
+    """
+    chain = []
+    cursor = frame
+    while cursor is not None and cursor is not ancestor_frame:
+        chain.append(cursor)
+        cursor = cursor.top_frame
+    if ancestor_frame is not None and cursor is not ancestor_frame:
+        raise ValueError(
+            f"Frame '{frame.name.value}' does not chain up to frame "
+            f"'{ancestor_frame.name.value}'. Anchors must belong to a component "
+            "already placed under the assembly."
+        )
+    translation, quaternion = [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]
+    for f in reversed(chain):
+        translation, quaternion = compose_tf(
+            translation, quaternion, f.position, f.quaternion
+        )
+    return translation, quaternion
+
+
 def create_frame_from_xdir_and_normal(
     base_frame: Any, x_dir: list[float], normal: list[float], name: str
 ) -> "Frame":

@@ -4,16 +4,18 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .anchor import Anchor
     from .frame import Frame
     from .material import Material
     from .plane import Plane
     from .string_parameter import StringParameter
     from .unions import Operation
 
-class PartRoot(ParameterFieldsMixin, BaseModel):
+class PartRoot(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object PartRoot."""
 
 
@@ -26,6 +28,7 @@ class PartRoot(ParameterFieldsMixin, BaseModel):
     name: StringParameter = Field(...)
     operations: List[Operation] = Field(...)
     planes: List[Plane] = Field(...)
+    anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     material: Optional[Material] = Field(default=None)
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

@@ -4,16 +4,17 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
-from ..runtime import _eval_expr, run_method
-from cadbuildr.foundation.mixin.sketch_mixin import SketchElementMixin
+from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .float_parameter import FloatParameter
-    from .sketch import Sketch
+    from .bool_parameter import BoolParameter
+    from .frame import Frame
+    from .plane import Plane
+    from .string_parameter import StringParameter
 
-class Point(SketchElementMixin, ParameterFieldsMixin, BaseModel):
-    """Generated from GraphQL object Point."""
+class Anchor(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object Anchor."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -29,7 +30,7 @@ class Point(SketchElementMixin, ParameterFieldsMixin, BaseModel):
             args,
             kwargs,
             cast_info=None,
-            field_order=['sketch', 'x', 'y'],
+            field_order=['frame', 'name'],
             list_fields=None,
         )
         if use_normal:
@@ -41,39 +42,38 @@ class Point(SketchElementMixin, ParameterFieldsMixin, BaseModel):
 
 
     @staticmethod
-    def midpoint(p1, p2) -> Optional[Point]:
+    def from_plane(plane, name) -> Optional[Anchor]:
         # Build local namespace with parameters for static method function
         _locals = {
-            'p1': p1,
-            'p2': p2
+            'plane': plane,
+            'name': name
         }
-        return run_method(None, 'point_midpoint', _locals)
-    @staticmethod
-    def distance_between_points(p1, p2) -> Optional[float]:
-        # Build local namespace with parameters for static method function
-        _locals = {
-            'p1': p1,
-            'p2': p2
-        }
-        return run_method(None, 'point_distance_between_points', _locals)
-    def translate(self, dx: float, dy: float) -> Optional[Point]:
+        return run_method(None, 'anchor_from_plane', _locals)
+    def offset(self, translation: List[float], name: Optional[str]='offset') -> Optional[Anchor]:
         # Build local namespace with parameters for method function
         _locals = {
-            'dx': dx,
-            'dy': dy
+            'translation': translation,
+            'name': name
         }
-        return run_method(self, 'point_translate', _locals)
-    def rotate(self, angle: float, center: Optional[Point]=None) -> Optional[Point]:
+        return run_method(self, 'anchor_offset_method', _locals)
+    def rotated(self, angle: float, axis: Optional[List[float]]=[0.0, 0.0, 1.0], name: Optional[str]='rotated') -> Optional[Anchor]:
         # Build local namespace with parameters for method function
         _locals = {
             'angle': angle,
-            'center': center
+            'axis': axis,
+            'name': name
         }
-        return run_method(self, 'point_rotate', _locals)
+        return run_method(self, 'anchor_rotated_method', _locals)
+    def flipped(self, name: Optional[str]='flipped') -> Optional[Anchor]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'name': name
+        }
+        return run_method(self, 'anchor_flipped_method', _locals)
 
 
-    sketch: Sketch = Field(...)
-    x: FloatParameter = Field(...)
-    y: FloatParameter = Field(...)
+    frame: Frame = Field(...)
+    name: StringParameter = Field(...)
+    display: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

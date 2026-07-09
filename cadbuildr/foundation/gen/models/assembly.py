@@ -8,10 +8,13 @@ from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .anchor import Anchor
+    from .connection import Connection
     from .frame import Frame
     from .plane import Plane
     from .string_parameter import StringParameter
     from .unions import ComponentRoot
+    from .unions import Joint
 
 class Assembly(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object Assembly."""
@@ -20,6 +23,36 @@ class Assembly(ParameterFieldsMixin, BaseModel, Computable):
 
 
 
+    def add_anchor(self, anchor: Anchor) -> Optional[Anchor]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'anchor': anchor
+        }
+        return run_method(self, 'add_anchor_method', _locals)
+    def anchor(self, name: str) -> Optional[Anchor]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'name': name
+        }
+        return run_method(self, 'get_anchor_method', _locals)
+    def add_joint(self, joint: Joint) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'joint': joint
+        }
+        return run_method(self, 'add_joint_method', _locals)
+    def add_connection(self, connection: Connection) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'connection': connection
+        }
+        return run_method(self, 'add_connection_method', _locals)
+    def ground(self, anchor: Anchor) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'anchor': anchor
+        }
+        return run_method(self, 'ground_method', _locals)
     def xy(self) -> Optional[Plane]:
         return run_method(self, 'get_xy_plane')
     def yx(self) -> Optional[Plane]:
@@ -76,5 +109,7 @@ class Assembly(ParameterFieldsMixin, BaseModel, Computable):
     frame: Frame = Field(default_factory=lambda: _eval_expr({}, 'Frame.make_origin_frame()'), json_schema_extra={'default': {'expr': 'Frame.make_origin_frame()'}})
     name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='assembly0')"), json_schema_extra={'default': {'expr': "StringParameter(value='assembly0')"}})
     components: List[ComponentRoot] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    joints: List[Joint] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

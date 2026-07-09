@@ -4,17 +4,16 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
-from ..runtime import Computable, Expandable, _eval_expr, run_method
+from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .bool_parameter import BoolParameter
-    from .extrusion import Extrusion
-    from .float_parameter import FloatParameter
-    from .point import Point
+    from .part_modifier import PartModifier
+    from .string_parameter import StringParameter
+    from .unions import Joint
 
-class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
-    """Generated from GraphQL object Cylinder."""
+class Connection(ParameterFieldsMixin, BaseModel, Computable):
+    """Generated from GraphQL object Connection."""
 
 
     # --- Positional-argument constructor shim --------------------- #
@@ -30,8 +29,8 @@ class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['center', 'radius', 'height'],
-            list_fields=None,
+            field_order=['name', 'joint', 'modifiers'],
+            list_fields=['modifiers'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -43,10 +42,8 @@ class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
 
 
 
-    center: Point = Field(...)
-    radius: FloatParameter = Field(...)
-    height: FloatParameter = Field(...)
-    cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
-    result: Optional[Extrusion] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': [{'__typename': 'Circle', 'center': '$center', 'radius': '$radius'}], 'start': {'__typename': 'FloatParameter', 'value': 0.0}, 'end': '$height', 'cut': '$cut'}}})
+    name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='connection')"), json_schema_extra={'default': {'expr': "StringParameter(value='connection')"}})
+    joint: Joint = Field(...)
+    modifiers: List[PartModifier] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

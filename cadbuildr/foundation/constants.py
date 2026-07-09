@@ -164,6 +164,20 @@ DEFAULT_VALID_TYPES: list[str] = [
     "Text",
     "Draft",
     "FullRound",
+    # Type ids are positional: ONLY append below, never insert or remove —
+    # existing serialized DAGs depend on the indices above staying stable.
+    "Anchor",
+    "JointLimits",
+    "RigidJoint",
+    "RevoluteJoint",
+    "SliderJoint",
+    "CylindricalJoint",
+    "PlanarJoint",
+    "BallJoint",
+    "PinSlotJoint",
+    "ScrewJoint",
+    "PartModifier",
+    "Connection",
 ]
 
 DEFAULT_TYPE_REGISTRY: dict[str, int] = {

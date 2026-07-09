@@ -39,6 +39,9 @@ from.math_utils import (
     axis_angle_to_quaternion,
     quaternion_multiply,
     create_frame_from_xdir_and_normal,
+    compose_tf,
+    invert_tf,
+    tf_relative_to_frame,
 )
 
 
@@ -904,6 +907,343 @@ def add_operations_method(inst: Part, operations: Iterable[Any]) -> bool:
     return True
 
 
+# --------------------------------------------------------------------------- #
+# Anchors ("mate connectors"): named frames on a Part/Assembly. Convention:
+# +Z is the mate axis / outward normal, +X the clocking direction.
+# The anchor -> owner back-reference is a transient attribute (never a model
+# field) so the serialized DAG stays acyclic.
+# --------------------------------------------------------------------------- #
+
+_ANCHOR_OWNER_ATTR = "_anchor_owner"
+
+
+def _anchor_owner(anchor: Any) -> Any:
+    owner = getattr(anchor, _ANCHOR_OWNER_ATTR, None)
+    if owner is None:
+        raise ValueError(
+            f"Anchor '{anchor.name.value}' has no owner. Attach it with "
+            "part.add_anchor(anchor) (or assembly.add_anchor) before using it "
+            "in a joint."
+        )
+    return owner
+
+
+def _set_anchor_owner(anchor: Any, owner: Any) -> None:
+    object.__setattr__(anchor, _ANCHOR_OWNER_ATTR, owner)
+
+
+@register_method_fn("add_anchor_method")
+def add_anchor_method(inst: Part | Assembly, anchor: Any) -> Any:
+    """Attach an anchor to a part/assembly and take ownership of it."""
+    for existing in inst.anchors:
+        if existing.name.value == anchor.name.value:
+            raise ValueError(
+                f"Anchor name '{anchor.name.value}' already exists on "
+                f"'{inst.name.value}'."
+            )
+    # Root the anchor frame under the owner frame unless the caller already
+    # chained it (e.g. Anchor.from_plane roots under the plane frame, which
+    # itself chains to the part frame).
+    if anchor.frame.top_frame is None:
+        anchor.frame.top_frame = inst.frame
+    _set_anchor_owner(anchor, inst)
+    inst.anchors.append(anchor)
+    return anchor
+
+
+@register_method_fn("get_anchor_method")
+def get_anchor_method(inst: Part | Assembly, name: str) -> Any:
+    """Look up an anchor by name."""
+    for anchor in inst.anchors:
+        if anchor.name.value == name:
+            return anchor
+    available = ", ".join(a.name.value for a in inst.anchors) or "<none>"
+    raise ValueError(
+        f"No anchor named '{name}' on '{inst.name.value}'. "
+        f"Available anchors: {available}"
+    )
+
+
+@register_method_fn("anchor_from_plane")
+def anchor_from_plane(inst: Any, plane: Any, name: str) -> Any:
+    """Create an anchor on a plane (anchor Z = plane normal, X = plane X).
+
+    Static method: ``inst`` is always None (run_method passes it for parity
+    with instance methods).
+    """
+    from.gen.models import Anchor
+
+    return Anchor(
+        frame=Frame(
+            top_frame=plane.frame,
+            name=StringParameter(value=f"anchor_{name}_frame"),
+            display=BoolParameter(value=False),
+            position=[0.0, 0.0, 0.0],
+            quaternion=[1.0, 0.0, 0.0, 0.0],
+        ),
+        name=StringParameter(value=name),
+    )
+
+
+def _derive_anchor(
+    base: Any,
+    name: str,
+    position: Sequence[float],
+    quaternion: Sequence[float],
+) -> Any:
+    """Create an anchor whose frame is a child of ``base``'s frame."""
+    from.gen.models import Anchor
+
+    derived_name = f"{base.name.value}_{name}"
+    derived = Anchor(
+        frame=Frame(
+            top_frame=base.frame,
+            name=StringParameter(value=f"anchor_{derived_name}_frame"),
+            display=BoolParameter(value=False),
+            position=[float(p) for p in position],
+            quaternion=[float(q) for q in quaternion],
+        ),
+        name=StringParameter(value=derived_name),
+    )
+    owner = getattr(base, _ANCHOR_OWNER_ATTR, None)
+    if owner is not None:
+        _set_anchor_owner(derived, owner)
+    return derived
+
+
+@register_method_fn("anchor_offset_method")
+def anchor_offset_method(inst: Any, translation: Sequence[float], name: str = "offset") -> Any:
+    """Derive an anchor translated in this anchor's local frame."""
+    return _derive_anchor(inst, name, translation, [1.0, 0.0, 0.0, 0.0])
+
+
+@register_method_fn("anchor_rotated_method")
+def anchor_rotated_method(
+    inst: Any,
+    angle: float,
+    axis: Sequence[float] = (0.0, 0.0, 1.0),
+    name: str = "rotated",
+) -> Any:
+    """Derive an anchor rotated about an axis in this anchor's local frame."""
+    return _derive_anchor(
+        inst, name, [0.0, 0.0, 0.0], axis_angle_to_quaternion(list(axis), angle)
+    )
+
+
+@register_method_fn("anchor_flipped_method")
+def anchor_flipped_method(inst: Any, name: str = "flipped") -> Any:
+    """Derive an anchor with its Z axis reversed (180° about local X)."""
+    return _derive_anchor(
+        inst, name, [0.0, 0.0, 0.0], axis_angle_to_quaternion([1.0, 0.0, 0.0], math.pi)
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Joints: deterministic anchor-to-anchor placement (no constraint solver).
+# A joint positions exactly one child component relative to an already-placed
+# parent:  child_root = P ∘ J(dof) ∘ Flip? ∘ C⁻¹   with P the parent anchor in
+# assembly space, J the DOF motion in the parent anchor frame, and C the child
+# anchor in child-root space.
+# --------------------------------------------------------------------------- #
+
+_PLACED_IN_ATTR = "_placed_in"
+_JOINT_ASSEMBLY_ATTR = "_joint_assembly"
+_JOINT_CHILD_ROOT_ATTR = "_joint_child_root"
+# Set on a Part/Assembly by _convert_component_to_root: pydantic copies list
+# fields at model construction, so later geometry contributions (Connection
+# modifiers) must be mirrored onto the converted root explicitly.
+_COMPONENT_ROOT_ATTR = "_component_root"
+
+_IDENTITY_TF = ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+
+
+def _check_limits(value: float, limits: Any, label: str) -> None:
+    if limits is None:
+        return
+    minimum = limits.min.value if limits.min is not None else None
+    maximum = limits.max.value if limits.max is not None else None
+    if minimum is not None and value < minimum:
+        raise ValueError(f"Joint {label} {value} below limit {minimum}")
+    if maximum is not None and value > maximum:
+        raise ValueError(f"Joint {label} {value} above limit {maximum}")
+
+
+def _validate_joint_limits(joint: Any) -> None:
+    type_name = type(joint).__name__
+    if type_name in ("RevoluteJoint", "ScrewJoint"):
+        _check_limits(joint.angle.value, joint.limits, "angle")
+    elif type_name == "SliderJoint":
+        _check_limits(joint.offset.value, joint.limits, "offset")
+    elif type_name in ("CylindricalJoint", "PinSlotJoint"):
+        _check_limits(joint.angle.value, joint.angle_limits, "angle")
+        _check_limits(joint.offset.value, joint.offset_limits, "offset")
+
+
+def _joint_dof_tf(joint: Any) -> tuple[list[float], list[float]]:
+    """DOF motion of a joint, expressed in the parent anchor frame."""
+    type_name = type(joint).__name__
+    if type_name == "RigidJoint":
+        return _IDENTITY_TF
+    if type_name == "RevoluteJoint":
+        return [0.0, 0.0, 0.0], axis_angle_to_quaternion([0, 0, 1], joint.angle.value)
+    if type_name == "SliderJoint":
+        return [0.0, 0.0, joint.offset.value], [1.0, 0.0, 0.0, 0.0]
+    if type_name == "CylindricalJoint":
+        return (
+            [0.0, 0.0, joint.offset.value],
+            axis_angle_to_quaternion([0, 0, 1], joint.angle.value),
+        )
+    if type_name == "PlanarJoint":
+        return (
+            [joint.dx.value, joint.dy.value, 0.0],
+            axis_angle_to_quaternion([0, 0, 1], joint.angle.value),
+        )
+    if type_name == "BallJoint":
+        return [0.0, 0.0, 0.0], [float(v) for v in joint.orientation]
+    if type_name == "PinSlotJoint":
+        # Slide along the slot (parent +X), spin about the pin axis (+Z).
+        return (
+            [joint.offset.value, 0.0, 0.0],
+            axis_angle_to_quaternion([0, 0, 1], joint.angle.value),
+        )
+    if type_name == "ScrewJoint":
+        travel = joint.angle.value / (2.0 * math.pi) * joint.pitch.value
+        return (
+            [0.0, 0.0, travel],
+            axis_angle_to_quaternion([0, 0, 1], joint.angle.value),
+        )
+    raise TypeError(f"Unsupported joint type '{type_name}'")
+
+
+def _resolve_joint_tf(joint: Any, assembly: Any) -> tuple[list[float], list[float]]:
+    """Compute the child component's root transform in assembly space."""
+    child_owner = _anchor_owner(joint.child_anchor)
+    p_t, p_q = tf_relative_to_frame(joint.parent_anchor.frame, assembly.frame)
+    t, q = compose_tf(p_t, p_q, *_joint_dof_tf(joint))
+    if joint.flip.value:
+        t, q = compose_tf(t, q, [0.0, 0.0, 0.0], axis_angle_to_quaternion([1, 0, 0], math.pi))
+    c_t, c_q = tf_relative_to_frame(joint.child_anchor.frame, child_owner.frame)
+    return compose_tf(t, q, *invert_tf(c_t, c_q))
+
+
+@register_method_fn("add_joint_method")
+def add_joint_method(inst: Assembly, joint: Any) -> bool:
+    """Place a child component by connecting two anchors with a joint."""
+    _validate_joint_limits(joint)
+    parent_owner = _anchor_owner(joint.parent_anchor)
+    child_owner = _anchor_owner(joint.child_anchor)
+    if child_owner is inst:
+        raise ValueError(
+            "The child anchor of a joint cannot belong to the assembly itself; "
+            "use assembly.ground(anchor) to fix a component to the assembly."
+        )
+    if parent_owner is child_owner:
+        raise ValueError("A joint cannot connect a component to itself")
+    placed_in = getattr(child_owner, _PLACED_IN_ATTR, None)
+    if placed_in is not None:
+        raise ValueError(
+            f"Component '{child_owner.name.value}' is already placed "
+            "(by add_component or another joint). A component can be "
+            "positioned by at most one joint — connect further components "
+            "to its anchors instead."
+        )
+
+    # The parent anchor must already chain to this assembly's frame (the
+    # assembly itself, or a previously placed component) — enforced by
+    # tf_relative_to_frame raising otherwise.
+    t, q = _resolve_joint_tf(joint, inst)
+
+    child_root = _convert_component_to_root(
+        child_owner,
+        parent_frame=inst.frame,
+        component_path=(len(inst.components),),
+    )
+    # Joints are absolute placements: overwrite, don't compose (a translate()
+    # done on the child before jointing is intentionally discarded).
+    child_root.frame.position = t
+    child_root.frame.quaternion = q
+    inst.components.append(child_root)
+    inst.joints.append(joint)
+
+    object.__setattr__(child_owner, _PLACED_IN_ATTR, inst)
+    object.__setattr__(joint, _JOINT_ASSEMBLY_ATTR, inst)
+    object.__setattr__(joint, _JOINT_CHILD_ROOT_ATTR, child_root)
+    return True
+
+
+@register_method_fn("joint_set_value_method")
+def joint_set_value_method(
+    inst: Any, angle: float | None = None, offset: float | None = None
+) -> bool:
+    """Update a joint DOF value and re-resolve the child placement."""
+    from.gen.models import FloatParameter as FloatParam
+
+    if angle is not None:
+        inst.angle = FloatParam(value=float(angle))
+    if offset is not None:
+        inst.offset = FloatParam(value=float(offset))
+    _validate_joint_limits(inst)
+
+    assembly = getattr(inst, _JOINT_ASSEMBLY_ATTR, None)
+    child_root = getattr(inst, _JOINT_CHILD_ROOT_ATTR, None)
+    if assembly is not None and child_root is not None:
+        # Recompute from scratch (idempotent), not an incremental compose.
+        t, q = _resolve_joint_tf(inst, assembly)
+        child_root.frame.position = t
+        child_root.frame.quaternion = q
+    return True
+
+
+@register_method_fn("add_connection_method")
+def add_connection_method(inst: Assembly, connection: Any) -> bool:
+    """Apply a library-defined connection: geometry modifiers, then the joint.
+
+    Modifiers run first so contributed operations land on the parts before the
+    joint placement serializes the child. For parts that were already placed
+    (converted to a PartRoot), the new operations are mirrored onto the root —
+    pydantic copied the operations list at conversion time.
+    """
+    for modifier in connection.modifiers:
+        owner = _anchor_owner(modifier.anchor)
+        if not isinstance(owner, Part):
+            raise ValueError(
+                f"PartModifier anchor '{modifier.anchor.name.value}' must belong "
+                f"to a Part, not {type(owner).__name__}: connections can only "
+                "modify part geometry."
+            )
+        count_before = len(owner.operations)
+        owner.add_operations(modifier.operations)
+        expanded_ops = owner.operations[count_before:]
+        root = getattr(owner, _COMPONENT_ROOT_ATTR, None)
+        if root is not None:
+            root.operations.extend(expanded_ops)
+    return add_joint_method(inst, connection.joint)
+
+
+@register_method_fn("ground_method")
+def ground_method(inst: Assembly, anchor: Any) -> bool:
+    """Fix a component to the assembly origin via a rigid joint."""
+    from.gen.models import Anchor, RigidJoint
+
+    origin_anchor = Anchor(
+        frame=Frame(
+            top_frame=inst.frame,
+            name=StringParameter(value=f"anchor_ground_{len(inst.joints)}_frame"),
+            display=BoolParameter(value=False),
+            position=[0.0, 0.0, 0.0],
+            quaternion=[1.0, 0.0, 0.0, 0.0],
+        ),
+        name=StringParameter(value=f"ground_{len(inst.joints)}"),
+    )
+    _set_anchor_owner(origin_anchor, inst)
+    joint = RigidJoint(
+        parent_anchor=origin_anchor,
+        child_anchor=anchor,
+        flip=BoolParameter(value=False),
+    )
+    return add_joint_method(inst, joint)
+
+
 @register_method_fn("interface_grid_offset_method")
 def interface_grid_offset_method(
     inst: Any, n_x: int = 0, n_y: int = 0, n_z: int = 0
@@ -1217,10 +1557,12 @@ def _convert_component_to_root(
             name=part_name,
             operations=component.operations,  # No need to update - frames reference component.frame which we just updated
             planes=component.planes,  # No need to update - frames reference component.frame which we just updated
+            anchors=component.anchors,  # Anchor frames also chain through component.frame
             material=getattr(component, "_material", None),
         )
         if auto_slug is not None:
             object.__setattr__(part_root, _AUTO_SLUG_ATTR, auto_slug)
+        object.__setattr__(component, _COMPONENT_ROOT_ATTR, part_root)
         return part_root
     if isinstance(component, Assembly):
         # Create assembly frame first
@@ -1243,6 +1585,13 @@ def _convert_component_to_root(
             if isinstance(original_frame.quaternion, list)
             else original_frame.quaternion,
         )
+
+        # Unlike Part conversion (frame updated in place), the assembly gets a
+        # fresh frame — re-root direct anchors onto it so they keep following
+        # the assembly. Derived anchors chain through their base anchor.
+        for anchor in component.anchors:
+            if anchor.frame.top_frame is original_frame:
+                anchor.frame.top_frame = assembly_frame
 
         # RECURSIVELY convert nested components, passing assembly frame so component frames can point to it
         converted_components = []
@@ -1273,12 +1622,15 @@ def _convert_component_to_root(
             frame=assembly_frame,
             name=assembly_name,
             components=converted_components,
+            anchors=component.anchors,
+            joints=component.joints,
             material=getattr(component, "_material", None),
         )
         if auto_assembly_slug is not None:
             object.__setattr__(
                 assembly_root, _AUTO_SLUG_ATTR, auto_assembly_slug
             )
+        object.__setattr__(component, _COMPONENT_ROOT_ATTR, assembly_root)
         return assembly_root
 
 
@@ -1351,6 +1703,10 @@ def add_component_method(inst: Assembly, component: Any, tf: Any = None) -> bool
     if quaternion is not None:
         _apply_rotation_to_root(component_root, quaternion)
     inst.components.append(component_root)
+    if isinstance(component, (Part, Assembly)):
+        # Mark placement so a later add_joint on the same component errors
+        # instead of silently double-placing it.
+        object.__setattr__(component, _PLACED_IN_ATTR, inst)
     return True
 
 

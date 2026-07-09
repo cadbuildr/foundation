@@ -14,7 +14,7 @@ from. import shape_methods  # noqa: F401
 from. import helpers  # noqa: F401
 
 # Export PlaneFactory for backward compatibility
-from.helpers import PlaneFactory, TFHelper
+from.helpers import PlaneFactory, TFHelper, anchor_plane, make_anchor
 
 # Export pattern classes
 from.pattern import (

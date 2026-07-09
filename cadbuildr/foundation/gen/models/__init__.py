@@ -129,6 +129,18 @@ from .fillet import Fillet
 from .chamfer import Chamfer
 from .material_options import MaterialOptions
 from .material import Material
+from .anchor import Anchor
+from .joint_limits import JointLimits
+from .rigid_joint import RigidJoint
+from .revolute_joint import RevoluteJoint
+from .slider_joint import SliderJoint
+from .cylindrical_joint import CylindricalJoint
+from .planar_joint import PlanarJoint
+from .ball_joint import BallJoint
+from .pin_slot_joint import PinSlotJoint
+from .screw_joint import ScrewJoint
+from .part_modifier import PartModifier
+from .connection import Connection
 from .fixed_translation_constraint import FixedTranslationConstraint
 from .interface_grid_spec import InterfaceGridSpec
 from .assembly_interface import AssemblyInterface
@@ -147,6 +159,7 @@ from .unions import (
     SheetMetalOperation,
     FinderRule,
     Operation,
+    Joint,
     ComponentRoot
 )
 FloatParameter.model_rebuild()
@@ -379,6 +392,30 @@ MaterialOptions.model_rebuild()
 
 Material.model_rebuild()
 
+Anchor.model_rebuild()
+
+JointLimits.model_rebuild()
+
+RigidJoint.model_rebuild()
+
+RevoluteJoint.model_rebuild()
+
+SliderJoint.model_rebuild()
+
+CylindricalJoint.model_rebuild()
+
+PlanarJoint.model_rebuild()
+
+BallJoint.model_rebuild()
+
+PinSlotJoint.model_rebuild()
+
+ScrewJoint.model_rebuild()
+
+PartModifier.model_rebuild()
+
+Connection.model_rebuild()
+
 FixedTranslationConstraint.model_rebuild()
 
 InterfaceGridSpec.model_rebuild()
@@ -438,15 +475,27 @@ register_type("Frame", Frame)
 
 register_type("Plane", Plane)
 
-register_type("Assembly", Assembly)
+register_type("Anchor", Anchor)
 
-register_type("AssemblyInterface", AssemblyInterface)
+register_type("BallJoint", BallJoint)
+
+register_type("CylindricalJoint", CylindricalJoint)
 
 register_type("InPlaneFinderRule", InPlaneFinderRule)
 
 register_type("Lathe", Lathe)
 
 register_type("Part", Part)
+
+register_type("Connection", Connection)
+
+register_type("Assembly", Assembly)
+
+register_type("AssemblyInterface", AssemblyInterface)
+
+register_type("PinSlotJoint", PinSlotJoint)
+
+register_type("PlanarJoint", PlanarJoint)
 
 register_type("Hexagon", Hexagon)
 
@@ -458,7 +507,13 @@ register_type("RectangleFromCenterAndSides", RectangleFromCenterAndSides)
 
 register_type("RegularPolygon", RegularPolygon)
 
+register_type("RevoluteJoint", RevoluteJoint)
+
+register_type("RigidJoint", RigidJoint)
+
 register_type("SVGShape", SVGShape)
+
+register_type("ScrewJoint", ScrewJoint)
 
 register_type("SheetMetalEdgeFlange", SheetMetalEdgeFlange)
 
@@ -469,6 +524,8 @@ register_type("SheetMetalJog", SheetMetalJog)
 register_type("SheetMetalMiterFlange", SheetMetalMiterFlange)
 
 register_type("SheetMetalSketchedBend", SheetMetalSketchedBend)
+
+register_type("SliderJoint", SliderJoint)
 
 register_type("SortByRule", SortByRule)
 
@@ -628,6 +685,18 @@ __all__ = [
     "Chamfer",
     "MaterialOptions",
     "Material",
+    "Anchor",
+    "JointLimits",
+    "RigidJoint",
+    "RevoluteJoint",
+    "SliderJoint",
+    "CylindricalJoint",
+    "PlanarJoint",
+    "BallJoint",
+    "PinSlotJoint",
+    "ScrewJoint",
+    "PartModifier",
+    "Connection",
     "FixedTranslationConstraint",
     "InterfaceGridSpec",
     "AssemblyInterface",
@@ -645,5 +714,6 @@ __all__ = [
     "SheetMetalOperation",
     "FinderRule",
     "Operation",
+    "Joint",
     "ComponentRoot",
 ]

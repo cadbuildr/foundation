@@ -47,7 +47,7 @@ def test_cylinder_extrusion_uses_circle_profile():
 
 
 def test_cylinder_dimensions_propagate():
-    """radius and ±height/2 should appear in the DAG as FloatParameter values."""
+    """radius, height and start=0 should appear in the DAG as FloatParameter values."""
 
     class CylPart(Part):
         def __init__(self):
@@ -63,5 +63,5 @@ def test_cylinder_dimensions_propagate():
     )
 
     assert 4.0 in fp_values, f"Expected radius 4.0 in DAG; got {fp_values}"
-    for z in (-7.0, 7.0):
-        assert z in fp_values, f"Expected ±height/2 ({z}) as start/end; got {fp_values}"
+    assert 0.0 in fp_values, f"Expected start=0.0 in DAG; got {fp_values}"
+    assert 14.0 in fp_values, f"Expected height=14.0 as end in DAG; got {fp_values}"
