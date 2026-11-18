@@ -66,8 +66,19 @@ def test_paint_accepts_hex():
 
 
 def test_set_diffuse_color_accepts_hex_and_rgb():
-    m = Material(name="m", painted_node_ids=[], options=MaterialOptions(diffuse_color=[0, 0, 0]))
+    m = Material(
+        name="m", painted_node_ids=[], options=MaterialOptions(diffuse_color=[0, 0, 0])
+    )
     m.set_diffuse_color("#00ff00")
     assert _approx(m.options.diffuse_color, [0.0, 1.0, 0.0])
     m.set_diffuse_color([255, 255, 255])
     assert _approx(m.options.diffuse_color, [1.0, 1.0, 1.0])
+
+
+def test_gray_and_grey_spellings_are_interchangeable():
+    from cadbuildr.foundation.constants import DEFAULT_COLORS, resolve_color
+
+    assert resolve_color("gray") == DEFAULT_COLORS["grey"]
+    assert resolve_color("Dark_Gray") == DEFAULT_COLORS["dark_grey"]
+    assert resolve_color("light_gray") == DEFAULT_COLORS["light_grey"]
+    assert resolve_color("light_bluish_grey") == DEFAULT_COLORS["light_bluish_gray"]

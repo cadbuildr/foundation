@@ -74,7 +74,8 @@ def resolve_color(color: ColorSpec) -> list[float]:
 
     Accepts:
 
-    * a named color from :data:`DEFAULT_COLORS` (e.g. ``"orange"``), case-insensitive;
+    * a named color from :data:`DEFAULT_COLORS` (e.g. ``"orange"``), case-insensitive,
+      with "gray"/"grey" spellings interchangeable;
     * a hex string — ``"#212121"``, ``"212121"``, or shorthand ``"#abc"``;
     * an RGB sequence of three numbers, given either as floats in ``[0, 1]`` or
       as integers in ``[0, 255]`` (auto-detected when any component is > 1).
@@ -83,9 +84,16 @@ def resolve_color(color: ColorSpec) -> list[float]:
     """
     if isinstance(color, str):
         name = color.strip()
-        # Named colors take precedence over hex parsing.
-        if name.lower() in DEFAULT_COLORS:
-            return list(DEFAULT_COLORS[name.lower()])
+        # Named colors take precedence over hex parsing. "gray" and "grey" are
+        # interchangeable in every name ("gray", "dark_gray", "light_bluish_grey").
+        key = name.lower()
+        for candidate in (
+            key,
+            key.replace("gray", "grey"),
+            key.replace("grey", "gray"),
+        ):
+            if candidate in DEFAULT_COLORS:
+                return list(DEFAULT_COLORS[candidate])
         if _HEX_RE.match(name):
             return _hex_to_rgb(name)
         raise ValueError(
@@ -107,6 +115,7 @@ def resolve_color(color: ColorSpec) -> list[float]:
     if any(c > 1.0 for c in components):
         components = [c / 255.0 for c in components]
     return [min(1.0, max(0.0, c)) for c in components]
+
 
 # Valid types for DAG serialization
 DEFAULT_VALID_TYPES: list[str] = [

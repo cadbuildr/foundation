@@ -208,7 +208,7 @@ def create_frame_from_xdir_and_normal(
     """Create a new frame from x direction and normal vectors.
 
     Args:
-        base_frame: Base frame to derive position from
+        base_frame: Parent frame (the new frame sits at its origin)
         x_dir: X direction vector
         normal: Normal vector (Z direction)
         name: Name for the new frame
@@ -234,16 +234,14 @@ def create_frame_from_xdir_and_normal(
     # Convert to quaternion
     quaternion = rotation_matrix_to_quaternion(rot_matrix)
 
-    # Get position from base frame
-    position = base_frame.position
-
-    # Create new frame with same position but different quaternion
-    # Set top_frame to base_frame (the part's frame) to match old foundation behavior
-    # This creates a frame hierarchy: part.frame -> plane.frame
+    # The new frame is a child of base_frame (hierarchy: part.frame -> plane.frame),
+    # so it sits at the parent's origin with a purely LOCAL rotation. Copying
+    # base_frame.position here as well applied the parent offset twice once the
+    # part had been translated before its first xz()/yz()/... call.
     return Frame(
         top_frame=base_frame,
         name=StringParameter(value=name),
         display=BoolParameter(value=False),
-        position=position,
+        position=[0.0, 0.0, 0.0],
         quaternion=quaternion,
     )

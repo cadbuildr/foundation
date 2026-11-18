@@ -21,15 +21,22 @@ _FIXTURE_PATH = (
 
 
 def _load_cases() -> dict:
+    # The shared fixture lives in the monorepo's TS tree; a standalone checkout
+    # (the public mirror / an sdist) doesn't have it — skip instead of erroring.
+    if not _FIXTURE_PATH.is_file():
+        return {}
     with _FIXTURE_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
+@pytest.mark.skipif(
+    not _FIXTURE_PATH.is_file(), reason="shared TS fixture only exists in the monorepo"
+)
 @pytest.mark.parametrize("name,case", list(_load_cases().items()))
 def test_canonical_json_matches_fixture(name: str, case: dict) -> None:
-    assert serialize(case["input"]) == case["expected"], (
-        f"canonical_json drift for fixture {name!r}"
-    )
+    assert (
+        serialize(case["input"]) == case["expected"]
+    ), f"canonical_json drift for fixture {name!r}"
 
 
 def test_double_quote_and_backslash_escapes() -> None:

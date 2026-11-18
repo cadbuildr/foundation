@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.15
+
+- `paint()` / `resolve_color()` accept both spellings of grey: `"gray"`,
+  `"dark_gray"`, `"light_bluish_grey"`… now resolve like their `grey`/`gray`
+  counterparts instead of raising `Unknown color`.
+
+## 0.2.14
+
+- `KernelApiClient` can talk to a kernel sidecar over a unix socket
+  (`coms/kernel_api.py`), alongside the HTTP transport.
+- Fix: derived planes (`get_parallel_plane`, `get_angle_plane_from_axis`)
+  applied their parent plane's transform twice, so they landed in the wrong
+  place on any base plane other than `xy()` (and on chained calls).
+
 ## 0.2.13
 
 Assembly interfaces: anchors and joints, schema-first.

@@ -1,4 +1,10 @@
-"""Tests for the sheet metal material library, config, and helpers."""
+"""Tests for the sheet metal material library, config, and node integration.
+
+Sheet-metal operations are nodes (SheetMetalBaseFlange & co.), constructed
+directly like Extrusion/Lathe — there is no snake_case helper layer anymore
+(see 81e0c358). Config resolution stays in SheetMetalConfig; the tests below
+feed its resolved values straight into the node the way the examples do.
+"""
 
 import math
 
@@ -8,10 +14,6 @@ from cadbuildr.foundation.sheet_metal import (
     MATERIALS,
     SheetMetalConfig,
     SheetMetalMaterial,
-    base_flange,
-    bend,
-    contour_flange,
-    edge_flange,
     get_material,
 )
 from cadbuildr.foundation.sheet_metal_materials import (
@@ -155,12 +157,12 @@ def test_config_without_material_falls_back_to_fixed_k_factor():
 
 
 # ---------------------------------------------------------------------------
-# Helper integration: the model receives the resolved values
+# Node integration: config-resolved values feed SheetMetalBaseFlange directly
 # ---------------------------------------------------------------------------
 
 
 def _make_rect_profile():
-    """Build a minimal closed profile for base_flange testing."""
+    """Build a minimal closed profile for SheetMetalBaseFlange testing."""
     from cadbuildr.foundation import Part, Rectangle, Sketch
 
     class _Holder(Part):
@@ -168,23 +170,36 @@ def _make_rect_profile():
             self.s = Sketch(self.xy())
             self.profile = Rectangle.from_center_and_sides(self.s.origin, 40, 30)
 
-    h = _Holder()
-    return h.profile, h.s
+    return _Holder().profile
 
 
-def test_base_flange_uses_config_thickness():
+def test_base_flange_node_receives_config_values():
+    from cadbuildr.foundation import SheetMetalBaseFlange
+
     cfg = SheetMetalConfig(thickness=1.5, bend_radius=1.5, k_factor=0.40)
-    profile, sketch = _make_rect_profile()
-    bf = base_flange(profile=profile, sketch=sketch, config=cfg)
+    r, k = cfg.resolve_bend()
+    bf = SheetMetalBaseFlange(
+        profile=_make_rect_profile(),
+        thickness=cfg.thickness,
+        default_bend_radius=r,
+        default_k_factor=k,
+    )
     assert math.isclose(bf.thickness.value, 1.5)
     assert math.isclose(bf.default_bend_radius.value, 1.5)
     assert math.isclose(bf.default_k_factor.value, 0.40)
 
 
-def test_base_flange_from_material_writes_correct_defaults():
+def test_base_flange_node_from_material_config():
+    from cadbuildr.foundation import SheetMetalBaseFlange
+
     cfg = SheetMetalConfig.from_material(COLD_ROLLED_STEEL, gauge=18)
-    profile, sketch = _make_rect_profile()
-    bf = base_flange(profile=profile, sketch=sketch, config=cfg)
+    r, k = cfg.resolve_bend()
+    bf = SheetMetalBaseFlange(
+        profile=_make_rect_profile(),
+        thickness=cfg.thickness,
+        default_bend_radius=r,
+        default_k_factor=k,
+    )
     assert math.isclose(bf.thickness.value, COLD_ROLLED_STEEL.thickness_for_gauge(18))
     assert math.isclose(
         bf.default_k_factor.value,
@@ -193,9 +208,16 @@ def test_base_flange_from_material_writes_correct_defaults():
     )
 
 
-def test_base_flange_explicit_override():
-    profile, sketch = _make_rect_profile()
-    bf = base_flange(profile=profile, sketch=sketch, thickness=3.0, bend_radius=4.0, k_factor=0.43)
+def test_base_flange_node_casts_plain_floats():
+    from cadbuildr.foundation import FloatParameter, SheetMetalBaseFlange
+
+    bf = SheetMetalBaseFlange(
+        profile=_make_rect_profile(),
+        thickness=3.0,
+        default_bend_radius=4.0,
+        default_k_factor=0.43,
+    )
+    assert isinstance(bf.thickness, FloatParameter)
     assert bf.thickness.value == 3.0
     assert bf.default_bend_radius.value == 4.0
     assert bf.default_k_factor.value == 0.43

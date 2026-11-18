@@ -1770,56 +1770,56 @@ def _normalize_vector(value: Any, expected_len: int) -> list[float]:
 
 @register_method_fn("get_parallel_plane_method")
 def get_parallel_plane_method(inst: Plane, distance: float, name: str = "parallel") -> Plane:
-    """Create a plane parallel to this plane at given distance."""
-    # Get normal vector from frame's Z-axis (quaternion's up direction)
-    # Quaternion format: [w, x, y, z]
-    q = inst.frame.quaternion
-    w, x, y, z = q[0], q[1], q[2], q[3]
+    """Create a plane parallel to this plane, offset by ``distance`` along its normal.
 
-    # Convert quaternion to rotation matrix and extract Z-axis (normal)
-    # Z-axis is the third column of the rotation matrix
-    normal_x = 2 * (x * z + w * y)
-    normal_y = 2 * (y * z - w * x)
-    normal_z = 1 - 2 * (x * x + y * y)
-
-    # Translate frame position along the normal
-    new_position = [
-        inst.frame.position[0] + normal_x * distance,
-        inst.frame.position[1] + normal_y * distance,
-        inst.frame.position[2] + normal_z * distance,
-    ]
-
+    The new frame is a CHILD of this plane's frame, so its transform is purely
+    local: ``[0, 0, distance]`` along the parent's Z (normal), identity rotation.
+    The kernel composes ``world = parent_world · local``; baking the parent's
+    position/quaternion in here as well applied the parent transform twice
+    (only harmless for an identity parent such as a bare ``part.xy()``).
+    """
     return Plane(
         frame=Frame(
             top_frame=inst.frame,
             name=StringParameter(value=f"frame_{name}"),
             display=BoolParameter(value=False),
-            position=new_position,
-            quaternion=inst.frame.quaternion,  # Same orientation
+            position=[0.0, 0.0, float(distance)],
+            quaternion=[1.0, 0.0, 0.0, 0.0],  # Same orientation as the parent
         ),
         name=StringParameter(value=name),
         display=BoolParameter(value=False),
     )
 
 
+def _plane_world_quaternion(inst: Plane) -> list[float]:
+    """Orientation of the plane's frame composed up its ``top_frame`` chain.
+
+    Derived planes (``get_parallel_plane`` / ``get_angle_plane_from_axis``)
+    store a LOCAL transform relative to their parent plane, so the frame's own
+    quaternion is not the plane's orientation — compose the chain.
+    """
+    _, quaternion = tf_relative_to_frame(inst.frame)
+    return quaternion
+
+
 @register_method_fn("get_plane_x_axis")
 def get_plane_x_axis(inst: Plane) -> list[float]:
     """Get the X-axis of the plane's frame."""
-    x_axis, _, _ = quaternion_to_axes(inst.frame.quaternion)
+    x_axis, _, _ = quaternion_to_axes(_plane_world_quaternion(inst))
     return x_axis
 
 
 @register_method_fn("get_plane_y_axis")
 def get_plane_y_axis(inst: Plane) -> list[float]:
     """Get the Y-axis of the plane's frame."""
-    _, y_axis, _ = quaternion_to_axes(inst.frame.quaternion)
+    _, y_axis, _ = quaternion_to_axes(_plane_world_quaternion(inst))
     return y_axis
 
 
 @register_method_fn("get_plane_z_axis")
 def get_plane_z_axis(inst: Plane) -> list[float]:
-    """Get the Z-axis of the plane's frame."""
-    _, _, z_axis = quaternion_to_axes(inst.frame.quaternion)
+    """Get the Z-axis (normal) of the plane's frame."""
+    _, _, z_axis = quaternion_to_axes(_plane_world_quaternion(inst))
     return z_axis
 
 
@@ -1827,24 +1827,21 @@ def get_plane_z_axis(inst: Plane) -> list[float]:
 def get_angle_plane_from_axis_method(
     inst: Plane, axis: Sequence[float], angle: float, name: str = "rotated"
 ) -> Plane:
-    """Create a plane rotated around the given axis by the given angle."""
-    # Convert axis-angle to quaternion
-    rotation_quat = axis_angle_to_quaternion(axis, angle)
+    """Create a plane rotated by ``angle`` (radians) around ``axis``.
 
-    # Multiply quaternions: new_quat = rotation_quat * original_quat
-    new_quaternion = quaternion_multiply(rotation_quat, inst.frame.quaternion)
-
+    ``axis`` is expressed in THIS plane's local coordinates (``[0, 0, 1]`` is
+    the plane normal, ``[1, 0, 0]`` its X axis) and passes through the plane
+    origin. The new frame is a child of this plane's frame, so the rotation is
+    stored as a purely local quaternion; pre-multiplying the parent quaternion
+    here as well applied the parent rotation twice.
+    """
     return Plane(
         frame=Frame(
             top_frame=inst.frame,
             name=StringParameter(value=f"frame_{name}"),
             display=BoolParameter(value=False),
-            position=[
-                0.0,
-                0.0,
-                0.0,
-            ],  # No translation, just rotation (position is relative to parent)
-            quaternion=new_quaternion,  # New orientation
+            position=[0.0, 0.0, 0.0],  # Rotation only, about the parent origin
+            quaternion=axis_angle_to_quaternion(axis, angle),
         ),
         name=StringParameter(value=name),
         display=BoolParameter(value=False),  # Don't display construction planes
