@@ -9,8 +9,15 @@ from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFie
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .anchor import Anchor
+    from .chamfer import Chamfer
+    from .extrusion import Extrusion
+    from .fillet import Fillet
     from .frame import Frame
+    from .lathe import Lathe
+    from .linear_pattern import LinearPattern
     from .plane import Plane
+    from .polar_pattern import PolarPattern
+    from .shell import Shell
     from .string_parameter import StringParameter
     from .unions import Operation
 
@@ -99,6 +106,74 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
         return run_method(self, 'rotate_method', _locals)
     def to_dag(self) -> Optional[Any]:
         return run_method(self, 'to_dag_method')
+    def extrude(self, shape: Any, depth: float, cut: Optional[bool]=False, end_condition: Optional[Any]=None) -> Optional[Extrusion]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'shape': shape,
+            'depth': depth,
+            'cut': cut,
+            'end_condition': end_condition
+        }
+        return run_method(self, 'part_extrude_method', _locals)
+    def cut_extrude(self, shape: Any, depth: float, end_condition: Optional[Any]=None) -> Optional[Extrusion]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'shape': shape,
+            'depth': depth,
+            'end_condition': end_condition
+        }
+        return run_method(self, 'part_cut_extrude_method', _locals)
+    def revolve(self, shape: Any, axis: Any, angle: Optional[float]=360.0, cut: Optional[bool]=False) -> Optional[Lathe]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'shape': shape,
+            'axis': axis,
+            'angle': angle,
+            'cut': cut
+        }
+        return run_method(self, 'part_revolve_method', _locals)
+    def fillet(self, solid: Any, radius: float, edges: Optional[Any]=None) -> Optional[Fillet]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'solid': solid,
+            'radius': radius,
+            'edges': edges
+        }
+        return run_method(self, 'part_fillet_method', _locals)
+    def chamfer(self, solid: Any, distance: float, edges: Optional[Any]=None) -> Optional[Chamfer]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'solid': solid,
+            'distance': distance,
+            'edges': edges
+        }
+        return run_method(self, 'part_chamfer_method', _locals)
+    def shell(self, solid: Any, thickness: float, faces: Optional[Any]=None) -> Optional[Shell]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'solid': solid,
+            'thickness': thickness,
+            'faces': faces
+        }
+        return run_method(self, 'part_shell_method', _locals)
+    def linear_pattern(self, shape: Any, direction: List[float], count: int, spacing: float) -> Optional[LinearPattern]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'shape': shape,
+            'direction': direction,
+            'count': count,
+            'spacing': spacing
+        }
+        return run_method(self, 'part_linear_pattern_method', _locals)
+    def polar_pattern(self, shape: Any, count: int, angle: Optional[float]=360.0, axis: Optional[List[float]]=[0.0, 0.0, 1.0]) -> Optional[PolarPattern]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'shape': shape,
+            'count': count,
+            'angle': angle,
+            'axis': axis
+        }
+        return run_method(self, 'part_polar_pattern_method', _locals)
 
 
     frame: Frame = Field(default_factory=lambda: _eval_expr({}, 'Frame.make_origin_frame()'), json_schema_extra={'default': {'expr': 'Frame.make_origin_frame()'}})

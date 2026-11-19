@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .axis import Axis
     from .bool_parameter import BoolParameter
+    from .float_parameter import FloatParameter
     from .sketch import Sketch
     from .unions import ClosedShape2D
 
@@ -46,6 +47,7 @@ class Lathe(ParameterFieldsMixin, BaseModel, Computable):
     shape: ClosedShape2D = Field(...)
     axis: Axis = Field(...)
     cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
+    angle: Optional[FloatParameter] = Field(default=None)
     sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'shape.sketch', 'includeInDag': True}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

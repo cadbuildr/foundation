@@ -1,6 +1,6 @@
 """Core Pydantic model to DAG node conversion."""
 
-from typing import Any, Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, Tuple
 
 from pydantic import BaseModel
 
@@ -199,6 +199,23 @@ def _process_fields(
     return params, deps
 
 
+class _Traversal(set):
+    """The set of object ids being processed (cycle detection), plus the node
+    id already emitted for each object during this conversion.
+
+    Nodes are content-hashed, so an object reached along two paths must hash
+    the same both times. Compute fields evaluated mid-traversal can grow a
+    shared object (e.g. new elements registering on a Sketch), which would give
+    the second visit a different hash and duplicate the whole subtree. Within
+    one conversion an object therefore keeps the id of its first visit.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        # id(obj) -> (obj, node id); holding obj keeps its id() from being reused.
+        self.emitted: Dict[int, Tuple[Any, str]] = {}
+
+
 def pydantic_to_dag(
     obj: Any,
     memo: Dict[str, Any],
@@ -232,10 +249,13 @@ def pydantic_to_dag(
     
     # Initialize processing set if not provided
     if processing is None:
-        processing = set()
+        processing = _Traversal()
     
     # Get object identity for cycle detection
     obj_id = id(obj)
+    emitted = getattr(processing, "emitted", None)
+    if emitted is not None and obj_id in emitted:
+        return emitted[obj_id][1]
     
     # Early cycle detection: check if this object is currently being processed
     if obj_id in processing:
@@ -269,7 +289,10 @@ def pydantic_to_dag(
     # Check for expansion if valid_types is provided and type is not valid
     expanded = _expand_type_if_needed(obj, type_name, valid_types, context, hooks)
     if expanded is not None:
-        return pydantic_to_dag(expanded, memo, type_registry, hooks, processing)
+        node_id = pydantic_to_dag(expanded, memo, type_registry, hooks, processing)
+        if emitted is not None:
+            emitted[obj_id] = (obj, node_id)
+        return node_id
     
     # Add object to processing set BEFORE processing fields
     processing.add(obj_id)
@@ -301,6 +324,9 @@ def pydantic_to_dag(
             if context.is_first_encounter:
                 run_hooks("on_first_encounter", obj, context, hooks)
         
+        if emitted is not None:
+            emitted[obj_id] = (obj, node_hash)
+
         # If already in memo, return the hash
         if node_hash in memo:
             return node_hash

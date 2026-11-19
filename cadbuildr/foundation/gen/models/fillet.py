@@ -44,5 +44,6 @@ class Fillet(ParameterFieldsMixin, BaseModel):
     solid: SolidOperation = Field(...)
     radius: FloatParameter = Field(...)
     edge_finder: Optional[EdgeFinder] = Field(default=None)
+    radius_end: Optional[FloatParameter] = Field(default=None)
 
     model_config = {"protected_namespaces": ()}  # Pydantic v2 config

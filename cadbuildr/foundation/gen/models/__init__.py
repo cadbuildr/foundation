@@ -5,6 +5,11 @@
 
 from __future__ import annotations
 from .enums import (
+    ExtrudeEndCondition,
+    HoleFit,
+    TextPathAlign,
+    EmbossMode,
+    BooleanOp,
     SheetDirection,
     FlangePosition,
     BendPosition,
@@ -12,7 +17,8 @@ from .enums import (
     HemType,
     CornerType,
     CornerReliefType,
-    DimensionPosition
+    DimensionPosition,
+    FlangeEdge
 )
 from .float_parameter import FloatParameter
 from .int_parameter import IntParameter
@@ -63,6 +69,7 @@ from .spline3_d import Spline3D
 from .sketch import Sketch
 from .extrusion import Extrusion
 from .tapped_hole import TappedHole
+from .clearance_hole import ClearanceHole
 from .hole import Hole
 from .draft import Draft
 from .convex_hull import ConvexHull
@@ -76,6 +83,7 @@ from .scale import Scale
 from .mirror import Mirror
 from .bounding_box import BoundingBox
 from .text import Text
+from .text_on_path import TextOnPath
 from .wedge import Wedge
 from .sphere import Sphere
 from .cylinder import Cylinder
@@ -94,6 +102,19 @@ from .thicken import Thicken
 from .stitch import Stitch
 from .shell import Shell
 from .thread import Thread
+from .rib import Rib
+from .offset_face import OffsetFace
+from .move_body import MoveBody
+from .linear_pattern import LinearPattern
+from .polar_pattern import PolarPattern
+from .extruded_surface import ExtrudedSurface
+from .revolved_surface import RevolvedSurface
+from .ruled_surface import RuledSurface
+from .planar_surface import PlanarSurface
+from .emboss import Emboss
+from .wrap import Wrap
+from .rip import Rip
+from .boolean_operation import BooleanOperation
 from .edge_ref import EdgeRef
 from .sheet_metal_body import SheetMetalBody
 from .sheet_metal_base_flange import SheetMetalBaseFlange
@@ -106,6 +127,12 @@ from .sheet_metal_jog import SheetMetalJog
 from .sheet_metal_closed_corner import SheetMetalClosedCorner
 from .sheet_metal_corner_relief import SheetMetalCornerRelief
 from .sheet_metal_lofted_bend import SheetMetalLoftedBend
+from .sheet_metal_from_solid import SheetMetalFromSolid
+from .sheet_metal_contour_flange import SheetMetalContourFlange
+from .sheet_metal_cut import SheetMetalCut
+from .sheet_metal_dimple import SheetMetalDimple
+from .sheet_metal_extruded_hole import SheetMetalExtrudedHole
+from .sheet_metal_bead import SheetMetalBead
 from .sheet_metal_to_solid import SheetMetalToSolid
 from .unfold import Unfold
 from .sheet_metal_fold import SheetMetalFold
@@ -125,6 +152,7 @@ from .parallel_to_axis_rule import ParallelToAxisRule
 from .on_face_rule import OnFaceRule
 from .sort_by_rule import SortByRule
 from .edge_finder import EdgeFinder
+from .face_finder import FaceFinder
 from .fillet import Fillet
 from .chamfer import Chamfer
 from .material_options import MaterialOptions
@@ -154,10 +182,12 @@ from .unions import (
     LoftSection2D,
     Shape2D,
     Path3D,
+    TextPath,
     SolidOperation,
     SurfaceOperation,
     SheetMetalOperation,
     FinderRule,
+    FaceSelection,
     Operation,
     Joint,
     ComponentRoot
@@ -260,6 +290,8 @@ Extrusion.model_rebuild()
 
 TappedHole.model_rebuild()
 
+ClearanceHole.model_rebuild()
+
 Hole.model_rebuild()
 
 Draft.model_rebuild()
@@ -285,6 +317,8 @@ Mirror.model_rebuild()
 BoundingBox.model_rebuild()
 
 Text.model_rebuild()
+
+TextOnPath.model_rebuild()
 
 Wedge.model_rebuild()
 
@@ -322,6 +356,32 @@ Shell.model_rebuild()
 
 Thread.model_rebuild()
 
+Rib.model_rebuild()
+
+OffsetFace.model_rebuild()
+
+MoveBody.model_rebuild()
+
+LinearPattern.model_rebuild()
+
+PolarPattern.model_rebuild()
+
+ExtrudedSurface.model_rebuild()
+
+RevolvedSurface.model_rebuild()
+
+RuledSurface.model_rebuild()
+
+PlanarSurface.model_rebuild()
+
+Emboss.model_rebuild()
+
+Wrap.model_rebuild()
+
+Rip.model_rebuild()
+
+BooleanOperation.model_rebuild()
+
 EdgeRef.model_rebuild()
 
 SheetMetalBody.model_rebuild()
@@ -345,6 +405,18 @@ SheetMetalClosedCorner.model_rebuild()
 SheetMetalCornerRelief.model_rebuild()
 
 SheetMetalLoftedBend.model_rebuild()
+
+SheetMetalFromSolid.model_rebuild()
+
+SheetMetalContourFlange.model_rebuild()
+
+SheetMetalCut.model_rebuild()
+
+SheetMetalDimple.model_rebuild()
+
+SheetMetalExtrudedHole.model_rebuild()
+
+SheetMetalBead.model_rebuild()
 
 SheetMetalToSolid.model_rebuild()
 
@@ -383,6 +455,8 @@ OnFaceRule.model_rebuild()
 SortByRule.model_rebuild()
 
 EdgeFinder.model_rebuild()
+
+FaceFinder.model_rebuild()
 
 Fillet.model_rebuild()
 
@@ -447,21 +521,9 @@ register_type("Material", Material)
 
 register_type("MultiSectionSweep", MultiSectionSweep)
 
-register_type("Extrusion", Extrusion)
-
-register_type("Box", Box)
-
-register_type("Cone", Cone)
-
-register_type("Cylinder", Cylinder)
-
 register_type("Helix3D", Helix3D)
 
-register_type("Hole", Hole)
-
 register_type("Loft", Loft)
-
-register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
 
 register_type("SheetMetalClosedCorner", SheetMetalClosedCorner)
 
@@ -469,7 +531,17 @@ register_type("SheetMetalCornerRelief", SheetMetalCornerRelief)
 
 register_type("SlotOverall", SlotOverall)
 
+register_type("MoveBody", MoveBody)
+
+register_type("PolarPattern", PolarPattern)
+
+register_type("Rip", Rip)
+
+register_type("SheetMetalFromSolid", SheetMetalFromSolid)
+
 register_type("Sphere", Sphere)
+
+register_type("Draft", Draft)
 
 register_type("Frame", Frame)
 
@@ -480,6 +552,16 @@ register_type("Anchor", Anchor)
 register_type("BallJoint", BallJoint)
 
 register_type("CylindricalJoint", CylindricalJoint)
+
+register_type("Extrusion", Extrusion)
+
+register_type("Box", Box)
+
+register_type("Cone", Cone)
+
+register_type("Cylinder", Cylinder)
+
+register_type("Hole", Hole)
 
 register_type("InPlaneFinderRule", InPlaneFinderRule)
 
@@ -509,11 +591,19 @@ register_type("RegularPolygon", RegularPolygon)
 
 register_type("RevoluteJoint", RevoluteJoint)
 
+register_type("RevolvedSurface", RevolvedSurface)
+
+register_type("Rib", Rib)
+
 register_type("RigidJoint", RigidJoint)
 
 register_type("SVGShape", SVGShape)
 
 register_type("ScrewJoint", ScrewJoint)
+
+register_type("SheetMetalBaseFlange", SheetMetalBaseFlange)
+
+register_type("SheetMetalContourFlange", SheetMetalContourFlange)
 
 register_type("SheetMetalEdgeFlange", SheetMetalEdgeFlange)
 
@@ -541,9 +631,9 @@ register_type("Stitch", Stitch)
 
 register_type("Sweep", Sweep)
 
-register_type("TappedHole", TappedHole)
-
 register_type("Text", Text)
+
+register_type("TextOnPath", TextOnPath)
 
 register_type("Thicken", Thicken)
 
@@ -562,6 +652,11 @@ except ImportError:
 
 
 __all__ = [
+    "ExtrudeEndCondition",
+    "HoleFit",
+    "TextPathAlign",
+    "EmbossMode",
+    "BooleanOp",
     "SheetDirection",
     "FlangePosition",
     "BendPosition",
@@ -570,6 +665,7 @@ __all__ = [
     "CornerType",
     "CornerReliefType",
     "DimensionPosition",
+    "FlangeEdge",
     "FloatParameter",
     "IntParameter",
     "BoolParameter",
@@ -619,6 +715,7 @@ __all__ = [
     "Sketch",
     "Extrusion",
     "TappedHole",
+    "ClearanceHole",
     "Hole",
     "Draft",
     "ConvexHull",
@@ -632,6 +729,7 @@ __all__ = [
     "Mirror",
     "BoundingBox",
     "Text",
+    "TextOnPath",
     "Wedge",
     "Sphere",
     "Cylinder",
@@ -650,6 +748,19 @@ __all__ = [
     "Stitch",
     "Shell",
     "Thread",
+    "Rib",
+    "OffsetFace",
+    "MoveBody",
+    "LinearPattern",
+    "PolarPattern",
+    "ExtrudedSurface",
+    "RevolvedSurface",
+    "RuledSurface",
+    "PlanarSurface",
+    "Emboss",
+    "Wrap",
+    "Rip",
+    "BooleanOperation",
     "EdgeRef",
     "SheetMetalBody",
     "SheetMetalBaseFlange",
@@ -662,6 +773,12 @@ __all__ = [
     "SheetMetalClosedCorner",
     "SheetMetalCornerRelief",
     "SheetMetalLoftedBend",
+    "SheetMetalFromSolid",
+    "SheetMetalContourFlange",
+    "SheetMetalCut",
+    "SheetMetalDimple",
+    "SheetMetalExtrudedHole",
+    "SheetMetalBead",
     "SheetMetalToSolid",
     "Unfold",
     "SheetMetalFold",
@@ -681,6 +798,7 @@ __all__ = [
     "OnFaceRule",
     "SortByRule",
     "EdgeFinder",
+    "FaceFinder",
     "Fillet",
     "Chamfer",
     "MaterialOptions",
@@ -709,10 +827,12 @@ __all__ = [
     "LoftSection2D",
     "Shape2D",
     "Path3D",
+    "TextPath",
     "SolidOperation",
     "SurfaceOperation",
     "SheetMetalOperation",
     "FinderRule",
+    "FaceSelection",
     "Operation",
     "Joint",
     "ComponentRoot",

@@ -4,15 +4,16 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .edge_finder import EdgeFinder
     from .float_parameter import FloatParameter
     from .string_parameter import StringParameter
+    from .unions import FaceSelection
     from .unions import SolidOperation
 
-class Draft(ParameterFieldsMixin, BaseModel):
+class Draft(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object Draft."""
 
 
@@ -44,7 +45,7 @@ class Draft(ParameterFieldsMixin, BaseModel):
 
     solid: SolidOperation = Field(...)
     angle_deg: FloatParameter = Field(...)
-    neutral_plane_name: StringParameter = Field(...)
-    edge_finder: EdgeFinder = Field(...)
+    neutral_plane_name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='XY')"), json_schema_extra={'default': {'expr': "StringParameter(value='XY')"}})
+    edge_finder: Optional[FaceSelection] = Field(default=None)
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

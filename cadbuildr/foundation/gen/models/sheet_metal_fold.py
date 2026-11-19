@@ -29,7 +29,7 @@ class SheetMetalFold(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['body'],
-            list_fields=['bend_ids'],
+            list_fields=['bend_ids', 'refold'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -43,5 +43,6 @@ class SheetMetalFold(ParameterFieldsMixin, BaseModel, Computable):
 
     body: SheetMetalOperation = Field(...)
     bend_ids: List[StringParameter] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    refold: List[SheetMetalOperation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

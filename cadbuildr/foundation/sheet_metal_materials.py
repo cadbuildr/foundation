@@ -361,3 +361,14 @@ __all__ = [
     "MATERIALS",
     "get_material",
 ]
+
+
+def sheet_thickness(material: str, gauge: int) -> float:
+    """Stock thickness (mm) of `material` (a MATERIALS key) at US `gauge`.
+
+    >>> sheet_thickness("aluminum_5052", 16)
+    1.291
+    """
+    if material not in MATERIALS:
+        raise ValueError(f"Unknown material {material!r}; choose one of {sorted(MATERIALS)}")
+    return MATERIALS[material].thickness_for_gauge(gauge)

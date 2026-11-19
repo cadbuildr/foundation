@@ -58,14 +58,14 @@ def test_elliptical_center_arc_converts_degrees_to_radians():
 
 # ---------- TappedHole ----------
 
-def test_tapped_hole_expands_to_hole_with_half_diameter_radius():
+def test_tapped_hole_expands_to_hole_with_tap_drill_radius():
     s_part = type("_P", (Part,), {})()
     s = Sketch(s_part.xy())
     hole = TappedHole(point=s.origin, thread_size=5.0, depth=10.0)
     inner = hole.expand()
     assert isinstance(inner, Hole)
-    # M5 → radius 2.5
-    assert inner.radius.value == 2.5
+    # M5 → Ø4.2 tap drill (ISO metric coarse) → radius 2.1
+    assert inner.radius.value == 2.1
     assert inner.depth.value == 10.0
 
 
@@ -93,11 +93,11 @@ def test_tapped_hole_lands_in_dag_via_hole_chain():
     # Box → Extrusion plus TappedHole → Hole → Extrusion = two Extrusions.
     extrusions = [n for n in dag["DAG"].values() if n["type"] == serializable["Extrusion"]]
     assert len(extrusions) == 2
-    # The bore radius FloatParameter should be 2.5 (M5 → 5/2).
+    # The bore radius FloatParameter is the M5 tap-drill radius (Ø4.2 / 2).
     fp_type = serializable["FloatParameter"]
     fp_values = [
         n["params"]["value"]
         for n in dag["DAG"].values()
         if n["type"] == fp_type and isinstance(n["params"].get("value"), (int, float))
     ]
-    assert 2.5 in fp_values
+    assert 2.1 in fp_values

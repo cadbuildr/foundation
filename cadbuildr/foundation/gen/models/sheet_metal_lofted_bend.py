@@ -4,13 +4,15 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .custom_open_shape import CustomOpenShape
     from .float_parameter import FloatParameter
+    from .sketch import Sketch
 
-class SheetMetalLoftedBend(ParameterFieldsMixin, BaseModel):
+class SheetMetalLoftedBend(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object SheetMetalLoftedBend."""
 
 
@@ -44,5 +46,7 @@ class SheetMetalLoftedBend(ParameterFieldsMixin, BaseModel):
     profile_end: CustomOpenShape = Field(...)
     thickness: FloatParameter = Field(...)
     bend_radius: Optional[FloatParameter] = Field(default=None)
+    start_sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'profile_start.sketch', 'includeInDag': True}})
+    end_sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'expr': 'profile_end.sketch', 'includeInDag': True}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

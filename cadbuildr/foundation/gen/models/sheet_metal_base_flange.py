@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .float_parameter import FloatParameter
     from .sketch import Sketch
+    from .string_parameter import StringParameter
     from .unions import ClosedShape2D
 from .enums import SheetDirection
 
@@ -49,5 +50,6 @@ class SheetMetalBaseFlange(ParameterFieldsMixin, BaseModel, Computable):
     default_bend_radius: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=1.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=1.0)'}})
     default_k_factor: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.44)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.44)'}})
     direction: SheetDirection = Field(default_factory=lambda: _eval_expr({}, 'SheetDirection.POSITIVE'), json_schema_extra={'default': {'expr': 'SheetDirection.POSITIVE'}})
+    material: Optional[StringParameter] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

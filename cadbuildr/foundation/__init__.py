@@ -39,6 +39,9 @@ from .parameters import (
 
 # DAG and WebRTC utilities
 from.dag_utils import show, show_dag
+from.sketch_ops import linear_copies, polar_copies, mirror, mirror_point, extend, intersect, trim_corner
+from.holes import ISO_METRIC_COARSE, tap_drill_diameter, clearance_diameter
+from.sheet_metal_materials import MATERIALS, sheet_thickness
 from.coms.screenshot_framing import build_screenshot_framing, request_viewer_screenshot
 from.coms.utils_webrtc import (
     set_port,

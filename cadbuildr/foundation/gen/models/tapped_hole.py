@@ -45,7 +45,7 @@ class TappedHole(ParameterFieldsMixin, BaseModel, Computable, Expandable):
     point: Point = Field(...)
     thread_size: FloatParameter = Field(...)
     depth: FloatParameter = Field(...)
-    radius: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=thread_size.value / 2.0)'}})
+    radius: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_tap_drill_radius'}})
     result: Optional[Hole] = Field(default=None, json_schema_extra={'expand': {'into': {'point': '$point', 'radius': '$radius', 'depth': '$depth'}}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

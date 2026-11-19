@@ -6,7 +6,7 @@ from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .edge_finder import EdgeFinder
+    from .unions import FaceSelection
     from .unions import SolidOperation
 
 class FullRound(BaseModel):
@@ -40,6 +40,6 @@ class FullRound(BaseModel):
 
 
     solid: SolidOperation = Field(...)
-    face_finder: EdgeFinder = Field(...)
+    face_finder: FaceSelection = Field(...)
 
     model_config = {"protected_namespaces": ()}  # Pydantic v2 config

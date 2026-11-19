@@ -10,9 +10,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .bool_parameter import BoolParameter
     from .float_parameter import FloatParameter
+    from .plane import Plane
     from .point3_d import Point3D
     from .sketch import Sketch
     from .unions import ClosedShape2D
+from .enums import ExtrudeEndCondition
 
 class Extrusion(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object Extrusion."""
@@ -42,6 +44,10 @@ class Extrusion(ParameterFieldsMixin, BaseModel, Computable):
 
 
 
+    def end_face_plane(self) -> Optional[Plane]:
+        return run_method(self, 'extrusion_end_face_plane')
+    def start_face_plane(self) -> Optional[Plane]:
+        return run_method(self, 'extrusion_start_face_plane')
 
 
     shape: List[ClosedShape2D] = Field(...)
@@ -51,5 +57,7 @@ class Extrusion(ParameterFieldsMixin, BaseModel, Computable):
     sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'fn': 'get_extrusion_sketch', 'includeInDag': True}})
     taper: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
     direction: Optional[Point3D] = Field(default=None)
+    end_condition: ExtrudeEndCondition = Field(default_factory=lambda: _eval_expr({}, 'ExtrudeEndCondition.BLIND'), json_schema_extra={'default': {'expr': 'ExtrudeEndCondition.BLIND'}})
+    thin_wall: Optional[FloatParameter] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

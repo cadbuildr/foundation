@@ -49,5 +49,6 @@ class Sweep(ParameterFieldsMixin, BaseModel, Computable):
     sketch: Optional[Sketch] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_sweep_sketch', 'includeInDag': True}})
     twist: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
     frenet: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=True)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=True)'}})
+    cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

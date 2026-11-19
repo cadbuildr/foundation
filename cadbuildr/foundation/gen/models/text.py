@@ -45,7 +45,7 @@ class Text(ParameterFieldsMixin, BaseModel, Computable):
     sketch: Sketch = Field(...)
     text: StringParameter = Field(...)
     size: FloatParameter = Field(...)
-    font_url: StringParameter = Field(...)
+    font_url: Optional[StringParameter] = Field(default=None)
     xshift: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
     yshift: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
 

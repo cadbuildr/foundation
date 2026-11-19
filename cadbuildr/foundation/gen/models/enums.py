@@ -4,6 +4,36 @@
 from __future__ import annotations
 from enum import Enum
 
+class ExtrudeEndCondition(str, Enum):
+    """Generated from GraphQL enum ExtrudeEndCondition."""
+    BLIND = "BLIND"
+    SYMMETRIC = "SYMMETRIC"
+    THROUGH_ALL = "THROUGH_ALL"
+    THROUGH_ALL_BOTH = "THROUGH_ALL_BOTH"
+
+class HoleFit(str, Enum):
+    """Generated from GraphQL enum HoleFit."""
+    CLOSE = "CLOSE"
+    NORMAL = "NORMAL"
+    LOOSE = "LOOSE"
+
+class TextPathAlign(str, Enum):
+    """Generated from GraphQL enum TextPathAlign."""
+    START = "START"
+    CENTER = "CENTER"
+    END = "END"
+
+class EmbossMode(str, Enum):
+    """Generated from GraphQL enum EmbossMode."""
+    RAISE = "RAISE"
+    ENGRAVE = "ENGRAVE"
+
+class BooleanOp(str, Enum):
+    """Generated from GraphQL enum BooleanOp."""
+    UNION = "UNION"
+    SUBTRACT = "SUBTRACT"
+    INTERSECT = "INTERSECT"
+
 class SheetDirection(str, Enum):
     """Generated from GraphQL enum SheetDirection."""
     POSITIVE = "POSITIVE"
@@ -55,6 +85,12 @@ class DimensionPosition(str, Enum):
     OUTSIDE = "OUTSIDE"
     INSIDE = "INSIDE"
     OVERALL = "OVERALL"
+
+class FlangeEdge(str, Enum):
+    """Generated from GraphQL enum FlangeEdge."""
+    FREE = "FREE"
+    START_SIDE = "START_SIDE"
+    END_SIDE = "END_SIDE"
 
 
 

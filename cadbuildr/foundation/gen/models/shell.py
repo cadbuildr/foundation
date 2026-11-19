@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field, model_validator
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from .edge_finder import EdgeFinder
     from .float_parameter import FloatParameter
+    from .unions import FaceSelection
     from .unions import SolidOperation
 
 class Shell(ParameterFieldsMixin, BaseModel):
@@ -43,6 +43,6 @@ class Shell(ParameterFieldsMixin, BaseModel):
 
     solid: SolidOperation = Field(...)
     thickness: FloatParameter = Field(...)
-    face_finder: Optional[EdgeFinder] = Field(default=None)
+    face_finder: Optional[FaceSelection] = Field(default=None)
 
     model_config = {"protected_namespaces": ()}  # Pydantic v2 config

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.16
+
+Feature-complete CAD operations and sheet metal.
+
+- **Face selection**: `FaceFinder` with `ContainsPointFinderRule` and friends.
+- **Operations**: `Emboss` / `Wrap` (raise or engrave a profile onto a curved
+  face, `EmbossMode`), `Split`, `Draft`, `Rib`, `Rip`, `OffsetFace`,
+  `MoveBody`, `BooleanOperation`, `LinearPattern` / `PolarPattern` nodes,
+  `TextOnPath`.
+- **Surfaces**: `PlanarSurface`, `ExtrudedSurface`, `RevolvedSurface`,
+  `RuledSurface`.
+- **Holes**: `ClearanceHole`, tapped-hole updates, `holes` helpers.
+- **Sheet metal**: contour flange, cut, bead, dimple, extruded hole,
+  sheet-metal-from-solid, fold/lofted-bend updates, material table updates.
+- `sketch_ops` helpers; new generated node classes under `gen/models`.
+
 ## 0.2.15
 
 - `paint()` / `resolve_color()` accept both spellings of grey: `"gray"`,

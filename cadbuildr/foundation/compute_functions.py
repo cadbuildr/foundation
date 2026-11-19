@@ -12,10 +12,13 @@ from.gen.runtime.helpers import register_cast_fn
 def _cast_edge_ref(v):
     """Route a bare value passed for an EdgeRef field: an EdgeFinder becomes a
     query reference, anything else (a Line) becomes a constructed reference."""
-    from.gen.models import EdgeFinder
+    from.gen.models import EdgeFinder, Line
     if isinstance(v, EdgeFinder):
         return {"finder": v}
-    return {"line": v}
+    if isinstance(v, Line):
+        return {"line": v}
+    # A sheet-metal operation stands for the FREE edge of the flange it created.
+    return {"flange": v}
 
 
 from.gen.models import (
@@ -1846,3 +1849,153 @@ def get_angle_plane_from_axis_method(
         name=StringParameter(value=name),
         display=BoolParameter(value=False),  # Don't display construction planes
     )
+
+
+# --------------------------------------------------------------------------- #
+# Hole wizard (TappedHole / ClearanceHole) — ISO metric tables in holes.py.
+# --------------------------------------------------------------------------- #
+
+
+@register_compute_fn("compute_tap_drill_radius")
+def compute_tap_drill_radius(inst: Any, field_name: str, meta: dict[str, Any]) -> Any:
+    from .holes import tap_drill_diameter
+
+    return FloatParameter(value=tap_drill_diameter(inst.thread_size.value) / 2.0)
+
+
+@register_compute_fn("compute_clearance_radius")
+def compute_clearance_radius(inst: Any, field_name: str, meta: dict[str, Any]) -> Any:
+    from .holes import clearance_diameter
+
+    return FloatParameter(value=clearance_diameter(inst.size.value, inst.fit) / 2.0)
+
+
+# --------------------------------------------------------------------------- #
+# Extrusion cap-face planes (FC-5): sketch on top of a pad without computing
+# offsets by hand.
+# --------------------------------------------------------------------------- #
+
+
+def _extrusion_span(inst: Any) -> tuple[float, float]:
+    start, end = inst.start.value, inst.end.value
+    cond = str(getattr(inst.end_condition, "value", inst.end_condition)).upper()
+    if cond == "SYMMETRIC":
+        return -end / 2.0, end / 2.0
+    if cond.startswith("THROUGH_ALL"):
+        raise ValueError(
+            "Cap-face planes of a THROUGH_ALL extrusion depend on the rest of the part; "
+            "use a BLIND or SYMMETRIC extrusion"
+        )
+    return start, end
+
+
+@register_method_fn("extrusion_end_face_plane")
+def extrusion_end_face_plane(inst: Any) -> Any:
+    _, end = _extrusion_span(inst)
+    return inst.sketch.plane.get_parallel_plane(end, name="end_face")
+
+
+@register_method_fn("extrusion_start_face_plane")
+def extrusion_start_face_plane(inst: Any) -> Any:
+    start, _ = _extrusion_span(inst)
+    return inst.sketch.plane.get_parallel_plane(start, name="start_face")
+
+
+# --------------------------------------------------------------------------- #
+# Part shortcuts (FC-12): build an operation, add it, return it.
+# --------------------------------------------------------------------------- #
+
+
+def _p3(v: Any) -> Any:
+    from .gen.models import Point3D
+
+    return v if isinstance(v, Point3D) else Point3D(x=v[0], y=v[1], z=v[2])
+
+
+@register_method_fn("part_extrude_method")
+def part_extrude_method(inst: Any, shape: Any, depth: float, cut: bool = False, end_condition: Any = None) -> Any:
+    from .gen.models import Extrusion
+
+    kwargs = {"cut": cut}
+    if end_condition is not None:
+        kwargs["end_condition"] = end_condition
+    op = Extrusion(shape, depth, **kwargs)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_cut_extrude_method")
+def part_cut_extrude_method(inst: Any, shape: Any, depth: float, end_condition: Any = None) -> Any:
+    return part_extrude_method(inst, shape, depth, cut=True, end_condition=end_condition)
+
+
+@register_method_fn("part_revolve_method")
+def part_revolve_method(inst: Any, shape: Any, axis: Any, angle: float = 360.0, cut: bool = False) -> Any:
+    from .gen.models import Axis, Lathe, Line
+
+    if isinstance(axis, Line):
+        axis = Axis(axis)
+    kwargs = {"cut": cut}
+    if abs(angle - 360.0) > 1e-9:
+        kwargs["angle"] = angle
+    op = Lathe(shape, axis, **kwargs)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_fillet_method")
+def part_fillet_method(inst: Any, solid: Any, radius: float, edges: Any = None) -> Any:
+    from .gen.models import Fillet
+
+    op = Fillet(solid=solid, radius=radius, edge_finder=edges)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_chamfer_method")
+def part_chamfer_method(inst: Any, solid: Any, distance: float, edges: Any = None) -> Any:
+    from .gen.models import Chamfer
+
+    op = Chamfer(solid=solid, radius=distance, edge_finder=edges)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_shell_method")
+def part_shell_method(inst: Any, solid: Any, thickness: float, faces: Any = None) -> Any:
+    from .gen.models import Shell
+
+    op = Shell(solid=solid, thickness=thickness, face_finder=faces)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_linear_pattern_method")
+def part_linear_pattern_method(inst: Any, shape: Any, direction: Any, count: int, spacing: float) -> Any:
+    from .gen.models import LinearPattern
+
+    op = LinearPattern(shape, _p3(direction), count, spacing)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_polar_pattern_method")
+def part_polar_pattern_method(
+    inst: Any, shape: Any, count: int, angle: float = 360.0, axis: Any = (0.0, 0.0, 1.0)
+) -> Any:
+    from .gen.models import PolarPattern
+
+    op = PolarPattern(shape, count, angle=angle, axis_direction=_p3(axis))
+    inst.add_operation(op)
+    return op
+
+
+@register_compute_fn("compute_rib_lines")
+def compute_rib_lines(inst: Any, field_name: str, meta: dict[str, Any]) -> list:
+    """Closed outline of a Rib: the polyline plus the chord back to its start."""
+    from .gen.models import Line
+
+    pts = list(inst.points)
+    if len(pts) < 3:
+        raise ValueError("Rib needs at least 3 points (two segments and the closing chord)")
+    return [Line(pts[i], pts[(i + 1) % len(pts)]) for i in range(len(pts))]

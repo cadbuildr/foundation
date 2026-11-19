@@ -4,13 +4,15 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
-from ..runtime import _CAST_CUSTOM
+from ..runtime import Computable, _eval_expr, run_method, _CAST_CUSTOM
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .edge_finder import EdgeFinder
     from .line import Line
+    from .unions import SheetMetalOperation
+from .enums import FlangeEdge
 
-class EdgeRef(BaseModel):
+class EdgeRef(BaseModel, Computable):
     """Generated from GraphQL object EdgeRef."""
 
 
@@ -47,5 +49,7 @@ class EdgeRef(BaseModel):
 
     line: Optional[Line] = Field(default=None)
     finder: Optional[EdgeFinder] = Field(default=None)
+    flange: Optional[SheetMetalOperation] = Field(default=None)
+    flange_edge: FlangeEdge = Field(default_factory=lambda: _eval_expr({}, 'FlangeEdge.FREE'), json_schema_extra={'default': {'expr': 'FlangeEdge.FREE'}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

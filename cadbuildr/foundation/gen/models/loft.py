@@ -51,5 +51,6 @@ class Loft(ParameterFieldsMixin, BaseModel, Computable):
     guides: List[Path3D] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     start_tangent: Optional[Point3D] = Field(default=None)
     end_tangent: Optional[Point3D] = Field(default=None)
+    cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

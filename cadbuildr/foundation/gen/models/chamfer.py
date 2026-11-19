@@ -44,5 +44,7 @@ class Chamfer(ParameterFieldsMixin, BaseModel):
     solid: SolidOperation = Field(...)
     radius: FloatParameter = Field(...)
     edge_finder: Optional[EdgeFinder] = Field(default=None)
+    distance2: Optional[FloatParameter] = Field(default=None)
+    angle_deg: Optional[FloatParameter] = Field(default=None)
 
     model_config = {"protected_namespaces": ()}  # Pydantic v2 config

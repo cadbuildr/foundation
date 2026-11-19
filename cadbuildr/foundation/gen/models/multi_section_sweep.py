@@ -48,5 +48,6 @@ class MultiSectionSweep(ParameterFieldsMixin, BaseModel, Computable):
     sketches: Optional[List[Sketch]] = Field(default=None, json_schema_extra={'compute': {'fn': 'compute_multi_section_sweep_sketches', 'includeInDag': True}})
     guides: List[Path3D] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     frenet: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=True)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=True)'}})
+    cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

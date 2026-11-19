@@ -19,8 +19,10 @@ When an operation does not specify a value, the config's resolved fields are
 used. If a material is attached, the bend radius and K-factor default to the
 material's recommendations rather than fixed numbers.
 
-The DXF flat-pattern exporter for unfolded bodies lives in
-:mod:`cadbuildr.foundation.sheet_metal_dxf`.
+Flat patterns are computed by the CAD kernel: wrap a body in ``Unfold`` and
+then ``SheetMetalToSolid``, and the viewer's DXF export writes the developed
+outline (including SheetMetalCut / corner-relief / extruded-hole cut-outs) plus
+a bend-line layer. Use :func:`sheet_thickness` for stock gauge thicknesses.
 """
 
 from __future__ import annotations
