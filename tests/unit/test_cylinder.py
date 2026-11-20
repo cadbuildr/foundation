@@ -65,3 +65,29 @@ def test_cylinder_dimensions_propagate():
     assert 4.0 in fp_values, f"Expected radius 4.0 in DAG; got {fp_values}"
     assert 0.0 in fp_values, f"Expected start=0.0 in DAG; got {fp_values}"
     assert 14.0 in fp_values, f"Expected height=14.0 as end in DAG; got {fp_values}"
+
+
+def _extrusion_span(**kwargs):
+    class CylPart(Part):
+        def __init__(self):
+            s = Sketch(self.xy())
+            self.add_operation(Cylinder(s.origin, radius=4.0, height=14.0, **kwargs))
+
+    dag = show_dag(CylPart())
+    nodes = dag["DAG"]
+    ext = next(
+        n for n in nodes.values() if n["type"] == dag["serializableNodes"]["Extrusion"]
+    )
+    return (
+        nodes[ext["deps"]["start"]]["params"]["value"],
+        nodes[ext["deps"]["end"]]["params"]["value"],
+    )
+
+
+def test_cylinder_default_is_bottom_anchored():
+    assert _extrusion_span() == (0.0, 14.0)
+    assert _extrusion_span(centered=False) == (0.0, 14.0)
+
+
+def test_cylinder_centered_spans_half_height():
+    assert _extrusion_span(centered=True) == (-7.0, 7.0)

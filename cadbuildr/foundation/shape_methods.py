@@ -365,6 +365,57 @@ def polygon_translate(inst: Polygon, dx: float, dy: float) -> Polygon:
     return Polygon(lines=[line.translate(dx, dy) for line in inst.lines])
 
 
+@register_method_fn("polygon_from_points")
+def polygon_from_points(inst, sketch, points) -> Polygon:
+    """Closed polygon through ``points`` on ``sketch``.
+
+    Each point is an ``(x, y)`` pair (tuple, list, numpy array) or a ``Point``
+    already on ``sketch``. Points are joined in order and the closing edge
+    back to the first point is added; a last point equal to the first is
+    treated as that closing vertex rather than a zero-length edge. Static
+    method: ``inst`` is always None.
+    """
+    vertices: list[Point] = []
+    for raw in points:
+        if isinstance(raw, Point):
+            if raw.sketch is not sketch:
+                raise ValueError(
+                    "Polygon.from_points: every Point must be on the given sketch"
+                )
+            vertices.append(raw)
+            continue
+        coords = list(raw.tolist() if hasattr(raw, "tolist") else raw)
+        if len(coords) != 2:
+            raise ValueError(
+                f"Polygon.from_points takes 2D points (x, y); got {tuple(coords)!r}"
+            )
+        vertices.append(
+            Point(
+                sketch=sketch,
+                x=FloatParameter(value=float(coords[0])),
+                y=FloatParameter(value=float(coords[1])),
+            )
+        )
+
+    def _same(a: Point, b: Point) -> bool:
+        return abs(a.x.value - b.x.value) <= 1e-9 and abs(a.y.value - b.y.value) <= 1e-9
+
+    if len(vertices) > 1 and _same(vertices[0], vertices[-1]):
+        vertices.pop()
+    if len(vertices) < 3:
+        raise ValueError(
+            f"Polygon.from_points needs at least 3 distinct points; got {len(vertices)}"
+        )
+    for a, b in zip(vertices, vertices[1:]):
+        if _same(a, b):
+            raise ValueError(
+                "Polygon.from_points: consecutive duplicate point "
+                f"({a.x.value}, {a.y.value}) would make a zero-length edge"
+            )
+    n = len(vertices)
+    return Polygon(lines=[Line(vertices[i], vertices[(i + 1) % n]) for i in range(n)])
+
+
 @register_method_fn("polygon_rotate")
 def polygon_rotate(inst: Polygon, angle: float, center: Optional[Point] = None) -> Polygon:
     """Rotate a polygon around a center point."""

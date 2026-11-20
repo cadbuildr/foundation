@@ -541,8 +541,6 @@ register_type("SheetMetalFromSolid", SheetMetalFromSolid)
 
 register_type("Sphere", Sphere)
 
-register_type("Draft", Draft)
-
 register_type("Frame", Frame)
 
 register_type("Plane", Plane)
@@ -552,6 +550,8 @@ register_type("Anchor", Anchor)
 register_type("BallJoint", BallJoint)
 
 register_type("CylindricalJoint", CylindricalJoint)
+
+register_type("Draft", Draft)
 
 register_type("Extrusion", Extrusion)
 

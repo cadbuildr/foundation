@@ -1,10 +1,13 @@
 """Sheet metal material library.
 
 Standard alloys + US/metric gauge tables, with per-material K-factor and
-minimum-bend-radius rules. Used by ``SheetMetalConfig`` and by the
-``base_flange`` / ``edge_flange`` / ``bend`` helpers to resolve material
-choice into the geometric parameters the runtime needs (thickness, bend
-radius, K-factor).
+minimum-bend-radius rules. ``SheetMetalConfig.from_material`` and
+``SheetMetalConfig.resolve_bend`` use it to turn a material choice into the
+geometric parameters the sheet-metal nodes take (``thickness``,
+``default_bend_radius``, ``default_k_factor`` on ``SheetMetalBaseFlange`` /
+``SheetMetalContourFlange``, per-bend ``bend_radius`` / ``k_factor`` on
+``SheetMetalEdgeFlange`` …); the material name itself can be recorded on a
+base or contour flange's ``material`` field for BOM / flat-pattern export.
 
 The K-factor model follows the empirical curve used in most shop-floor
 guides:

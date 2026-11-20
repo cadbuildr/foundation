@@ -39,6 +39,8 @@ class RigidJoint(ParameterFieldsMixin, BaseModel, Computable):
 
 
 
+    def resolve(self) -> Optional[bool]:
+        return run_method(self, 'joint_resolve_method')
 
 
     parent_anchor: Anchor = Field(...)

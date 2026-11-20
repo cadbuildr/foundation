@@ -54,6 +54,14 @@ class Polygon(SketchElementMixin, BaseModel, Computable):
             'center': center
         }
         return run_method(self, 'polygon_rotate', _locals)
+    @staticmethod
+    def from_points(sketch, points) -> Optional[Polygon]:
+        # Build local namespace with parameters for static method function
+        _locals = {
+            'sketch': sketch,
+            'points': points
+        }
+        return run_method(None, 'polygon_from_points', _locals)
 
 
     lines: List[Line] = Field(...)

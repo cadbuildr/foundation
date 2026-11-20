@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.2.17
+
+Assemblies: anchors, placement, joints and interference.
+
+- **Anchor helpers** (`anchors.py`): `make_anchor(name, position, ...,
+  z_axis=, x_axis=)`, `Anchor.linear_pattern` / `polar_pattern` /
+  `along_path`, `rotate_deg`, `add_anchors`; derived names are auto-unique.
+- **Placement** (`placement.py`): `add_component(comp, at=, rot_deg=)`,
+  `assembly.ground(anchor, at=, rot_deg=)`, loop-closing `add_connection`
+  (raises `LoopClosureError` when the anchors disagree), hole wizards accept
+  an `Anchor`. `Connection.joint` is now optional (modifier-only connections).
+- **Joints**: `set_angle` / `set_offset` cascade to everything jointed
+  downstream, including inside placed sub-assemblies; `joint.resolve()` and
+  `Assembly.resolve()`. A joint in a sub-assembly may take its parent anchor
+  from a sibling component (resolved through the common enclosing assembly).
+- **Interference**: `assembly.check_interference(tolerance=, allow=, ...)`.
+- **Live components**: components placed with `add_component` stay live —
+  operations / anchors added afterwards are no longer lost.
+- `Polygon.from_points`; `Draft(neutral_plane=)` for tilted neutral planes.
+- **Cylinder**: new `centered=` flag. `Cylinder` is
+  bottom-anchored (`0..height` along the sketch normal) while `Box` is
+  centred. Code written for the old centred cylinder should pass
+  `centered=True` (`-height/2..+height/2`) instead of shifting by hand. The
+  default is unchanged.
+
 ## 0.2.16
 
 Feature-complete CAD operations and sheet metal.

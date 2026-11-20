@@ -47,6 +47,9 @@ class Cylinder(ParameterFieldsMixin, BaseModel, Computable, Expandable):
     radius: FloatParameter = Field(...)
     height: FloatParameter = Field(...)
     cut: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
-    result: Optional[Extrusion] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': [{'__typename': 'Circle', 'center': '$center', 'radius': '$radius'}], 'start': {'__typename': 'FloatParameter', 'value': 0.0}, 'end': '$height', 'cut': '$cut'}}})
+    centered: BoolParameter = Field(default_factory=lambda: _eval_expr({}, 'BoolParameter(value=False)'), json_schema_extra={'default': {'expr': 'BoolParameter(value=False)'}})
+    start_val: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=-height.value / 2.0 if centered.value else 0.0)'}})
+    end_val: Optional[FloatParameter] = Field(default=None, json_schema_extra={'compute': {'expr': 'FloatParameter(value=height.value / 2.0 if centered.value else height.value)'}})
+    result: Optional[Extrusion] = Field(default=None, json_schema_extra={'expand': {'into': {'shape': [{'__typename': 'Circle', 'center': '$center', 'radius': '$radius'}], 'start': '$start_val', 'end': '$end_val', 'cut': '$cut'}}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

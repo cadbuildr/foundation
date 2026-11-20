@@ -43,7 +43,7 @@ class Connection(ParameterFieldsMixin, BaseModel, Computable):
 
 
     name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='connection')"), json_schema_extra={'default': {'expr': "StringParameter(value='connection')"}})
-    joint: Joint = Field(...)
+    joint: Optional[Joint] = Field(default=None)
     modifiers: List[PartModifier] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Sequence
 
@@ -377,19 +379,164 @@ class TFHelper:
         return self.translate([0.0, 0.0, distance])
 
     def rotate(self, axis: Sequence[float], angle: float) -> "TFHelper":
+        """Pre-multiply a rotation of ``angle`` **radians** about ``axis``.
+
+        Note the argument order is ``(axis, angle)`` — the reverse of
+        ``Part.rotate(angle, axis)``; both take radians. Use
+        :meth:`rotate_deg` for degrees.
+        """
         from .math_utils import axis_angle_to_quaternion, quaternion_multiply
 
         rotation_quat = axis_angle_to_quaternion(self._as_list(axis, 3), angle)
         self._quaternion = quaternion_multiply(rotation_quat, self._quaternion)
         return self
 
+    def rotate_deg(self, axis: Sequence[float], angle_deg: float) -> "TFHelper":
+        """:meth:`rotate` with the angle in degrees."""
+        return self.rotate(axis, math.radians(angle_deg))
 
-def _assembly_add_component(self: Assembly, component: Any, tf: Any = None) -> Any:
-    _locals = {"component": component, "tf": tf}
+
+def _assembly_add_component(
+    self: Assembly,
+    component: Any,
+    tf: Any = None,
+    *,
+    at: Optional[Sequence[float]] = None,
+    rot_deg: Any = None,
+) -> Any:
+    """Add a part/assembly, optionally posed.
+
+    ``rot_deg`` (degrees: a number about +Z, or ``(rx, ry, rz)`` about the
+    fixed X, Y, Z axes in that order) rotates the component about its own
+    origin, then ``at=(x, y, z)`` (mm) moves it. ``tf`` is the older
+    transform form; pass one or the other.
+    """
+    _locals = {"component": component, "tf": tf, "at": at, "rot_deg": rot_deg}
     return run_method(self, "add_component_method", _locals)
 
 
 setattr(Assembly, "add_component", _assembly_add_component)
+
+
+def _assembly_ground(
+    self: Assembly,
+    anchor: Any,
+    *,
+    at: Optional[Sequence[float]] = None,
+    rot_deg: Any = None,
+) -> Any:
+    """Fix the component owning ``anchor`` so the anchor sits at ``at`` (mm),
+    rotated by ``rot_deg`` (degrees, same forms as ``add_component``), in
+    assembly space. Defaults to the assembly origin."""
+    _locals = {"anchor": anchor, "at": at, "rot_deg": rot_deg}
+    return run_method(self, "ground_method", _locals)
+
+
+setattr(Assembly, "ground", _assembly_ground)
+
+
+def _assembly_add_connection(
+    self: Assembly,
+    connection: Any,
+    *,
+    pos_tol: Optional[float] = None,
+    angle_tol_deg: Optional[float] = None,
+) -> Any:
+    """Apply a Connection (modifiers, then its joint if any).
+
+    When the joint connects two already-placed components it closes a loop:
+    nothing moves, and the anchors must agree within ``pos_tol`` mm /
+    ``angle_tol_deg`` degrees or ``LoopClosureError`` is raised.
+    """
+    _locals: dict[str, Any] = {"connection": connection}
+    if pos_tol is not None:
+        _locals["pos_tol"] = pos_tol
+    if angle_tol_deg is not None:
+        _locals["angle_tol_deg"] = angle_tol_deg
+    return run_method(self, "add_connection_method", _locals)
+
+
+setattr(Assembly, "add_connection", _assembly_add_connection)
+
+
+def _accept_anchor_as_point(cls: type) -> None:
+    """Let a hole wizard take an ``Anchor`` where it takes its ``point``.
+
+    ``Hole(anchor, radius, depth)`` / ``Hole(anchor=a, ...)`` drills along the
+    anchor's -Z (into the face whose outward normal is the anchor +Z), with
+    the hole entry on the anchor origin. The anchor resolves to an ordinary
+    sketch point, so the DAG shape is unchanged.
+    """
+    original_init = cls.__init__
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        from .gen.models import Anchor
+        from .holes import hole_point_from_anchor
+
+        anchor = kwargs.pop("anchor", None)
+        if anchor is not None:
+            if "point" in kwargs or args:
+                raise TypeError(
+                    f"{cls.__name__}: with anchor=, pass the other arguments "
+                    "by keyword (and no point)"
+                )
+            kwargs["point"] = anchor
+        if args and isinstance(args[0], Anchor):
+            args = (hole_point_from_anchor(args[0]),) + tuple(args[1:])
+        if isinstance(kwargs.get("point"), Anchor):
+            kwargs["point"] = hole_point_from_anchor(kwargs["point"])
+        original_init(self, *args, **kwargs)
+
+    __init__.__doc__ = original_init.__doc__
+    setattr(cls, "__init__", __init__)
+
+
+def _install_anchor_holes() -> None:
+    from .gen.models import (
+        ClearanceHole,
+        CounterBoreHole,
+        CounterSinkHole,
+        Hole,
+        TappedHole,
+    )
+
+    for cls in (Hole, CounterSinkHole, CounterBoreHole, TappedHole, ClearanceHole):
+        _accept_anchor_as_point(cls)
+
+
+_install_anchor_holes()
+
+
+def _install_part_modifier_expansion() -> None:
+    """Let ``PartModifier.operations`` take sugar operations.
+
+    Hole wizards such as ``CounterSinkHole`` / ``TappedHole`` are not members
+    of the ``Operation`` union (they are expanded before reaching the DAG), so
+    expand them up front, exactly as ``Part.add_operations`` would.
+    """
+    from .gen.models import PartModifier
+
+    original_init = PartModifier.__init__
+
+    def __init__(self: Any, *args: Any, **kwargs: Any) -> None:
+        from .compute_functions import _fully_expand_operation
+
+        def expand(ops: Any) -> Any:
+            if isinstance(ops, (list, tuple)):
+                return [_fully_expand_operation(op) for op in ops]
+            return ops
+
+        if len(args) >= 2:
+            args = (args[0], expand(args[1])) + tuple(args[2:])
+        if "operations" in kwargs:
+            kwargs["operations"] = expand(kwargs["operations"])
+        original_init(self, *args, **kwargs)
+
+    __init__.__doc__ = original_init.__doc__
+    setattr(PartModifier, "__init__", __init__)
+
+
+_install_part_modifier_expansion()
 
 
 # Add to_array() method to Point3D for backward compatibility
@@ -422,16 +569,40 @@ def make_anchor(
     position: Sequence[float] = (0.0, 0.0, 0.0),
     quaternion: Optional[Sequence[float]] = None,
     z_down: bool = False,
+    *,
+    z_axis: Optional[Sequence[float]] = None,
+    x_axis: Optional[Sequence[float]] = None,
 ) -> Any:
     """Convenience Anchor constructor (+Z = mate axis / outward normal).
 
-    ``z_down=True`` flips the anchor 180° about X so its outward normal points
-    along local -Z — the usual convention for a bottom/underside mating face.
+    Orientation, pick one (all in the parent/part frame):
+
+    * ``quaternion`` — ``[w, x, y, z]``;
+    * ``z_down=True`` — 180° about X, so the outward normal points along
+      -Z (the usual bottom/underside mating face);
+    * ``z_axis=`` (+ optional ``x_axis=``) — directions. ``z_axis`` is kept
+      exactly; ``x_axis`` (clocking) has its Z component projected off. If
+      ``x_axis`` is omitted, X is the image of +X under the shortest rotation
+      taking +Z onto ``z_axis`` (``z_axis=(0, 0, -1)`` gives the same frame as
+      ``z_down=True``). ``ValueError`` for zero-length axes or an ``x_axis``
+      parallel to ``z_axis``.
+    * nothing — identity.
+
     Attach the result with ``part.add_anchor(...)``; its frame roots under the
     part frame at that point.
     """
     from .gen.models import Anchor, Frame, StringParameter
+    from .math_utils import quaternion_from_directions
 
+    if x_axis is not None and z_axis is None:
+        raise ValueError("make_anchor: x_axis needs z_axis (Z is the mate axis)")
+    if z_axis is not None:
+        if quaternion is not None or z_down:
+            raise ValueError(
+                "make_anchor: pass either z_axis/x_axis or quaternion/z_down, "
+                "not both"
+            )
+        quaternion = quaternion_from_directions(z_axis, x_axis)
     if quaternion is None:
         quaternion = (0.0, 1.0, 0.0, 0.0) if z_down else (1.0, 0.0, 0.0, 0.0)
     return Anchor(

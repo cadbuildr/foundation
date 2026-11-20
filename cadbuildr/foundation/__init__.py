@@ -13,6 +13,9 @@ from. import shape_methods  # noqa: F401
 # Import helpers to add monkey-patched methods
 from. import helpers  # noqa: F401
 
+# Anchor patterns, rotate_deg/rotated_deg, add_anchors (monkey-patched)
+from. import anchors  # noqa: F401
+
 # Export PlaneFactory for backward compatibility
 from.helpers import PlaneFactory, TFHelper, anchor_plane, make_anchor
 
@@ -41,6 +44,19 @@ from .parameters import (
 from.dag_utils import show, show_dag
 from.sketch_ops import linear_copies, polar_copies, mirror, mirror_point, extend, intersect, trim_corner
 from.holes import ISO_METRIC_COARSE, tap_drill_diameter, clearance_diameter
+from.placement import LoopClosureError, rotation_from_deg
+# Assembly.check_interference / Part.set_extents (monkey-patched)
+from.interference import (
+    OBB,
+    Interference,
+    InterferenceError,
+    PartExtents,
+    check_interference,
+    estimate_part_extents,
+    obb_intersects,
+    obb_penetration,
+    set_part_extents,
+)
 from.sheet_metal_materials import MATERIALS, sheet_thickness
 from.coms.screenshot_framing import build_screenshot_framing, request_viewer_screenshot
 from.coms.utils_webrtc import (

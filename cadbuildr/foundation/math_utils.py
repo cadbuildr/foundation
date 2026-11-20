@@ -1,4 +1,12 @@
-"""Math utilities for vector and quaternion operations."""
+"""Math utilities for vector and quaternion operations.
+
+Angle convention for the whole 3D API (Part/Assembly.rotate, Anchor.rotated,
+TFHelper.rotate, axis_angle_to_quaternion): **radians**. Degree variants say
+so in their name (``rotate_deg``, ``rotated_deg``) or keyword (``angle_deg=``).
+Sketch-level patterns (``PolarLocations``) take degrees, also named ``*_deg``.
+"""
+
+import math
 
 import numpy as np
 from typing import TYPE_CHECKING, Any, Sequence
@@ -182,16 +190,27 @@ def tf_relative_to_frame(
     the walk continues to the root frame. Identity comparison (``is``) is used
     on purpose: structurally equal frames at different tree positions must not
     terminate the walk.
+
+    ``ancestor_frame`` may also be a list/tuple of frames that all stand for
+    the same coordinate system (an assembly's own frame and the frames of the
+    roots created from it when it was placed); the walk stops at the first one
+    it meets.
     """
+    if isinstance(ancestor_frame, (list, tuple)):
+        stops = list(ancestor_frame)
+    elif ancestor_frame is None:
+        stops = []
+    else:
+        stops = [ancestor_frame]
     chain = []
     cursor = frame
-    while cursor is not None and cursor is not ancestor_frame:
+    while cursor is not None and not any(cursor is stop for stop in stops):
         chain.append(cursor)
         cursor = cursor.top_frame
-    if ancestor_frame is not None and cursor is not ancestor_frame:
+    if stops and cursor is None:
         raise ValueError(
             f"Frame '{frame.name.value}' does not chain up to frame "
-            f"'{ancestor_frame.name.value}'. Anchors must belong to a component "
+            f"'{stops[0].name.value}'. Anchors must belong to a component "
             "already placed under the assembly."
         )
     translation, quaternion = [0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]
@@ -245,3 +264,117 @@ def create_frame_from_xdir_and_normal(
         position=[0.0, 0.0, 0.0],
         quaternion=quaternion,
     )
+
+
+# --------------------------------------------------------------------------- #
+# Orientation from directions (make_anchor(z_axis=, x_axis=), anchor patterns).
+# --------------------------------------------------------------------------- #
+
+# Below this length a direction is treated as the zero vector.
+_ZERO_EPS = 1e-12
+# Below this sine of the angle between two directions they count as parallel.
+_PARALLEL_SIN_EPS = 1e-6
+
+
+def unit_vector(v: Sequence[float], label: str = "vector") -> np.ndarray:
+    """Normalised 3-vector; ``ValueError`` for a wrong length or zero vector."""
+    arr = np.asarray([float(c) for c in v], dtype=float)
+    if arr.shape != (3,):
+        raise ValueError(f"{label} must have exactly 3 components, got {len(arr)}")
+    norm = float(np.linalg.norm(arr))
+    if norm < _ZERO_EPS:
+        raise ValueError(f"{label} must be a non-zero direction, got {list(v)}")
+    return arr / norm
+
+
+def default_x_for_z(z_axis: Sequence[float]) -> list[float]:
+    """Stable X direction for a frame whose Z is ``z_axis``.
+
+    Rule: X is the image of world +X under the *shortest rotation* taking
+    world +Z onto ``z_axis``. So ``z=+Z`` gives ``x=+X`` (identity), a ``z``
+    in the XZ plane keeps Y fixed (``z=+X`` gives ``x=-Z``), and the one
+    ambiguous case ``z=-Z`` resolves to 180° about X — exactly
+    ``make_anchor(z_down=True)``, i.e. ``x=+X``. Closed form:
+    ``x = (1 - zx²/(1+zz), -zx·zy/(1+zz), -zx)``.
+    """
+    z = unit_vector(z_axis, "z_axis")
+    if 1.0 + z[2] < _PARALLEL_SIN_EPS:
+        return [1.0, 0.0, 0.0]
+    k = 1.0 / (1.0 + z[2])
+    x = np.array([1.0 - z[0] * z[0] * k, -z[0] * z[1] * k, -z[0]])
+    return (x / float(np.linalg.norm(x))).tolist()
+
+
+def _perpendicular_part(
+    vector: Sequence[float], axis: np.ndarray, label: str, axis_label: str
+) -> np.ndarray:
+    hint = unit_vector(vector, label)
+    perp = hint - float(np.dot(hint, axis)) * axis
+    norm = float(np.linalg.norm(perp))
+    if norm < _PARALLEL_SIN_EPS:
+        raise ValueError(
+            f"{label} {list(vector)} is parallel to {axis_label} "
+            f"{axis.tolist()}; pass a {label} with a component perpendicular "
+            f"to {axis_label}"
+        )
+    return perp / norm
+
+
+def axes_from_directions(
+    z_axis: Sequence[float], x_axis: Sequence[float] | None = None
+) -> tuple[list[float], list[float], list[float]]:
+    """Right-handed orthonormal (x, y, z) from a primary Z and an X hint.
+
+    ``z_axis`` is kept exactly (normalised). ``x_axis`` is a hint: its
+    component along Z is projected off and the rest normalised. When
+    ``x_axis`` is omitted, :func:`default_x_for_z` picks it. Raises
+    ``ValueError`` for zero-length axes or an ``x_axis`` parallel to
+    ``z_axis``.
+    """
+    z = unit_vector(z_axis, "z_axis")
+    if x_axis is None:
+        x = np.asarray(default_x_for_z(z), dtype=float)
+    else:
+        x = _perpendicular_part(x_axis, z, "x_axis", "z_axis")
+    y = np.cross(z, x)
+    return x.tolist(), y.tolist(), z.tolist()
+
+
+def axes_from_x_and_up(
+    x_axis: Sequence[float], up: Sequence[float]
+) -> tuple[list[float], list[float], list[float]]:
+    """Orthonormal (x, y, z) keeping ``x_axis`` exact, Z towards ``up``.
+
+    The X-primary twin of :func:`axes_from_directions` (used by
+    ``Anchor.along_path`` where X must follow the tangent exactly).
+    """
+    x = unit_vector(x_axis, "x_axis")
+    z = _perpendicular_part(up, x, "up", "x_axis")
+    y = np.cross(z, x)
+    return x.tolist(), y.tolist(), z.tolist()
+
+
+def quaternion_from_axes(
+    x_axis: Sequence[float], y_axis: Sequence[float], z_axis: Sequence[float]
+) -> list[float]:
+    """Quaternion [w, x, y, z] of the rotation whose columns are x, y, z.
+
+    The sign is normalised to ``w >= 0`` so equal rotations serialise equally.
+    """
+    rot = np.array([list(x_axis), list(y_axis), list(z_axis)], dtype=float).T
+    q = [float(c) for c in rotation_matrix_to_quaternion(rot)]
+    norm = math.sqrt(sum(c * c for c in q))
+    q = [c / norm for c in q]
+    if q[0] < 0.0:
+        q = [-c for c in q]
+    return q
+
+
+def quaternion_from_directions(
+    z_axis: Sequence[float], x_axis: Sequence[float] | None = None
+) -> list[float]:
+    """Quaternion for a frame with Z along ``z_axis`` and X towards ``x_axis``.
+
+    See :func:`axes_from_directions` for the orthonormalisation rule.
+    """
+    return quaternion_from_axes(*axes_from_directions(z_axis, x_axis))

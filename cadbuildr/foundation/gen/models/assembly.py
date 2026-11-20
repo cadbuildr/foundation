@@ -53,6 +53,8 @@ class Assembly(ParameterFieldsMixin, BaseModel, Computable):
             'anchor': anchor
         }
         return run_method(self, 'ground_method', _locals)
+    def resolve(self) -> Optional[bool]:
+        return run_method(self, 'assembly_resolve_method')
     def xy(self) -> Optional[Plane]:
         return run_method(self, 'get_xy_plane')
     def yx(self) -> Optional[Plane]:

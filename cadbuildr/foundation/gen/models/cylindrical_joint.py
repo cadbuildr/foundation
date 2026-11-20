@@ -53,6 +53,8 @@ class CylindricalJoint(ParameterFieldsMixin, BaseModel, Computable):
             'offset': offset
         }
         return run_method(self, 'joint_set_value_method', _locals)
+    def resolve(self) -> Optional[bool]:
+        return run_method(self, 'joint_resolve_method')
 
 
     parent_anchor: Anchor = Field(...)

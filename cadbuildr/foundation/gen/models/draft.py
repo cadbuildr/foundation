@@ -9,6 +9,7 @@ from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFie
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .float_parameter import FloatParameter
+    from .plane import Plane
     from .string_parameter import StringParameter
     from .unions import FaceSelection
     from .unions import SolidOperation
@@ -30,7 +31,7 @@ class Draft(ParameterFieldsMixin, BaseModel, Computable):
             args,
             kwargs,
             cast_info=None,
-            field_order=['solid', 'angle_deg', 'neutral_plane_name', 'edge_finder'],
+            field_order=['solid', 'angle_deg', 'neutral_plane_name', 'edge_finder', 'neutral_plane'],
             list_fields=None,
         )
         if use_normal:
@@ -47,5 +48,6 @@ class Draft(ParameterFieldsMixin, BaseModel, Computable):
     angle_deg: FloatParameter = Field(...)
     neutral_plane_name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='XY')"), json_schema_extra={'default': {'expr': "StringParameter(value='XY')"}})
     edge_finder: Optional[FaceSelection] = Field(default=None)
+    neutral_plane: Optional[Plane] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

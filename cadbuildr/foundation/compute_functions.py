@@ -46,6 +46,12 @@ from.math_utils import (
     invert_tf,
     tf_relative_to_frame,
 )
+from.placement import (
+    DEFAULT_ANGLE_TOL_DEG,
+    DEFAULT_POS_TOL,
+    check_loop_closure,
+    rotation_from_deg,
+)
 
 
 @register_compute_fn("get_plane_factory")
@@ -744,23 +750,6 @@ def compute_sheet_metal_base_sketch(
     )
 
 
-@register_compute_fn("compute_sheet_metal_contour_sketch")
-def compute_sheet_metal_contour_sketch(
-    inst: Any, field_name: str, meta: dict[str, Any]
-) -> Sketch:
-    """Compute the sketch used by a SheetMetalContourFlange from its profile."""
-    profile = inst.profile
-    if hasattr(profile, "sketch"):
-        sketch = profile.sketch
-        if sketch is None and hasattr(profile, "compute"):
-            sketch = profile.compute("sketch")
-        if sketch is not None:
-            return sketch
-    raise ValueError(
-        f"Profile {profile} does not provide a valid sketch for SheetMetalContourFlange"
-    )
-
-
 @register_compute_fn("compute_multi_section_sweep_sketches")
 def compute_multi_section_sweep_sketches(
     inst: Any, field_name: str, meta: dict[str, Any]
@@ -935,15 +924,118 @@ def _set_anchor_owner(anchor: Any, owner: Any) -> None:
     object.__setattr__(anchor, _ANCHOR_OWNER_ATTR, owner)
 
 
+# --------------------------------------------------------------------------- #
+# Anchor naming. One rule, two cases:
+#   * a name the caller REGISTERS (part.add_anchor) is a lookup key
+#     (part.anchor("top"), downstream libraries) -> a duplicate RAISES;
+#     silently renaming it would make lookups order-dependent.
+#   * a DERIVED anchor's name (offset/rotated/flipped/patterns) is generated
+#     as "<base>_<label>" and is unique by construction: if that name is
+#     already used in the owner's namespace it gets "_2", "_3", ... Callers
+#     hold the returned object, never look it up by name, so no counters are
+#     needed (woodworking's global _seq(), the tube-tee "tee_seat" clash).
+# The namespace is the owner's registered anchors plus every name derived
+# from its anchors (transient attribute, never serialised). Anchors derived
+# from an unowned anchor share that root anchor's namespace, merged into the
+# owner's when the root is registered.
+# --------------------------------------------------------------------------- #
+
+_DERIVED_NAMES_ATTR = "_derived_anchor_names"
+_NAMESPACE_ROOT_ATTR = "_anchor_namespace_root"
+_RESERVED_IN_ATTR = "_anchor_name_reserved_in"
+_MERGED_NAMESPACES_ATTR = "_merged_anchor_namespaces"
+
+
+def _derived_names(holder: Any) -> set[str]:
+    names = getattr(holder, _DERIVED_NAMES_ATTR, None)
+    if names is None:
+        names = set()
+        object.__setattr__(holder, _DERIVED_NAMES_ATTR, names)
+    return names
+
+
+def _namespace_holder(anchor: Any) -> Any:
+    """Owner if the anchor has one, else the unowned root of its derivation."""
+    owner = getattr(anchor, _ANCHOR_OWNER_ATTR, None)
+    if owner is not None:
+        return owner
+    return getattr(anchor, _NAMESPACE_ROOT_ATTR, None) or anchor
+
+
+def _used_anchor_names(holder: Any) -> set[str]:
+    used = set(_derived_names(holder))
+    for existing in getattr(holder, "anchors", None) or []:
+        used.add(existing.name.value)
+    if not hasattr(holder, "anchors"):  # unowned root anchor
+        used.add(holder.name.value)
+    return used
+
+
+def unique_derived_anchor_name(base: Any, candidate: str) -> str:
+    """Reserve ``candidate`` (or ``candidate_2``, ``_3``...) in ``base``'s namespace."""
+    holder = _namespace_holder(base)
+    used = _used_anchor_names(holder)
+    name, i = candidate, 2
+    while name in used:
+        name = f"{candidate}_{i}"
+        i += 1
+    _derived_names(holder).add(name)
+    return name
+
+
+def unique_derived_anchor_stem(base: Any, stem: str, count: int) -> str:
+    """Reserve ``<stem>_0 .. <stem>_<count-1>`` as a block (patterns).
+
+    The whole block moves to ``<stem>_2_<i>``, ``<stem>_3_<i>``... if any
+    member is taken, so element names stay aligned with list indices.
+    """
+    holder = _namespace_holder(base)
+    used = _used_anchor_names(holder)
+    chosen, k = stem, 2
+    while any(f"{chosen}_{i}" in used for i in range(count)):
+        chosen = f"{stem}_{k}"
+        k += 1
+    _derived_names(holder).update(f"{chosen}_{i}" for i in range(count))
+    return chosen
+
+
 @register_method_fn("add_anchor_method")
 def add_anchor_method(inst: Part | Assembly, anchor: Any) -> Any:
-    """Attach an anchor to a part/assembly and take ownership of it."""
+    """Attach an anchor to a part/assembly and take ownership of it.
+
+    Raises ``ValueError`` if the name is already registered on ``inst`` or
+    was generated for a different derived anchor of ``inst``.
+    """
+    name = anchor.name.value
     for existing in inst.anchors:
-        if existing.name.value == anchor.name.value:
+        if existing is anchor:
+            return anchor
+        if existing.name.value == name:
             raise ValueError(
-                f"Anchor name '{anchor.name.value}' already exists on "
+                f"Anchor name '{name}' already exists on "
                 f"'{inst.name.value}'."
             )
+    derived = _derived_names(inst)
+    merged = getattr(inst, _MERGED_NAMESPACES_ATTR, None) or []
+    reserved_in = getattr(anchor, _RESERVED_IN_ATTR, None)
+    own_reservation = reserved_in is derived or any(reserved_in is s for s in merged)
+    if name in derived and not own_reservation:
+        raise ValueError(
+            f"Anchor name '{name}' is already used by a derived anchor on "
+            f"'{inst.name.value}'; pick another name."
+        )
+    # An unowned anchor may carry names derived from it: merge them in.
+    carried = getattr(anchor, _DERIVED_NAMES_ATTR, None)
+    if carried:
+        registered = {a.name.value for a in inst.anchors}
+        for derived_name in carried:
+            if derived_name in registered or derived_name in derived:
+                raise ValueError(
+                    f"Anchor '{name}' carries derived anchor '{derived_name}', "
+                    f"which collides with an anchor on '{inst.name.value}'."
+                )
+        derived.update(carried)
+        object.__setattr__(inst, _MERGED_NAMESPACES_ATTR, [*merged, carried])
     # Root the anchor frame under the owner frame unless the caller already
     # chained it (e.g. Anchor.from_plane roots under the plane frame, which
     # itself chains to the part frame).
@@ -994,10 +1086,24 @@ def _derive_anchor(
     position: Sequence[float],
     quaternion: Sequence[float],
 ) -> Any:
-    """Create an anchor whose frame is a child of ``base``'s frame."""
+    """Create an anchor ``<base>_<name>`` whose frame is a child of ``base``'s.
+
+    The name is made unique in the owner's anchor namespace (see the naming
+    rule above ``add_anchor_method``).
+    """
+    derived_name = unique_derived_anchor_name(base, f"{base.name.value}_{name}")
+    return make_child_anchor(base, derived_name, position, quaternion)
+
+
+def make_child_anchor(
+    base: Any,
+    derived_name: str,
+    position: Sequence[float],
+    quaternion: Sequence[float],
+) -> Any:
+    """Anchor named exactly ``derived_name`` (already reserved) under ``base``."""
     from.gen.models import Anchor
 
-    derived_name = f"{base.name.value}_{name}"
     derived = Anchor(
         frame=Frame(
             top_frame=base.frame,
@@ -1008,9 +1114,13 @@ def _derive_anchor(
         ),
         name=StringParameter(value=derived_name),
     )
+    holder = _namespace_holder(base)
+    object.__setattr__(derived, _RESERVED_IN_ATTR, _derived_names(holder))
     owner = getattr(base, _ANCHOR_OWNER_ATTR, None)
     if owner is not None:
         _set_anchor_owner(derived, owner)
+    else:
+        object.__setattr__(derived, _NAMESPACE_ROOT_ATTR, holder)
     return derived
 
 
@@ -1052,10 +1162,10 @@ def anchor_flipped_method(inst: Any, name: str = "flipped") -> Any:
 _PLACED_IN_ATTR = "_placed_in"
 _JOINT_ASSEMBLY_ATTR = "_joint_assembly"
 _JOINT_CHILD_ROOT_ATTR = "_joint_child_root"
-# Set on a Part/Assembly by _convert_component_to_root: pydantic copies list
-# fields at model construction, so later geometry contributions (Connection
-# modifiers) must be mirrored onto the converted root explicitly.
-_COMPONENT_ROOT_ATTR = "_component_root"
+# Connections applied with add_connection (transient, never serialised): the
+# interference check reads them to skip intended contacts, including
+# loop-closing joints, which are not appended to ``joints``.
+_APPLIED_CONNECTIONS_ATTR = "_applied_connections"
 
 _IDENTITY_TF = ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
 
@@ -1118,15 +1228,238 @@ def _joint_dof_tf(joint: Any) -> tuple[list[float], list[float]]:
     raise TypeError(f"Unsupported joint type '{type_name}'")
 
 
+_ROOT_FRAMES_ATTR = "_root_frames"
+
+
+def component_frames(component: Any) -> list[Any]:
+    """Every frame standing for ``component``'s own coordinate system.
+
+    A Part keeps its frame when placed. An Assembly gets a fresh root frame
+    each time it is converted to an ``AssemblyRoot`` (placed in a parent, or
+    serialised by ``to_dag``), and its children / anchors are re-rooted onto
+    it. All of those frames are the same coordinate system, so anything that
+    expresses a frame "in assembly space" must stop at whichever one the
+    chain reaches.
+    """
+    source = getattr(component, _SOURCE_COMPONENT_ATTR, None) or component
+    frames: list[Any] = []
+    for frame in (
+        component.frame,
+        source.frame,
+        *getattr(source, _ROOT_FRAMES_ATTR, ()),
+    ):
+        if not any(frame is f for f in frames):
+            frames.append(frame)
+    return frames
+
+
+def tf_in_component(frame: Any, component: Any) -> tuple[list[float], list[float]]:
+    """Transform of ``frame`` in ``component``'s own coordinates."""
+    return tf_relative_to_frame(frame, component_frames(component))
+
+
+_FOREIGN_JOINTS_ATTR = "_foreign_joints"
+
+
+def _placed_chain(component: Any) -> list[Any]:
+    """``component`` followed by every assembly it is (transitively) placed in."""
+    chain = [component]
+    while (parent := getattr(chain[-1], _PLACED_IN_ATTR, None)) is not None:
+        if any(parent is c for c in chain):
+            break
+        chain.append(parent)
+    return chain
+
+
+def _placement_frame(component: Any, assembly: Any) -> Any:
+    """The frame ``component`` was placed at inside ``assembly``."""
+    for child in assembly.components:
+        source = getattr(child, _SOURCE_COMPONENT_ATTR, None)
+        if child is component or source is component:
+            return child.frame
+    raise ValueError(
+        f"'{component.name.value}' is not a direct component of "
+        f"'{assembly.name.value}'"
+    )
+
+
+def _tf_component_in_ancestor(
+    component: Any, ancestor: Any
+) -> tuple[list[float], list[float]]:
+    """Transform of ``component``'s own coordinates in ``ancestor``'s, walking
+    the placement chain (works across sub-assembly boundaries)."""
+    t, q = _IDENTITY_TF
+    cursor = component
+    while cursor is not ancestor:
+        parent = getattr(cursor, _PLACED_IN_ATTR)
+        p_t, p_q = tf_in_component(_placement_frame(cursor, parent), parent)
+        t, q = compose_tf(p_t, p_q, t, q)
+        cursor = parent
+    return t, q
+
+
+def _common_ancestor(a: Any, b: Any) -> Optional[Any]:
+    b_chain = _placed_chain(b)
+    for candidate in _placed_chain(a):
+        if any(candidate is c for c in b_chain):
+            return candidate
+    return None
+
+
+def _parent_anchor_tf(joint: Any, assembly: Any) -> tuple[list[float], list[float]]:
+    """Parent anchor of ``joint`` in ``assembly`` coordinates.
+
+    Usually the anchor belongs to ``assembly`` or something placed under it.
+    It may also belong to a *sibling* of ``assembly`` (e.g. a board Part next
+    to a ``Components`` grouping sub-assembly): it is then resolved through
+    the nearest assembly enclosing both, which must already hold both.
+    """
+    frame = joint.parent_anchor.frame
+    try:
+        return tf_in_component(frame, assembly)
+    except ValueError:
+        owner = _anchor_owner(joint.parent_anchor)
+        ancestor = _common_ancestor(assembly, owner)
+        if ancestor is None or ancestor is assembly:
+            raise ValueError(
+                f"Parent anchor '{joint.parent_anchor.name.value}' (on "
+                f"'{owner.name.value}') does not chain up to "
+                f"'{assembly.name.value}' and shares no common enclosing "
+                "assembly with it. Place the parent component first (in this "
+                "assembly, or next to it in an enclosing one)."
+            ) from None
+    a_t, a_q = compose_tf(
+        *_tf_component_in_ancestor(owner, ancestor), *tf_in_component(frame, owner)
+    )
+    s_t, s_q = _tf_component_in_ancestor(assembly, ancestor)
+    # Re-place this joint whenever something moves in the common ancestor.
+    foreign = getattr(ancestor, _FOREIGN_JOINTS_ATTR, None)
+    if foreign is None:
+        foreign = []
+        object.__setattr__(ancestor, _FOREIGN_JOINTS_ATTR, foreign)
+    if not any(j is joint for j in foreign):
+        foreign.append(joint)
+    return compose_tf(*invert_tf(s_t, s_q), a_t, a_q)
+
+
 def _resolve_joint_tf(joint: Any, assembly: Any) -> tuple[list[float], list[float]]:
     """Compute the child component's root transform in assembly space."""
     child_owner = _anchor_owner(joint.child_anchor)
-    p_t, p_q = tf_relative_to_frame(joint.parent_anchor.frame, assembly.frame)
+    p_t, p_q = _parent_anchor_tf(joint, assembly)
     t, q = compose_tf(p_t, p_q, *_joint_dof_tf(joint))
     if joint.flip.value:
         t, q = compose_tf(t, q, [0.0, 0.0, 0.0], axis_angle_to_quaternion([1, 0, 0], math.pi))
-    c_t, c_q = tf_relative_to_frame(joint.child_anchor.frame, child_owner.frame)
+    c_t, c_q = tf_in_component(joint.child_anchor.frame, child_owner)
     return compose_tf(t, q, *invert_tf(c_t, c_q))
+
+
+# --------------------------------------------------------------------------- #
+# Re-resolution. A joint writes an ABSOLUTE placement for its child root (in
+# assembly space), so moving a link does not by itself move what is jointed
+# downstream of it. Whenever a joint's pose changes we therefore re-place
+# every dependent joint:
+#
+# * inside the joint's assembly, ``assembly.joints`` is already in
+#   topological order (a joint's parent must be placed before it is added),
+#   so one forward pass over the joints after it suffices; a joint is
+#   dependent when its parent or child anchor chains through a frame that
+#   moved (a re-placed child root).
+# * when that assembly is itself placed in a parent, the moved frames now sit
+#   inside one of the parent's components: the same pass runs on the
+#   parent's joints (re-placing e.g. the joint that mates the sub-assembly by
+#   an anchor that moved), and so on up the tree.
+#
+# Re-resolution recomputes from scratch, so it is idempotent: resolving a
+# joint whose inputs did not change is a no-op.
+# --------------------------------------------------------------------------- #
+
+
+def _chain_hits(frame: Any, moved: set[int]) -> bool:
+    cursor = frame
+    while cursor is not None:
+        if id(cursor) in moved:
+            return True
+        cursor = cursor.top_frame
+    return False
+
+
+def _place_joint_child(joint: Any) -> Optional[Any]:
+    """Recompute a placed joint's child root pose; return the moved frame."""
+    assembly = getattr(joint, _JOINT_ASSEMBLY_ATTR, None)
+    child_root = getattr(joint, _JOINT_CHILD_ROOT_ATTR, None)
+    if assembly is None or child_root is None:
+        return None
+    t, q = _resolve_joint_tf(joint, assembly)
+    child_root.frame.position = t
+    child_root.frame.quaternion = q
+    return child_root.frame
+
+
+def _cascade(assembly: Any, moved: set[int], start: int = 0) -> None:
+    """Re-place joints of ``assembly`` (from ``start``) that depend on a moved
+    frame, then continue in the assembly's parent."""
+    while assembly is not None:
+        for joint in list(assembly.joints)[start:]:
+            if _chain_hits(joint.parent_anchor.frame, moved) or _chain_hits(
+                joint.child_anchor.frame, moved
+            ):
+                frame = _place_joint_child(joint)
+                if frame is not None:
+                    moved.add(id(frame))
+        # Joints of sub-assemblies whose parent anchor sits on a sibling:
+        # re-place unconditionally (idempotent) — either end may have moved.
+        if moved:
+            for joint in list(getattr(assembly, _FOREIGN_JOINTS_ATTR, ())):
+                frame = _place_joint_child(joint)
+                if frame is not None:
+                    moved.add(id(frame))
+        start = 0
+        assembly = getattr(assembly, _PLACED_IN_ATTR, None)
+
+
+def resolve_joint(joint: Any) -> bool:
+    """Re-place ``joint``'s child, then everything jointed downstream of it.
+
+    Returns False when the joint has not been added to an assembly yet.
+    """
+    frame = _place_joint_child(joint)
+    if frame is None:
+        return False
+    assembly = getattr(joint, _JOINT_ASSEMBLY_ATTR)
+    index = next(
+        (i for i, j in enumerate(assembly.joints) if j is joint), len(assembly.joints)
+    )
+    _cascade(assembly, {id(frame)}, start=index + 1)
+    return True
+
+
+def _resolve_subtree(assembly: Any, moved: set[int]) -> None:
+    """Re-place every joint of ``assembly`` and of its sub-assemblies."""
+    for component in assembly.components:
+        source = getattr(component, _SOURCE_COMPONENT_ATTR, None)
+        if isinstance(source, Assembly) and source is not assembly:
+            _resolve_subtree(source, moved)
+    for joint in list(assembly.joints):
+        frame = _place_joint_child(joint)
+        if frame is not None:
+            moved.add(id(frame))
+
+
+@register_method_fn("joint_resolve_method")
+def joint_resolve_method(inst: Any) -> bool:
+    """Re-place this joint's child and cascade to dependent joints."""
+    _validate_joint_limits(inst)
+    return resolve_joint(inst)
+
+
+@register_method_fn("assembly_resolve_method")
+def assembly_resolve_method(inst: Any) -> bool:
+    """Re-place every joint in this assembly (sub-assemblies first), then the
+    joints of enclosing assemblies that depend on what moved."""
+    moved: set[int] = set()
+    _resolve_subtree(inst, moved)
+    _cascade(getattr(inst, _PLACED_IN_ATTR, None), moved)
+    return True
 
 
 @register_method_fn("add_joint_method")
@@ -1148,12 +1481,15 @@ def add_joint_method(inst: Assembly, joint: Any) -> bool:
             f"Component '{child_owner.name.value}' is already placed "
             "(by add_component or another joint). A component can be "
             "positioned by at most one joint — connect further components "
-            "to its anchors instead."
+            "to its anchors instead, or close the loop with "
+            "assembly.add_connection(Connection(joint=...)), which checks that "
+            "the two anchors already agree."
         )
 
     # The parent anchor must already chain to this assembly's frame (the
-    # assembly itself, or a previously placed component) — enforced by
-    # tf_relative_to_frame raising otherwise.
+    # assembly itself, or a previously placed component), or belong to a
+    # sibling placed in an enclosing assembly (resolved through the common
+    # ancestor, see _parent_anchor_tf) — else this raises.
     t, q = _resolve_joint_tf(joint, inst)
 
     child_root = _convert_component_to_root(
@@ -1187,25 +1523,67 @@ def joint_set_value_method(
         inst.offset = FloatParam(value=float(offset))
     _validate_joint_limits(inst)
 
-    assembly = getattr(inst, _JOINT_ASSEMBLY_ATTR, None)
-    child_root = getattr(inst, _JOINT_CHILD_ROOT_ATTR, None)
-    if assembly is not None and child_root is not None:
-        # Recompute from scratch (idempotent), not an incremental compose.
-        t, q = _resolve_joint_tf(inst, assembly)
-        child_root.frame.position = t
-        child_root.frame.quaternion = q
+    # Recompute from scratch (idempotent), then re-place everything jointed
+    # downstream of the child, here and in enclosing assemblies.
+    resolve_joint(inst)
     return True
 
 
+def _is_placed_in(owner: Any, assembly: Any) -> bool:
+    """True when ``owner`` is ``assembly`` itself or already has a placement."""
+    return owner is assembly or getattr(owner, _PLACED_IN_ATTR, None) is not None
+
+
 @register_method_fn("add_connection_method")
-def add_connection_method(inst: Assembly, connection: Any) -> bool:
+def add_connection_method(
+    inst: Assembly,
+    connection: Any,
+    pos_tol: float = DEFAULT_POS_TOL,
+    angle_tol_deg: float = DEFAULT_ANGLE_TOL_DEG,
+) -> bool:
     """Apply a library-defined connection: geometry modifiers, then the joint.
 
+    Three shapes of connection:
+
+    * **placing** -- the joint's child component is not placed yet: the joint
+      places it (exactly like :func:`add_joint_method`).
+    * **loop-closing** -- both components are already placed (the far end of a
+      rail between two legs, a slat screwed to its second rail): the joint
+      places nothing. Its anchors must already agree up to the joint's free
+      DOFs, within ``pos_tol`` mm / ``angle_tol_deg`` degrees, else
+      :class:`LoopClosureError`. The joint is not added to ``inst.joints``.
+    * **joint-less** -- ``joint`` is None: only the modifiers apply
+      (fastening- or cut-only).
+
     Modifiers run first so contributed operations land on the parts before the
-    joint placement serializes the child. For parts that were already placed
-    (converted to a PartRoot), the new operations are mirrored onto the root —
-    pydantic copied the operations list at conversion time.
+    joint placement. Parts that were already placed need no special handling:
+    their converted root shares the live ``operations`` list (see
+    :func:`_bind_live_fields`). A loop closure is checked before any modifier
+    runs, so a failing connection leaves the parts untouched.
     """
+    joint = connection.joint
+    closes_loop = False
+    if joint is not None:
+        child_owner = _anchor_owner(joint.child_anchor)
+        parent_owner = _anchor_owner(joint.parent_anchor)
+        closes_loop = _is_placed_in(child_owner, inst)
+        if closes_loop:
+            if not _is_placed_in(parent_owner, inst):
+                raise ValueError(
+                    f"Connection '{connection.name.value}': child component "
+                    f"'{child_owner.name.value}' is already placed but parent "
+                    f"'{parent_owner.name.value}' is not. Swap parent_anchor and "
+                    "child_anchor so the joint places the unplaced component."
+                )
+            _validate_joint_limits(joint)
+            check_loop_closure(
+                joint,
+                inst,
+                pos_tol=pos_tol,
+                angle_tol_deg=angle_tol_deg,
+                label=connection.name.value,
+            )
+
     for modifier in connection.modifiers:
         owner = _anchor_owner(modifier.anchor)
         if not isinstance(owner, Part):
@@ -1214,27 +1592,44 @@ def add_connection_method(inst: Assembly, connection: Any) -> bool:
                 f"to a Part, not {type(owner).__name__}: connections can only "
                 "modify part geometry."
             )
-        count_before = len(owner.operations)
         owner.add_operations(modifier.operations)
-        expanded_ops = owner.operations[count_before:]
-        root = getattr(owner, _COMPONENT_ROOT_ATTR, None)
-        if root is not None:
-            root.operations.extend(expanded_ops)
-    return add_joint_method(inst, connection.joint)
+    applied = getattr(inst, _APPLIED_CONNECTIONS_ATTR, None)
+    if applied is None:
+        applied = []
+        object.__setattr__(inst, _APPLIED_CONNECTIONS_ATTR, applied)
+    applied.append(connection)
+    if joint is None or closes_loop:
+        return True
+    return add_joint_method(inst, joint)
 
 
 @register_method_fn("ground_method")
-def ground_method(inst: Assembly, anchor: Any) -> bool:
-    """Fix a component to the assembly origin via a rigid joint."""
+def ground_method(
+    inst: Assembly,
+    anchor: Any,
+    at: Optional[Sequence[float]] = None,
+    rot_deg: Any = None,
+) -> bool:
+    """Fix a component to the assembly via a rigid joint.
+
+    The component moves so that ``anchor`` coincides with the assembly frame
+    translated by ``at`` (mm) and rotated by ``rot_deg`` (degrees, see
+    :func:`cadbuildr.foundation.placement.rotation_from_deg`). Axes are
+    aligned, not mated face-to-face. Defaults: the assembly origin.
+    """
     from.gen.models import Anchor, RigidJoint
 
+    position = _normalize_vector(at, 3) if at is not None else [0.0, 0.0, 0.0]
+    quaternion = (
+        rotation_from_deg(rot_deg) if rot_deg is not None else [1.0, 0.0, 0.0, 0.0]
+    )
     origin_anchor = Anchor(
         frame=Frame(
             top_frame=inst.frame,
             name=StringParameter(value=f"anchor_ground_{len(inst.joints)}_frame"),
             display=BoolParameter(value=False),
-            position=[0.0, 0.0, 0.0],
-            quaternion=[1.0, 0.0, 0.0, 0.0],
+            position=position,
+            quaternion=quaternion,
         ),
         name=StringParameter(value=f"ground_{len(inst.joints)}"),
     )
@@ -1495,12 +1890,61 @@ def _user_class_slug(component: Any, base_class_names: tuple[str, ...]) -> Optio
     return slug or None
 
 
+# --------------------------------------------------------------------------- #
+# Live components. ``add_component`` / ``add_joint`` convert a Part/Assembly to
+# a PartRoot/AssemblyRoot when it is placed (placement math needs the root's
+# frame), but the user keeps editing the *Part*: ``part.add_operation(...)``
+# after placement must still reach the DAG. Two mechanisms keep the root live:
+#
+# 1. The root shares the source's list objects (operations, planes, anchors,
+#    joints) instead of pydantic's validation-time copies, so appends through
+#    either object are visible to both — even to a bare ``pydantic_to_dag``.
+# 2. Every root remembers its source; re-converting a root (which ``to_dag``,
+#    ``show_dag``, ``show`` and the BOM do on the whole tree before
+#    serialising) re-syncs what sharing cannot cover: lists the user rebound,
+#    a ``paint()`` done after placement, and components added to a
+#    sub-assembly after the sub-assembly itself was placed.
+# --------------------------------------------------------------------------- #
+
+_SOURCE_COMPONENT_ATTR = "_source_component"
+_LIVE_PART_FIELDS = ("operations", "planes", "anchors")
+_LIVE_ASSEMBLY_FIELDS = ("anchors", "joints")
+
+
+def _bind_live_fields(root: Any, source: Any, fields: tuple[str, ...]) -> None:
+    """Make ``root.<field>`` the very list object held by ``source.<field>``."""
+    for field in fields:
+        value = getattr(source, field)
+        if getattr(root, field) is not value:
+            # Bypass pydantic: assignment would not copy today, but the
+            # identity of the list is the whole point here.
+            object.__setattr__(root, field, value)
+
+
+def _sync_material(root: Any, source: Any) -> None:
+    material = getattr(source, "_material", None)
+    if material is not None:
+        root.material = material
+
+
+def _sync_part_root(root: PartRoot) -> None:
+    source = getattr(root, _SOURCE_COMPONENT_ATTR, None)
+    if source is None:
+        return
+    _bind_live_fields(root, source, _LIVE_PART_FIELDS)
+    _sync_material(root, source)
+
+
 def _convert_component_to_root(
     component: Any,
     parent_frame: Optional[Frame] = None,
     component_path: tuple[int, ...] = (),
 ) -> Optional[PartRoot | AssemblyRoot]:
     """Convert Part/Assembly instances to their root representations.
+
+    Converting an existing root re-syncs it (and, for an assembly, its whole
+    subtree) with the live Part/Assembly it was created from, so edits made
+    after placement are reflected.
 
     Args:
         component: Part or Assembly to convert
@@ -1513,19 +1957,35 @@ def _convert_component_to_root(
         if parent_frame is not None and component.frame.top_frame != parent_frame:
             # Update the frame's top_frame to point to parent
             component.frame.top_frame = parent_frame
+        _sync_part_root(component)
         return component
     if isinstance(component, AssemblyRoot):
-        # Component is already an AssemblyRoot, recursively update its components
         if parent_frame is not None:
             # Update this assembly's frame's top_frame
             component.frame.top_frame = parent_frame
-            # Recursively update nested components
-            for idx, child in enumerate(component.components):
-                _convert_component_to_root(
-                    child,
-                    parent_frame=component.frame,
-                    component_path=component_path + (idx,),
-                )
+        source = getattr(component, _SOURCE_COMPONENT_ATTR, None)
+        if source is not None:
+            # Components added to the source after it was placed (their frames
+            # point at the source's own frame) join the root here.
+            children = list(source.components)
+            _bind_live_fields(component, source, _LIVE_ASSEMBLY_FIELDS)
+            _sync_material(component, source)
+            for anchor in source.anchors:
+                if anchor.frame.top_frame is source.frame:
+                    anchor.frame.top_frame = component.frame
+        elif parent_frame is not None:
+            children = list(component.components)
+        else:
+            return component
+        # Recursively convert/update nested components
+        component.components = [
+            _convert_component_to_root(
+                child,
+                parent_frame=component.frame,
+                component_path=component_path + (idx,),
+            )
+            for idx, child in enumerate(children)
+        ]
         return component
     if isinstance(component, Part):
         # Update the component's frame to point to parent_frame (like old foundation)
@@ -1565,7 +2025,8 @@ def _convert_component_to_root(
         )
         if auto_slug is not None:
             object.__setattr__(part_root, _AUTO_SLUG_ATTR, auto_slug)
-        object.__setattr__(component, _COMPONENT_ROOT_ATTR, part_root)
+        object.__setattr__(part_root, _SOURCE_COMPONENT_ATTR, component)
+        _bind_live_fields(part_root, component, _LIVE_PART_FIELDS)
         return part_root
     if isinstance(component, Assembly):
         # Create assembly frame first
@@ -1592,9 +2053,15 @@ def _convert_component_to_root(
         # Unlike Part conversion (frame updated in place), the assembly gets a
         # fresh frame — re-root direct anchors onto it so they keep following
         # the assembly. Derived anchors chain through their base anchor.
+        previous_frames = component_frames(component)
         for anchor in component.anchors:
-            if anchor.frame.top_frame is original_frame:
+            if any(anchor.frame.top_frame is f for f in previous_frames):
                 anchor.frame.top_frame = assembly_frame
+        object.__setattr__(
+            component,
+            _ROOT_FRAMES_ATTR,
+            [*getattr(component, _ROOT_FRAMES_ATTR, ()), assembly_frame],
+        )
 
         # RECURSIVELY convert nested components, passing assembly frame so component frames can point to it
         converted_components = []
@@ -1633,7 +2100,8 @@ def _convert_component_to_root(
             object.__setattr__(
                 assembly_root, _AUTO_SLUG_ATTR, auto_assembly_slug
             )
-        object.__setattr__(component, _COMPONENT_ROOT_ATTR, assembly_root)
+        object.__setattr__(assembly_root, _SOURCE_COMPONENT_ATTR, component)
+        _bind_live_fields(assembly_root, component, _LIVE_ASSEMBLY_FIELDS)
         return assembly_root
 
 
@@ -1693,14 +2161,37 @@ def _translate_component_root(component_root: Any, vector: Sequence[float]) -> N
 
 
 @register_method_fn("add_component_method")
-def add_component_method(inst: Assembly, component: Any, tf: Any = None) -> bool:
-    """Add a component (part or assembly) to an assembly."""
+def add_component_method(
+    inst: Assembly,
+    component: Any,
+    tf: Any = None,
+    at: Optional[Sequence[float]] = None,
+    rot_deg: Any = None,
+) -> bool:
+    """Add a component (part or assembly) to an assembly.
+
+    Place it either with ``tf`` (a transform dict / 4x4 matrix / ``TFHelper``)
+    or with the explicit pose keywords -- not both:
+
+    * ``rot_deg`` -- rotation in **degrees** about the component's own origin:
+      a number (about +Z) or ``(rx, ry, rz)`` about the fixed X, Y, Z axes,
+      applied in that order;
+    * ``at`` -- then a translation ``(x, y, z)`` in mm, in assembly space.
+    """
+    if tf is not None and (at is not None or rot_deg is not None):
+        raise TypeError(
+            "add_component: pass either tf= or at=/rot_deg=, not both"
+        )
     component_root = _convert_component_to_root(
         component,
         parent_frame=inst.frame,
         component_path=(len(inst.components),),
     )
-    translation, quaternion = _parse_component_tf(tf)
+    if tf is not None:
+        translation, quaternion = _parse_component_tf(tf)
+    else:
+        translation = _normalize_vector(at, 3) if at is not None else None
+        quaternion = rotation_from_deg(rot_deg) if rot_deg is not None else None
     if translation is not None:
         _apply_translation_to_root(component_root, translation)
     if quaternion is not None:

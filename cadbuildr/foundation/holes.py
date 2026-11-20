@@ -7,6 +7,8 @@ loose (coarse) series.
 
 from __future__ import annotations
 
+from typing import Any
+
 # size: (coarse pitch, tap drill Ø, clearance Ø close, normal, loose)
 ISO_METRIC_COARSE: dict[float, tuple[float, float, float, float, float]] = {
     1.6: (0.35, 1.25, 1.7, 1.8, 2.0),
@@ -51,3 +53,36 @@ def clearance_diameter(size: float, fit: str = "NORMAL") -> float:
     if key not in _FIT_COLUMN:
         raise ValueError(f"Unknown hole fit {fit!r}; use CLOSE, NORMAL or LOOSE")
     return _row(size)[_FIT_COLUMN[key]]
+
+
+def hole_point_from_anchor(anchor: Any) -> Any:
+    """Sketch point for a hole drilled at ``anchor``.
+
+    Anchors point +Z *out* of a face; holes extrude along their sketch normal.
+    The point therefore lives on a plane flipped 180° about the anchor's X
+    axis (normal = anchor -Z, X = anchor X), so every hole wizard (Hole,
+    TappedHole, ClearanceHole, CounterBoreHole, CounterSinkHole) drills into
+    the face, entering at the anchor origin. The plane's frame is a child of
+    the anchor frame, so the hole follows the part however it is placed.
+    """
+    from .gen.models import (
+        BoolParameter,
+        Frame,
+        Plane,
+        Sketch,
+        StringParameter,
+    )
+
+    name = anchor.name.value
+    plane = Plane(
+        frame=Frame(
+            top_frame=anchor.frame,
+            name=StringParameter(value=f"hole_{name}_frame"),
+            display=BoolParameter(value=False),
+            position=[0.0, 0.0, 0.0],
+            quaternion=[0.0, 1.0, 0.0, 0.0],
+        ),
+        name=StringParameter(value=f"hole_{name}"),
+        display=BoolParameter(value=False),
+    )
+    return Sketch(plane).origin
