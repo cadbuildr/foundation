@@ -26,6 +26,16 @@ Contacts that are part of the design are never reported:
   screw in the hole the connection drilled);
 * pairs listed in ``allow=``.
 
+**Exact mode** (``exact=True``) compares the real solids instead: every part
+is meshed (by default through the kernel API, :func:`kernel_api_mesher`; pass
+``mesher=`` to supply meshes yourself), placed with the same transforms, and
+each pair's intersection volume is computed with ``manifold3d``
+(``pip install 'cadbuildr-foundation[exact]'``). A pair is reported when the
+solids share more than ``volume_tol`` mm³. Jointed / connected pairs are
+checked too — a joint says the parts are *meant* to touch, not that they may
+interpenetrate (two meshed gears, a pin in its hole); exempt a pair explicitly
+with ``allow=``.
+
 Entry point: ``assembly.check_interference(tolerance=0.0, allow=[...])``.
 """
 
@@ -33,7 +43,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional, Sequence, Union
+from typing import Any, Callable, Iterable, Optional, Sequence, Union
 
 import numpy as np
 
@@ -50,6 +60,8 @@ __all__ = [
     "estimate_part_extents",
     "set_part_extents",
     "check_interference",
+    "kernel_api_mesher",
+    "solid_overlap",
 ]
 
 _EXPLICIT_EXTENTS_ATTR = "_explicit_extents"
@@ -990,6 +1002,176 @@ def _user_allowed(
     return pairs, ignored
 
 
+# --------------------------------------------------------------------------- #
+# Exact mode: real solids, meshed and intersected
+# --------------------------------------------------------------------------- #
+
+#: A triangle mesh in the PART frame: vertices (n, 3) mm, triangles (m, 3) indices.
+Mesh = tuple[np.ndarray, np.ndarray]
+#: Meshes one placed part (its ``PartRoot``); see :func:`kernel_api_mesher`.
+Mesher = Callable[[Any], Mesh]
+
+#: Vertices closer than this (mm) are welded before the boolean: kernels emit
+#: per-face vertex copies, manifold3d needs a shared-vertex closed mesh.
+_WELD_TOL = 1e-6
+
+
+def kernel_api_mesher(client: Any = None) -> Mesher:
+    """Mesh each part through the kernel API (``KernelApiClient``; its base URL
+    comes from ``CAD_COMPILE_API_BASE_URL`` / ``CADBUILDR_KERNEL_API_BASE_URL``).
+    The kernel returns a part's mesh in the part's own frame."""
+
+    def mesh(part: Any) -> Mesh:
+        from .coms.kernel_api import KernelApiClient
+        from .dag_utils import show_dag
+
+        api = client or KernelApiClient()
+        out = api.compile_mesh(dag=show_dag(part))
+        store = (out.get("mesh") or out).get("store") or {}
+        geometries = []
+        for entry in store.values():
+            data = entry.get("data", entry) if isinstance(entry, dict) else None
+            if isinstance(data, dict) and data.get("faces"):
+                geometries.append(data["faces"])
+        if len(geometries) != 1:
+            raise ValueError(
+                f"kernel returned {len(geometries)} meshes for part "
+                f"'{part.name.value}' (expected 1)"
+            )
+        faces = geometries[0]
+        return (
+            np.asarray(faces["vertices"], dtype=float).reshape(-1, 3),
+            np.asarray(faces["triangles"], dtype=np.int64).reshape(-1, 3),
+        )
+
+    return mesh
+
+
+def _manifold3d() -> Any:
+    try:
+        import manifold3d
+    except ImportError as exc:  # pragma: no cover - depends on the environment
+        raise ImportError(
+            "check_interference(exact=True) needs manifold3d: "
+            "pip install 'cadbuildr-foundation[exact]'"
+        ) from exc
+    return manifold3d
+
+
+def _solid(vertices: np.ndarray, triangles: np.ndarray, label: str) -> Any:
+    """A manifold3d solid from a closed triangle mesh (vertices welded)."""
+    m3d = _manifold3d()
+    verts = np.asarray(vertices, dtype=float).reshape(-1, 3)
+    tris = np.asarray(triangles, dtype=np.int64).reshape(-1, 3)
+    keys = np.round(verts / _WELD_TOL).astype(np.int64)
+    _, first, inverse = np.unique(keys, axis=0, return_index=True, return_inverse=True)
+    welded = verts[first]
+    tris = inverse.reshape(-1)[tris]
+    tris = tris[
+        (tris[:, 0] != tris[:, 1])
+        & (tris[:, 1] != tris[:, 2])
+        & (tris[:, 0] != tris[:, 2])
+    ]
+    solid = m3d.Manifold(
+        m3d.Mesh(
+            vert_properties=welded.astype(np.float32),
+            tri_verts=tris.astype(np.uint32),
+        )
+    )
+    if solid.status() != m3d.Error.NoError:
+        raise ValueError(f"{label}: mesh is not a closed solid ({solid.status()})")
+    return solid
+
+
+def solid_overlap(a: Mesh, b: Mesh) -> tuple[float, float]:
+    """``(volume mm³, depth mm)`` shared by two closed meshes given in the same
+    frame. ``depth`` is the smallest extent of the shared region's bounding
+    box — how far one solid reaches into the other."""
+    shared = _solid(*a, "a") ^ _solid(*b, "b")
+    volume = float(shared.volume())
+    if volume <= 0.0:
+        return 0.0, 0.0
+    box = shared.bounding_box()
+    return volume, float(min(box[3] - box[0], box[4] - box[1], box[5] - box[2]))
+
+
+def _depth_in_frame(shared: Any, rotation: np.ndarray) -> float:
+    """Smallest extent of the shared region, measured along the axes of a
+    part's own frame (world axes would inflate it for rotated parts)."""
+    inv = np.asarray(rotation, dtype=float).T
+    local = shared.transform(np.hstack([inv, np.zeros((3, 1))]).tolist())
+    box = local.bounding_box()
+    return float(min(box[3] - box[0], box[4] - box[1], box[5] - box[2]))
+
+
+def _exact_overlaps(
+    leaves: Sequence[_Leaf],
+    allowed: set[frozenset[int]],
+    ignored: set[int],
+    mesher: Mesher,
+    tolerance: float,
+    volume_tol: float,
+) -> tuple[list[Interference], list[Interference]]:
+    solids: dict[int, Any] = {}
+    boxes: dict[int, tuple[np.ndarray, np.ndarray]] = {}
+    failed: dict[int, str] = {}
+    for idx, leaf in enumerate(leaves):
+        if idx in ignored:
+            continue
+        try:
+            verts, tris = mesher(leaf.root)
+            world = np.asarray(verts, dtype=float) @ leaf.rotation.T + leaf.translation
+            solids[idx] = _solid(world, tris, leaf.path)
+            boxes[idx] = (world.min(axis=0), world.max(axis=0))
+        except Exception as exc:  # report, don't guess
+            failed[idx] = f"{leaf.path}: could not mesh ({exc})"
+
+    overlaps: list[Interference] = []
+    unknowns: list[Interference] = []
+    for i in range(len(leaves)):
+        if i in ignored:
+            continue
+        for j in range(i + 1, len(leaves)):
+            if j in ignored or frozenset((i, j)) in allowed:
+                continue
+            a, b = leaves[i], leaves[j]
+            if i in failed or j in failed:
+                unknowns.append(
+                    Interference(
+                        a.path,
+                        b.path,
+                        "unknown",
+                        reason="; ".join(failed[k] for k in (i, j) if k in failed),
+                        component_a=a.source or a.root,
+                        component_b=b.source or b.root,
+                    )
+                )
+                continue
+            (lo_a, hi_a), (lo_b, hi_b) = boxes[i], boxes[j]
+            if np.any(np.minimum(hi_a, hi_b) - np.maximum(lo_a, lo_b) <= 0.0):
+                continue
+            shared = solids[i] ^ solids[j]
+            volume = float(shared.volume())
+            if volume <= volume_tol:
+                continue
+            depth = _depth_in_frame(shared, a.rotation)
+            if depth <= tolerance:
+                continue
+            overlaps.append(
+                Interference(
+                    a.path,
+                    b.path,
+                    "overlap",
+                    depth=depth,
+                    volume=volume,
+                    reason="solids overlap",
+                    component_a=a.source or a.root,
+                    component_b=b.source or b.root,
+                )
+            )
+    return overlaps, unknowns
+
+
 def check_interference(
     assembly: Any,
     tolerance: float = 0.0,
@@ -998,6 +1180,9 @@ def check_interference(
     extents: Optional[dict[Any, ExtentsSpec]] = None,
     strict: bool = False,
     include_unknown: bool = True,
+    exact: bool = False,
+    volume_tol: float = 1e-3,
+    mesher: Optional[Mesher] = None,
 ) -> list[Interference]:
     """Find parts of ``assembly`` whose bounding volumes interpenetrate.
 
@@ -1012,13 +1197,34 @@ def check_interference(
             ``allow`` items (part-frame ``OBB``, list of OBBs, or ``(lo, hi)``).
         strict: raise :class:`InterferenceError` if any overlap is found.
         include_unknown: also return ``"unknown"`` entries for pairs involving
-            a part whose extents could not be estimated.
+            a part whose extents could not be estimated (or, in exact mode,
+            meshed).
+        exact: compare the real solids (meshed, intersected with manifold3d)
+            instead of bounding boxes. Jointed / connected pairs are checked
+            too; only ``allow=`` exempts a pair. ``extents=`` is ignored.
+        volume_tol: exact mode: shared volume (mm³) to accept.
+        mesher: exact mode: ``mesher(part_root) -> (vertices, triangles)`` in
+            the part frame. Default: :func:`kernel_api_mesher`.
 
     Returns:
         Overlaps first (deepest first), then unknown pairs, as
         :class:`Interference` records.
     """
     leaves, members, assemblies, paths = _walk(assembly)
+    if exact:
+        user_pairs, ignored = _user_allowed(allow, members, paths)
+        overlaps, unknowns = _exact_overlaps(
+            leaves,
+            user_pairs,
+            ignored,
+            mesher or kernel_api_mesher(),
+            tolerance,
+            volume_tol,
+        )
+        overlaps.sort(key=lambda r: -(r.volume or 0.0))
+        if strict and overlaps:
+            raise InterferenceError(overlaps)
+        return overlaps + (unknowns if include_unknown else [])
     for ref, spec in (extents or {}).items():
         ext = _coerce_extents(spec)
         for idx in _resolve_ref(ref, members, paths):
@@ -1094,6 +1300,9 @@ def _assembly_check_interference(
     extents: Optional[dict[Any, ExtentsSpec]] = None,
     strict: bool = False,
     include_unknown: bool = True,
+    exact: bool = False,
+    volume_tol: float = 1e-3,
+    mesher: Optional[Mesher] = None,
 ) -> list[Interference]:
     return check_interference(
         self,
@@ -1102,6 +1311,9 @@ def _assembly_check_interference(
         extents=extents,
         strict=strict,
         include_unknown=include_unknown,
+        exact=exact,
+        volume_tol=volume_tol,
+        mesher=mesher,
     )
 
 

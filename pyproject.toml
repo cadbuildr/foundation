@@ -1,6 +1,6 @@
 [project]
 name = "cadbuildr-foundation"
-version = "0.2.17"
+version = "0.2.18"
 description = "Foundation library for CADbuildr - Core types for parametric CAD"
 readme = "README.md"
 requires-python = ">=3.10.0,<4.0.0"
@@ -11,6 +11,12 @@ dependencies = [
     "pydantic>=2.0.0,<3.0.0",
     "requests>=2.31.0,<3.0.0",
     "numpy>=2.2.6,<3.0.0",
+]
+
+[project.optional-dependencies]
+# check_interference(exact=True): mesh booleans on the real solids.
+exact = [
+    "manifold3d>=3.0.0,<4.0.0",
 ]
 
 [dependency-groups]

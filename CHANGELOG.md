@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.18
+
+- **Exact interference check**: `assembly.check_interference(exact=True)`
+  compares the real solids instead of bounding boxes — each part is meshed
+  (through the kernel API by default, `kernel_api_mesher()`, or your own
+  `mesher=`), placed, and every pair's shared volume computed with
+  `manifold3d`. Pairs sharing more than `volume_tol` mm³ are reported with
+  their volume and depth. Jointed / connected pairs are checked too (a joint
+  means the parts touch, not that they may interpenetrate); exempt a pair with
+  `allow=[(a, b)]`. Install with `pip install 'cadbuildr-foundation[exact]'`.
+  The default bounding-box mode is unchanged.
+- `solid_overlap(mesh_a, mesh_b)` helper.
+
 ## 0.2.17
 
 Assemblies: anchors, placement, joints and interference.

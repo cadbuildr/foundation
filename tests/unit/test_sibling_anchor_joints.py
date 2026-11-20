@@ -3,7 +3,7 @@ component of an enclosing assembly (resolved through the common ancestor)."""
 
 import pytest
 
-from cadbuildr.foundation.gen.models import Assembly, RevoluteJoint
+from cadbuildr.foundation.gen.models import Assembly
 
 from cadbuildr.foundation.compute_functions import (
     _anchor_owner,
@@ -11,7 +11,55 @@ from cadbuildr.foundation.compute_functions import (
     tf_in_component,
 )
 from cadbuildr.foundation.math_utils import compose_tf, tf_relative_to_frame
-from test_joint_cascade import _anchor, _link, _revolute, _rigid
+from cadbuildr.foundation.gen.models import (
+    Anchor,
+    BoolParameter,
+    Extrusion,
+    Frame,
+    Part,
+    RevoluteJoint,
+    RigidJoint,
+    Sketch,
+    Square,
+    StringParameter,
+)
+
+
+# Self-contained helpers (a cross-test-module import breaks under Bazel's
+# runfiles sandbox, where tests/unit is not on sys.path).
+def _anchor(name, position):
+    return Anchor(
+        frame=Frame(
+            top_frame=None,
+            name=StringParameter(value=f"anchor_{name}_frame"),
+            display=BoolParameter(value=False),
+            position=list(position),
+            quaternion=[1.0, 0.0, 0.0, 0.0],
+        ),
+        name=StringParameter(value=name),
+    )
+
+
+def _link(length=100.0):
+    """A bar along +X with a 'base' anchor at the origin and a 'tip' at x=length."""
+    part = Part()
+    sketch = Sketch(part.xy())
+    part.add_operation(Extrusion(Square.from_center_and_side(sketch.origin, 5.0), 5.0))
+    part.add_anchor(_anchor("base", [0.0, 0.0, 0.0]))
+    part.add_anchor(_anchor("tip", [length, 0.0, 0.0]))
+    return part
+
+
+def _revolute(parent, child):
+    return RevoluteJoint(
+        parent_anchor=parent, child_anchor=child, flip=BoolParameter(value=False)
+    )
+
+
+def _rigid(parent, child):
+    return RigidJoint(
+        parent_anchor=parent, child_anchor=child, flip=BoolParameter(value=False)
+    )
 
 
 def _in(anchor, top):
