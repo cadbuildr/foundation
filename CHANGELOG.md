@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.19
+
+- `check_interference(exact=True)` no longer reports line-to-line fits (a
+  shaft in a same-size bore) as overlaps:
+  - the default `kernel_api_mesher` asks for a fine tessellation
+    (`FINE_MESH_CONFIG`: 0.01 mm chord, 0.05 rad; override with `mesh_config=`);
+  - new `depth_tol` (default `DEFAULT_DEPTH_TOL` = 0.02 mm): shared regions
+    thinner than this (2 x volume / area) are ignored, also for custom meshers.
+  Real interference is still reported (a 0.1 mm press fit: 50.9 mm³).
+
 ## 0.2.18
 
 - **Exact interference check**: `assembly.check_interference(exact=True)`

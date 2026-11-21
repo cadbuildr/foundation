@@ -62,6 +62,8 @@ __all__ = [
     "check_interference",
     "kernel_api_mesher",
     "solid_overlap",
+    "FINE_MESH_CONFIG",
+    "DEFAULT_DEPTH_TOL",
 ]
 
 _EXPLICIT_EXTENTS_ATTR = "_explicit_extents"
@@ -1015,18 +1017,32 @@ Mesher = Callable[[Any], Mesh]
 #: per-face vertex copies, manifold3d needs a shared-vertex closed mesh.
 _WELD_TOL = 1e-6
 
+#: Tessellation the default exact-mode mesher asks the kernel for: chord error
+#: ≤ 0.01 mm (the viewer default is 1 mm / 0.2 rad, far too coarse to compare
+#: coincident curved faces — a shaft in a same-size bore).
+FINE_MESH_CONFIG = {"tolerance": 0.01, "angularTolerance": 0.05}
 
-def kernel_api_mesher(client: Any = None) -> Mesher:
+#: Exact mode ignores shared regions thinner than this (mm): what's left where
+#: two tessellations of the SAME curved surface (a line-to-line fit) cross.
+#: Twice :data:`FINE_MESH_CONFIG`'s chord error.
+DEFAULT_DEPTH_TOL = 0.02
+
+
+def kernel_api_mesher(
+    client: Any = None, mesh_config: Optional[dict[str, float]] = None
+) -> Mesher:
     """Mesh each part through the kernel API (``KernelApiClient``; its base URL
-    comes from ``CAD_COMPILE_API_BASE_URL`` / ``CADBUILDR_KERNEL_API_BASE_URL``).
-    The kernel returns a part's mesh in the part's own frame."""
+    comes from ``CAD_COMPILE_API_BASE_URL`` / ``CADBUILDR_KERNEL_API_BASE_URL``),
+    at :data:`FINE_MESH_CONFIG` unless ``mesh_config`` says otherwise. The
+    kernel returns a part's mesh in the part's own frame."""
+    config = dict(mesh_config or FINE_MESH_CONFIG)
 
     def mesh(part: Any) -> Mesh:
         from .coms.kernel_api import KernelApiClient
         from .dag_utils import show_dag
 
         api = client or KernelApiClient()
-        out = api.compile_mesh(dag=show_dag(part))
+        out = api.compile_mesh(dag=show_dag(part), mesh_config=config)
         store = (out.get("mesh") or out).get("store") or {}
         geometries = []
         for entry in store.values():
@@ -1111,6 +1127,7 @@ def _exact_overlaps(
     mesher: Mesher,
     tolerance: float,
     volume_tol: float,
+    depth_tol: float,
 ) -> tuple[list[Interference], list[Interference]]:
     solids: dict[int, Any] = {}
     boxes: dict[int, tuple[np.ndarray, np.ndarray]] = {}
@@ -1154,6 +1171,12 @@ def _exact_overlaps(
             volume = float(shared.volume())
             if volume <= volume_tol:
                 continue
+            # Thickness of the shared region (2V/A, exact for a thin sheet):
+            # coincident tessellated faces leave a sheet a few microns thick
+            # that wraps a whole shaft, so its bounding box says nothing.
+            area = float(shared.surface_area())
+            if area > 0.0 and 2.0 * volume / area <= depth_tol:
+                continue
             depth = _depth_in_frame(shared, a.rotation)
             if depth <= tolerance:
                 continue
@@ -1183,6 +1206,7 @@ def check_interference(
     exact: bool = False,
     volume_tol: float = 1e-3,
     mesher: Optional[Mesher] = None,
+    depth_tol: float = DEFAULT_DEPTH_TOL,
 ) -> list[Interference]:
     """Find parts of ``assembly`` whose bounding volumes interpenetrate.
 
@@ -1204,7 +1228,12 @@ def check_interference(
             too; only ``allow=`` exempts a pair. ``extents=`` is ignored.
         volume_tol: exact mode: shared volume (mm³) to accept.
         mesher: exact mode: ``mesher(part_root) -> (vertices, triangles)`` in
-            the part frame. Default: :func:`kernel_api_mesher`.
+            the part frame. Default: :func:`kernel_api_mesher` (fine
+            tessellation, :data:`FINE_MESH_CONFIG`).
+        depth_tol: exact mode: ignore shared regions thinner than this (mm,
+            2·volume/area) — the slivers two tessellations of one curved
+            surface leave in a line-to-line fit (shaft in a same-size bore).
+            Default :data:`DEFAULT_DEPTH_TOL`; raise it with a coarser mesher.
 
     Returns:
         Overlaps first (deepest first), then unknown pairs, as
@@ -1220,6 +1249,7 @@ def check_interference(
             mesher or kernel_api_mesher(),
             tolerance,
             volume_tol,
+            depth_tol,
         )
         overlaps.sort(key=lambda r: -(r.volume or 0.0))
         if strict and overlaps:
@@ -1303,6 +1333,7 @@ def _assembly_check_interference(
     exact: bool = False,
     volume_tol: float = 1e-3,
     mesher: Optional[Mesher] = None,
+    depth_tol: float = DEFAULT_DEPTH_TOL,
 ) -> list[Interference]:
     return check_interference(
         self,
@@ -1314,6 +1345,7 @@ def _assembly_check_interference(
         exact=exact,
         volume_tol=volume_tol,
         mesher=mesher,
+        depth_tol=depth_tol,
     )
 
 

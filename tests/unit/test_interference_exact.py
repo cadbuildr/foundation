@@ -36,6 +36,10 @@ def prism(name, outline, height=10.0):
 
 def mesher(root):
     source = getattr(root, "_source_component", None) or root
+    solid = getattr(source, "_test_solid", None)
+    if solid is not None:
+        mesh = solid.to_mesh()
+        return np.asarray(mesh.vert_properties)[:, :3], np.asarray(mesh.tri_verts)
     outline, height = getattr(source, _MESH_ATTR)
     solid = m3d.CrossSection([np.asarray(outline, dtype=float)]).extrude(height)
     mesh = solid.to_mesh()
@@ -110,9 +114,57 @@ def test_allow_exempts_a_pair():
 
 
 def test_volume_tol():
-    asm, _, _ = jointed_pair(9.99)  # 0.01 x 10 x 10 = 1 mm³
+    asm, _, _ = jointed_pair(9.95)  # 0.05 x 10 x 10 = 5 mm³
     assert len(asm.check_interference(exact=True, mesher=mesher)) == 1
-    assert asm.check_interference(exact=True, mesher=mesher, volume_tol=2.0) == []
+    assert asm.check_interference(exact=True, mesher=mesher, volume_tol=6.0) == []
+
+
+def test_depth_tol_ignores_sheet_thin_overlaps():
+    asm, _, _ = jointed_pair(9.99)  # 0.01 mm deep: below DEFAULT_DEPTH_TOL
+    assert asm.check_interference(exact=True, mesher=mesher) == []
+    assert len(asm.check_interference(exact=True, mesher=mesher, depth_tol=0.0)) == 1
+
+
+def shaft_in_bore(shaft_r, bore_r=4.0):
+    """A 20 mm cube with a bore, and a shaft through it — tessellated with
+    different segment counts, as two parts meshed separately would be."""
+    block = prism("block", square(s=20.0), height=20.0)
+    shaft = prism("shaft", square(s=2 * shaft_r), height=30.0)
+    hole = m3d.Manifold.cylinder(40.0, bore_r, bore_r, circular_segments=40).translate(
+        [0, 0, -10]
+    )
+    object.__setattr__(
+        block,
+        "_test_solid",
+        m3d.Manifold.cube([20.0, 20.0, 20.0], center=True).translate([0, 0, 10]) - hole,
+    )
+    object.__setattr__(
+        shaft,
+        "_test_solid",
+        m3d.Manifold.cylinder(30.0, shaft_r, shaft_r, circular_segments=48).translate(
+            [0, 0, -5]
+        ),
+    )
+    asm = Assembly()
+    asm.add_component(block)
+    asm.add_component(shaft)
+    return asm
+
+
+def test_line_to_line_fit_is_clean():
+    asm = shaft_in_bore(4.0)
+    # Different tessellations of the same circle cross: a sliver is there...
+    slivers = asm.check_interference(exact=True, mesher=mesher, depth_tol=0.0)
+    assert len(slivers) == 1 and slivers[0].volume < 5.0
+    # ...but it is a sheet thinner than the chord error, not an interference.
+    assert asm.check_interference(exact=True, mesher=mesher) == []
+
+
+def test_interference_fit_is_reported():
+    hits = shaft_in_bore(4.1).check_interference(
+        exact=True, mesher=mesher
+    )  # 0.1 mm press fit
+    assert len(hits) == 1 and hits[0].volume > 10.0
 
 
 def test_concave_parts_with_overlapping_boxes_are_clean():
