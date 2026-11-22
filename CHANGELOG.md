@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.2.20
+
+- **Edge fillet / chamfer on the part's body**, as in CAD tools: a `Fillet` or
+  `Chamfer` with no `solid` rounds / bevels the edges of the body built by
+  every operation before it (all edges, or those an `EdgeFinder` selects);
+  operations added after it apply on top, unrounded. New shortcuts
+  `part.fillet_edges(radius, edges=None)` and
+  `part.chamfer_edges(distance, edges=None)` (they refuse an empty part).
+  `Fillet(solid, radius)` / `part.fillet(solid, ...)` are unchanged.
+- `Fillet.solid` and `Chamfer.solid` are now optional.
+- Documented semantics (schema docstrings; kernels follow them):
+  - `Thicken`: `thickness` along the surface normal (a `PlanarSurface`'s
+    normal is its sketch plane's normal); `both_sides=True` puts `thickness`
+    on each side (2 × thickness total).
+  - `Stitch`: only a closed shell (no free edges) becomes a solid; an open
+    one stays a shell.
+  - `Loft.guides`: rails the loft surface passes through (each must start on
+    the first section's outline and end on the last one's).
+
 ## 0.2.19
 
 - `check_interference(exact=True)` no longer reports line-to-line fits (a

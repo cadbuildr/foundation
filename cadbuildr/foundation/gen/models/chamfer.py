@@ -41,7 +41,7 @@ class Chamfer(ParameterFieldsMixin, BaseModel):
 
 
 
-    solid: SolidOperation = Field(...)
+    solid: Optional[SolidOperation] = Field(default=None)
     radius: FloatParameter = Field(...)
     edge_finder: Optional[EdgeFinder] = Field(default=None)
     distance2: Optional[FloatParameter] = Field(default=None)

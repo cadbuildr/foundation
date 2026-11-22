@@ -2452,6 +2452,30 @@ def part_chamfer_method(inst: Any, solid: Any, distance: float, edges: Any = Non
     return op
 
 
+@register_method_fn("part_fillet_edges_method")
+def part_fillet_edges_method(inst: Any, radius: float, edges: Any = None) -> Any:
+    """Round edges of the part's body built so far (all edges, or those ``edges`` selects)."""
+    from .gen.models import Fillet
+
+    if not inst.operations:
+        raise ValueError("fillet_edges: add the features to round before the fillet")
+    op = Fillet(radius=radius, edge_finder=edges)
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_chamfer_edges_method")
+def part_chamfer_edges_method(inst: Any, distance: float, edges: Any = None) -> Any:
+    """Bevel edges of the part's body built so far (all edges, or those ``edges`` selects)."""
+    from .gen.models import Chamfer
+
+    if not inst.operations:
+        raise ValueError("chamfer_edges: add the features to bevel before the chamfer")
+    op = Chamfer(radius=distance, edge_finder=edges)
+    inst.add_operation(op)
+    return op
+
+
 @register_method_fn("part_shell_method")
 def part_shell_method(inst: Any, solid: Any, thickness: float, faces: Any = None) -> Any:
     from .gen.models import Shell

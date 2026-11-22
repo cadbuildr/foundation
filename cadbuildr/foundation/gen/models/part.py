@@ -148,6 +148,20 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
             'edges': edges
         }
         return run_method(self, 'part_chamfer_method', _locals)
+    def fillet_edges(self, radius: float, edges: Optional[Any]=None) -> Optional[Fillet]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'radius': radius,
+            'edges': edges
+        }
+        return run_method(self, 'part_fillet_edges_method', _locals)
+    def chamfer_edges(self, distance: float, edges: Optional[Any]=None) -> Optional[Chamfer]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'distance': distance,
+            'edges': edges
+        }
+        return run_method(self, 'part_chamfer_edges_method', _locals)
     def shell(self, solid: Any, thickness: float, faces: Optional[Any]=None) -> Optional[Shell]:
         # Build local namespace with parameters for method function
         _locals = {
