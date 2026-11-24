@@ -10,15 +10,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .anchor import Anchor
     from .chamfer import Chamfer
+    from .curve_pattern import CurvePattern
+    from .delete_bodies import DeleteBodies
     from .extrusion import Extrusion
     from .fillet import Fillet
     from .frame import Frame
+    from .keep_bodies import KeepBodies
     from .lathe import Lathe
     from .linear_pattern import LinearPattern
     from .plane import Plane
     from .polar_pattern import PolarPattern
     from .shell import Shell
     from .string_parameter import StringParameter
+    from .vertex_chamfer import VertexChamfer
     from .unions import Operation
 
 class Part(ParameterFieldsMixin, BaseModel, Computable):
@@ -132,12 +136,14 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
             'cut': cut
         }
         return run_method(self, 'part_revolve_method', _locals)
-    def fillet(self, solid: Any, radius: float, edges: Optional[Any]=None) -> Optional[Fillet]:
+    def fillet(self, solid: Any, radius: float, edges: Optional[Any]=None, radius_end: Optional[float]=None, radius_points: Optional[Any]=None) -> Optional[Fillet]:
         # Build local namespace with parameters for method function
         _locals = {
             'solid': solid,
             'radius': radius,
-            'edges': edges
+            'edges': edges,
+            'radius_end': radius_end,
+            'radius_points': radius_points
         }
         return run_method(self, 'part_fillet_method', _locals)
     def chamfer(self, solid: Any, distance: float, edges: Optional[Any]=None) -> Optional[Chamfer]:
@@ -148,11 +154,13 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
             'edges': edges
         }
         return run_method(self, 'part_chamfer_method', _locals)
-    def fillet_edges(self, radius: float, edges: Optional[Any]=None) -> Optional[Fillet]:
+    def fillet_edges(self, radius: float, edges: Optional[Any]=None, radius_end: Optional[float]=None, radius_points: Optional[Any]=None) -> Optional[Fillet]:
         # Build local namespace with parameters for method function
         _locals = {
             'radius': radius,
-            'edges': edges
+            'edges': edges,
+            'radius_end': radius_end,
+            'radius_points': radius_points
         }
         return run_method(self, 'part_fillet_edges_method', _locals)
     def chamfer_edges(self, distance: float, edges: Optional[Any]=None) -> Optional[Chamfer]:
@@ -162,6 +170,13 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
             'edges': edges
         }
         return run_method(self, 'part_chamfer_edges_method', _locals)
+    def chamfer_vertices(self, distance: float, at: Optional[Any]=None) -> Optional[VertexChamfer]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'distance': distance,
+            'at': at
+        }
+        return run_method(self, 'part_chamfer_vertices_method', _locals)
     def shell(self, solid: Any, thickness: float, faces: Optional[Any]=None) -> Optional[Shell]:
         # Build local namespace with parameters for method function
         _locals = {
@@ -170,13 +185,16 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
             'faces': faces
         }
         return run_method(self, 'part_shell_method', _locals)
-    def linear_pattern(self, shape: Any, direction: List[float], count: int, spacing: float) -> Optional[LinearPattern]:
+    def linear_pattern(self, shape: Any, direction: List[float], count: int, spacing: float, direction2: Optional[List[float]]=None, count2: Optional[int]=1, spacing2: Optional[float]=0.0) -> Optional[LinearPattern]:
         # Build local namespace with parameters for method function
         _locals = {
             'shape': shape,
             'direction': direction,
             'count': count,
-            'spacing': spacing
+            'spacing': spacing,
+            'direction2': direction2,
+            'count2': count2,
+            'spacing2': spacing2
         }
         return run_method(self, 'part_linear_pattern_method', _locals)
     def polar_pattern(self, shape: Any, count: int, angle: Optional[float]=360.0, axis: Optional[List[float]]=[0.0, 0.0, 1.0]) -> Optional[PolarPattern]:
@@ -188,6 +206,27 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
             'axis': axis
         }
         return run_method(self, 'part_polar_pattern_method', _locals)
+    def curve_pattern(self, shape: Any, path: Any, count: int, align_to_path: Optional[bool]=False) -> Optional[CurvePattern]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'shape': shape,
+            'path': path,
+            'count': count,
+            'align_to_path': align_to_path
+        }
+        return run_method(self, 'part_curve_pattern_method', _locals)
+    def delete_bodies(self, bodies: Any) -> Optional[DeleteBodies]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'bodies': bodies
+        }
+        return run_method(self, 'part_delete_bodies_method', _locals)
+    def keep_bodies(self, bodies: Any) -> Optional[KeepBodies]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'bodies': bodies
+        }
+        return run_method(self, 'part_keep_bodies_method', _locals)
 
 
     frame: Frame = Field(default_factory=lambda: _eval_expr({}, 'Frame.make_origin_frame()'), json_schema_extra={'default': {'expr': 'Frame.make_origin_frame()'}})

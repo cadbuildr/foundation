@@ -4,6 +4,11 @@
 from __future__ import annotations
 from enum import Enum
 
+class IsoDirection(str, Enum):
+    """Generated from GraphQL enum IsoDirection."""
+    U = "U"
+    V = "V"
+
 class ExtrudeEndCondition(str, Enum):
     """Generated from GraphQL enum ExtrudeEndCondition."""
     BLIND = "BLIND"
@@ -22,6 +27,11 @@ class TextPathAlign(str, Enum):
     START = "START"
     CENTER = "CENTER"
     END = "END"
+
+class SurfaceContinuity(str, Enum):
+    """Generated from GraphQL enum SurfaceContinuity."""
+    G0 = "G0"
+    G1 = "G1"
 
 class EmbossMode(str, Enum):
     """Generated from GraphQL enum EmbossMode."""
@@ -91,6 +101,11 @@ class FlangeEdge(str, Enum):
     FREE = "FREE"
     START_SIDE = "START_SIDE"
     END_SIDE = "END_SIDE"
+
+class CornerBreakType(str, Enum):
+    """Generated from GraphQL enum CornerBreakType."""
+    FILLET = "FILLET"
+    CHAMFER = "CHAMFER"
 
 
 

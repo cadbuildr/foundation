@@ -4,6 +4,7 @@
 from __future__ import annotations
 from typing import List, Optional, Any, Dict, Union, Iterable
 from pydantic import BaseModel, Field, model_validator
+from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
     from .point3_d import Point3D
     from .unions import SolidOperation
 
-class LinearPattern(ParameterFieldsMixin, BaseModel):
+class LinearPattern(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object LinearPattern."""
 
 
@@ -42,9 +43,12 @@ class LinearPattern(ParameterFieldsMixin, BaseModel):
 
 
 
-    shape: SolidOperation = Field(...)
+    shape: Optional[SolidOperation] = Field(default=None)
     direction: Point3D = Field(...)
     count: IntParameter = Field(...)
     spacing: FloatParameter = Field(...)
+    direction2: Optional[Point3D] = Field(default=None)
+    count2: IntParameter = Field(default_factory=lambda: _eval_expr({}, 'IntParameter(value=1)'), json_schema_extra={'default': {'expr': 'IntParameter(value=1)'}})
+    spacing2: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=0.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=0.0)'}})
 
-    model_config = {"protected_namespaces": ()}  # Pydantic v2 config
+    model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

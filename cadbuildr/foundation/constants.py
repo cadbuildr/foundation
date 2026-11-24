@@ -187,6 +187,10 @@ DEFAULT_VALID_TYPES: list[str] = [
     "ScrewJoint",
     "PartModifier",
     "Connection",
+    "GearRelation",
+    "RackPinionRelation",
+    "ScrewRelation",
+    "LinearRelation",
 ]
 
 DEFAULT_TYPE_REGISTRY: dict[str, int] = {

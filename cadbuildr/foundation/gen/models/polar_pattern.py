@@ -43,7 +43,7 @@ class PolarPattern(ParameterFieldsMixin, BaseModel, Computable):
 
 
 
-    shape: SolidOperation = Field(...)
+    shape: Optional[SolidOperation] = Field(default=None)
     count: IntParameter = Field(...)
     angle: FloatParameter = Field(default_factory=lambda: _eval_expr({}, 'FloatParameter(value=360.0)'), json_schema_extra={'default': {'expr': 'FloatParameter(value=360.0)'}})
     axis_origin: Point3D = Field(default_factory=lambda: _eval_expr({}, 'Point3D(x=FloatParameter(value=0.0), y=FloatParameter(value=0.0), z=FloatParameter(value=0.0))'), json_schema_extra={'default': {'expr': 'Point3D(x=FloatParameter(value=0.0), y=FloatParameter(value=0.0), z=FloatParameter(value=0.0))'}})

@@ -9,7 +9,20 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from .gen.models import Circle, Line, Point, Polygon
+from .gen.models import (
+    Arc,
+    BSpline,
+    Bezier,
+    Circle,
+    CustomClosedShape,
+    CustomOpenShape,
+    Ellipse,
+    EllipseArc,
+    Line,
+    Point,
+    Polygon,
+    Spline,
+)
 
 
 def _movable(shape: Any) -> Any:
@@ -69,18 +82,124 @@ def mirror_point(point: Point, line: Line) -> Point:
     return Point(point.sketch, x, y)
 
 
-def mirror(shape: Any, line: Line) -> Any:
-    """Mirror image of a Point, Line, Circle or Polygon-like shape across `line`.
+def _mirror_vector(vx: float, vy: float, line: Line) -> tuple[float, float]:
+    """A direction (not a point) reflected across `line`'s direction."""
+    dx = line.p2.x.value - line.p1.x.value
+    dy = line.p2.y.value - line.p1.y.value
+    n = math.hypot(dx, dy)
+    ux, uy = dx / n, dy / n
+    d = vx * ux + vy * uy
+    return 2 * d * ux - vx, 2 * d * uy - vy
 
-    Polygon-like means anything with a `lines` list (Polygon, Rectangle,
-    Square, Triangle, ...); the mirror is returned as a Polygon.
+
+def _axis_parallel(line: Line) -> str:
+    """'x' or 'y' if the mirror line runs along a sketch axis, else ''."""
+    dx = line.p2.x.value - line.p1.x.value
+    dy = line.p2.y.value - line.p1.y.value
+    if abs(dy) <= 1e-12 * max(1.0, abs(dx)):
+        return "x"
+    if abs(dx) <= 1e-12 * max(1.0, abs(dy)):
+        return "y"
+    return ""
+
+
+def _mirror_angle(angle: float, axis: str) -> float:
+    # Across a line along x, angles flip sign; along y, they go to pi - angle.
+    return -angle if axis == "x" else math.pi - angle
+
+
+def _mirror_ellipse(shape: Any, line: Line, reverse: bool = False) -> Any:
+    axis = _axis_parallel(line)
+    if not axis:
+        raise TypeError(
+            f"mirror: an {type(shape).__name__} (axes along x / y) mirrors only across "
+            "a line along the sketch x or y axis; mirroring it across a slanted line "
+            "would tilt its axes, which foundation ellipses can't express"
+        )
+    center = mirror_point(shape.center, line)
+    if isinstance(shape, Ellipse):
+        return Ellipse(center, shape.a.value, shape.b.value)
+    a0 = _mirror_angle(shape.start_angle.value, axis)
+    a1 = _mirror_angle(shape.end_angle.value, axis)
+    if reverse:
+        a0, a1 = a1, a0
+    return EllipseArc(center, shape.a.value, shape.b.value, a0, a1)
+
+
+def _mirror_points(points: list[Point], line: Line, reverse: bool) -> list[Point]:
+    pts = [mirror_point(p, line) for p in points]
+    return pts[::-1] if reverse else pts
+
+
+def _mirror_tangent(t: Any, line: Line) -> Any:
+    if t is None:
+        return None
+    x, y = _mirror_vector(t.x.value, t.y.value, line)
+    return Point(t.sketch, x, y)
+
+
+def _negated(t: Any) -> Any:
+    return None if t is None else Point(t.sketch, -t.x.value, -t.y.value)
+
+
+def _mirror_primitive(prim: Any, line: Line, reverse: bool) -> Any:
+    """One boundary element mirrored; `reverse` also runs it backwards (to keep
+    a chain's winding when the chain itself is reversed)."""
+    if isinstance(prim, Line):
+        a, b = mirror_point(prim.p1, line), mirror_point(prim.p2, line)
+        return Line(b, a) if reverse else Line(a, b)
+    if isinstance(prim, Arc):
+        a, m, b = (mirror_point(p, line) for p in (prim.p1, prim.p2, prim.p3))
+        return Arc(b, m, a) if reverse else Arc(a, m, b)
+    if isinstance(prim, Spline):
+        t0 = _mirror_tangent(prim.start_tangent, line)
+        t1 = _mirror_tangent(prim.end_tangent, line)
+        if reverse:
+            # Running backwards, the end tangent (negated) leads.
+            t0, t1 = _negated(t1), _negated(t0)
+        kw = {
+            k: v
+            for k, v in (("start_tangent", t0), ("end_tangent", t1))
+            if v is not None
+        }
+        return Spline(_mirror_points(prim.points, line, reverse), **kw)
+    if isinstance(prim, Bezier):
+        return Bezier(_mirror_points(prim.points, line, reverse))
+    if isinstance(prim, BSpline):
+        return BSpline(_mirror_points(prim.points, line, reverse), prim.degree.value)
+    if isinstance(prim, EllipseArc):
+        return _mirror_ellipse(prim, line, reverse)
+    raise TypeError(f"mirror: unsupported boundary element {type(prim).__name__}")
+
+
+def mirror(shape: Any, line: Line) -> Any:
+    """Mirror image of a sketch shape across `line` (a Line of the same sketch).
+
+    Points, lines, arcs, splines (Spline / Bezier / BSpline), circles and
+    custom open / closed shapes keep their type (element by element, so the
+    mirror of a counter-clockwise outline runs clockwise). Polygon-like shapes (anything with a
+    `lines` list: Polygon, Rectangle, Square, Triangle, Hexagon, ...) come back
+    as a Polygon. Ellipses and elliptical arcs mirror across a line along the
+    sketch x or y axis.
     """
     if isinstance(shape, Point):
         return mirror_point(shape, line)
-    if isinstance(shape, Line):
-        return Line(mirror_point(shape.p1, line), mirror_point(shape.p2, line))
     if isinstance(shape, Circle):
         return Circle(mirror_point(shape.center, line), shape.radius.value)
+    if isinstance(shape, (Ellipse, EllipseArc)):
+        return _mirror_ellipse(shape, line)
+    if isinstance(shape, (Line, Arc, Spline, Bezier, BSpline)):
+        return _mirror_primitive(shape, line, reverse=False)
+    if isinstance(shape, CustomClosedShape):
+        # Mirrored in place, element by element (a smooth Spline isn't the same
+        # curve when traced backwards, so the order is kept).
+        return CustomClosedShape(
+            [_mirror_primitive(p, line, False) for p in shape.primitives]
+        )
+    if isinstance(shape, CustomOpenShape):
+        return CustomOpenShape(
+            [_mirror_primitive(p, line, False) for p in shape.primitives]
+        )
     lines = getattr(shape, "lines", None)
     if lines:
         # Reverse the order so the mirrored outline keeps a consistent winding.

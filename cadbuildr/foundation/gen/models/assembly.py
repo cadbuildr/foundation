@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .string_parameter import StringParameter
     from .unions import ComponentRoot
     from .unions import Joint
+    from .unions import JointRelation
 
 class Assembly(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object Assembly."""
@@ -41,6 +42,41 @@ class Assembly(ParameterFieldsMixin, BaseModel, Computable):
             'joint': joint
         }
         return run_method(self, 'add_joint_method', _locals)
+    def add_relation(self, relation: JointRelation) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'relation': relation
+        }
+        return run_method(self, 'add_relation_method', _locals)
+    def linear_pattern(self, component: Any, direction: List[float], count: int, spacing: float) -> Optional[List[Any]]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'component': component,
+            'direction': direction,
+            'count': count,
+            'spacing': spacing
+        }
+        return run_method(self, 'assembly_linear_pattern_method', _locals)
+    def polar_pattern(self, component: Any, count: int, angle_deg: Optional[float]=360.0, axis: Optional[List[float]]=[0.0, 0.0, 1.0], center: Optional[List[float]]=[0.0, 0.0, 0.0], about: Optional[Anchor]=None) -> Optional[List[Any]]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'component': component,
+            'count': count,
+            'angle_deg': angle_deg,
+            'axis': axis,
+            'center': center,
+            'about': about
+        }
+        return run_method(self, 'assembly_polar_pattern_method', _locals)
+    def replicate(self, component: Any, onto: List[Anchor], child_anchor: Optional[Any]=None, flip: Optional[bool]=True) -> Optional[List[Any]]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'component': component,
+            'onto': onto,
+            'child_anchor': child_anchor,
+            'flip': flip
+        }
+        return run_method(self, 'assembly_replicate_method', _locals)
     def add_connection(self, connection: Connection) -> Optional[bool]:
         # Build local namespace with parameters for method function
         _locals = {
@@ -113,5 +149,6 @@ class Assembly(ParameterFieldsMixin, BaseModel, Computable):
     components: List[ComponentRoot] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     joints: List[Joint] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    relations: List[JointRelation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

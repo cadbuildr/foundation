@@ -1455,7 +1455,10 @@ def joint_resolve_method(inst: Any) -> bool:
 @register_method_fn("assembly_resolve_method")
 def assembly_resolve_method(inst: Any) -> bool:
     """Re-place every joint in this assembly (sub-assemblies first), then the
-    joints of enclosing assemblies that depend on what moved."""
+    joints of enclosing assemblies that depend on what moved. Relations of
+    this assembly are re-enforced first (a DOF edited by hand follows its
+    driver again)."""
+    _enforce_relations(inst.relations)
     moved: set[int] = set()
     _resolve_subtree(inst, moved)
     _cascade(getattr(inst, _PLACED_IN_ATTR, None), moved)
@@ -1514,18 +1517,267 @@ def add_joint_method(inst: Assembly, joint: Any) -> bool:
 def joint_set_value_method(
     inst: Any, angle: float | None = None, offset: float | None = None
 ) -> bool:
-    """Update a joint DOF value and re-resolve the child placement."""
+    """Update a joint DOF value and re-resolve the child placement.
+
+    When the joint is coupled by relations (see :func:`add_relation_method`),
+    the related joints move with it: a driven DOF back-solves its driver, and
+    every DOF downstream of that driver is recomputed.
+    """
+    updates: list[tuple[Any, str, float]] = []
+    for dof, value in (("angle", angle), ("offset", offset)):
+        if value is not None:
+            root, root_dof, root_value = _back_solve(inst, dof, float(value))
+            updates.extend(_relation_updates(root, root_dof, root_value))
+    # Recompute from scratch (idempotent), then re-place everything jointed
+    # downstream of each moved child, here and in enclosing assemblies.
+    _apply_joint_values(updates, requested=inst)
+    return True
+
+
+# --------------------------------------------------------------------------- #
+# Joint relations (Onshape "mate relations"). A relation couples one DOF of a
+# driver joint to one DOF of a driven joint, linearly:
+#     driven = k · driver + offset
+# DOFs form a forest: each DOF is driven by at most one relation and the
+# relations never loop, so setting any DOF has exactly one consistent answer
+# — back-solve to the root driver, then recompute everything below it. Like
+# joints, relations resolve at authoring time; the DAG carries the resulting
+# frames plus the relation nodes for provenance.
+# --------------------------------------------------------------------------- #
+
+_ANGLE_JOINTS = ("RevoluteJoint", "CylindricalJoint", "ScrewJoint", "PinSlotJoint")
+_OFFSET_JOINTS = ("SliderJoint", "CylindricalJoint", "PinSlotJoint")
+# Transient (never serialised): relations a joint drives, and per DOF the
+# relation driving it.
+_DRIVES_ATTR = "_drives_relations"
+_DRIVEN_BY_ATTR = "_driven_by_relation"
+
+# relation type -> (driver field, driver DOF, driven field, driven DOF, gain field)
+_RELATION_SPECS: dict[str, tuple[str, str, str, str, str]] = {
+    "GearRelation": ("driver", "angle", "driven", "angle", "ratio"),
+    "RackPinionRelation": ("pinion", "angle", "rack", "offset", "pitch_radius"),
+    "ScrewRelation": ("screw", "angle", "nut", "offset", "pitch"),
+    "LinearRelation": ("driver", "offset", "driven", "offset", "ratio"),
+}
+
+# Two requests for the same DOF agree when within this (rad or mm).
+_RELATION_VALUE_TOL = 1e-9
+
+
+def _relation_spec(relation: Any) -> tuple[str, str, str, str, str]:
+    type_name = type(relation).__name__
+    spec = _RELATION_SPECS.get(type_name)
+    if spec is None:
+        raise TypeError(f"Unsupported joint relation type '{type_name}'")
+    return spec
+
+
+def _relation_ends(relation: Any) -> tuple[tuple[Any, str], tuple[Any, str]]:
+    """``((driver_joint, dof), (driven_joint, dof))`` of a relation."""
+    driver_field, driver_dof, driven_field, driven_dof, _ = _relation_spec(relation)
+    driver = getattr(relation, driver_field)
+    driven = getattr(relation, driven_field)
+    if driven is None:
+        # ScrewRelation without a nut: a cylindrical joint's own offset.
+        driven = driver
+    return (driver, driver_dof), (driven, driven_dof)
+
+
+def _relation_gain(relation: Any) -> float:
+    """``k`` in ``driven = k · driver + offset``."""
+    *_, gain_field = _relation_spec(relation)
+    magnitude = float(getattr(relation, gain_field).value)
+    if not magnitude > 0.0:
+        raise ValueError(
+            f"{type(relation).__name__}.{gain_field} must be > 0 (got "
+            f"{magnitude}); use reverse=True to turn the driven joint the "
+            "other way"
+        )
+    if type(relation).__name__ == "ScrewRelation":
+        magnitude /= 2.0 * math.pi  # pitch is mm per turn
+    return -magnitude if relation.reverse.value else magnitude
+
+
+def _joint_label(joint: Any) -> str:
+    """Human name of a joint: its type and the child anchor it places."""
+    return f"{type(joint).__name__}('{joint.child_anchor.name.value}')"
+
+
+def _check_relation_dof(relation: Any, joint: Any, dof: str, field: str) -> None:
+    allowed = _ANGLE_JOINTS if dof == "angle" else _OFFSET_JOINTS
+    type_name = type(joint).__name__
+    if type_name not in allowed:
+        raise ValueError(
+            f"{type(relation).__name__}.{field} needs a joint with an {dof} "
+            f"({', '.join(allowed)}), got {type_name}"
+        )
+    if getattr(joint, _JOINT_ASSEMBLY_ATTR, None) is None:
+        raise ValueError(
+            f"{type(relation).__name__}.{field}: {_joint_label(joint)} is not "
+            "placed yet — add it with assembly.add_joint(...) before relating it"
+        )
+
+
+def _driven_relation(joint: Any, dof: str) -> Optional[Any]:
+    return getattr(joint, _DRIVEN_BY_ATTR, {}).get(dof)
+
+
+def _driven_dofs(joint: Any, dof: str) -> list[tuple[Any, Any, str]]:
+    """``(relation, driven_joint, driven_dof)`` for every relation driven by
+    ``joint``'s ``dof``."""
+    out = []
+    for relation in getattr(joint, _DRIVES_ATTR, ()):
+        (_, driver_dof), (driven, driven_dof) = _relation_ends(relation)
+        if driver_dof == dof:
+            out.append((relation, driven, driven_dof))
+    return out
+
+
+def _back_solve(joint: Any, dof: str, value: float) -> tuple[Any, str, float]:
+    """Walk up the relations driving ``joint.dof`` to the root driver and the
+    value it needs for ``joint.dof`` to reach ``value``."""
+    while (relation := _driven_relation(joint, dof)) is not None:
+        (driver, driver_dof), _ = _relation_ends(relation)
+        value = (value - float(relation.offset.value)) / _relation_gain(relation)
+        joint, dof = driver, driver_dof
+    return joint, dof, value
+
+
+def _relation_updates(
+    joint: Any, dof: str, value: float
+) -> list[tuple[Any, str, float]]:
+    """``(joint, dof, value)`` for ``joint.dof`` and every DOF it drives."""
+    updates = [(joint, dof, value)]
+    index = 0
+    while index < len(updates):
+        current, current_dof, current_value = updates[index]
+        index += 1
+        for relation, driven, driven_dof in _driven_dofs(current, current_dof):
+            updates.append(
+                (
+                    driven,
+                    driven_dof,
+                    _relation_gain(relation) * current_value
+                    + float(relation.offset.value),
+                )
+            )
+    return updates
+
+
+def _apply_joint_values(
+    updates: list[tuple[Any, str, float]], requested: Optional[Any] = None
+) -> None:
+    """Write DOF values atomically (limits checked, all-or-nothing), then
+    re-place each touched joint and what is jointed downstream of it."""
     from.gen.models import FloatParameter as FloatParam
 
-    if angle is not None:
-        inst.angle = FloatParam(value=float(angle))
-    if offset is not None:
-        inst.offset = FloatParam(value=float(offset))
-    _validate_joint_limits(inst)
+    merged: dict[tuple[int, str], tuple[Any, str, float]] = {}
+    for joint, dof, value in updates:
+        key = (id(joint), dof)
+        if key in merged and abs(merged[key][2] - value) > _RELATION_VALUE_TOL:
+            raise ValueError(
+                f"Conflicting values for the {dof} of {_joint_label(joint)} "
+                f"({merged[key][2]:g} vs {value:g}): it is coupled by a "
+                "relation to another value set in the same call — set only one"
+            )
+        merged[key] = (joint, dof, value)
 
-    # Recompute from scratch (idempotent), then re-place everything jointed
-    # downstream of the child, here and in enclosing assemblies.
-    resolve_joint(inst)
+    joints: list[Any] = []
+    for joint, _, _ in merged.values():
+        if not any(joint is j for j in joints):
+            joints.append(joint)
+    previous = [(joint, dof, getattr(joint, dof)) for joint, dof, _ in merged.values()]
+    try:
+        for joint, dof, value in merged.values():
+            setattr(joint, dof, FloatParam(value=float(value)))
+        for joint in joints:
+            try:
+                _validate_joint_limits(joint)
+            except ValueError as exc:
+                if joint is requested or len(joints) == 1:
+                    raise
+                raise ValueError(
+                    f"{exc} on {_joint_label(joint)}, which a joint relation "
+                    "moves with this change; nothing was changed"
+                ) from None
+    except ValueError:
+        for joint, dof, old in previous:
+            setattr(joint, dof, old)
+        raise
+    for joint in joints:
+        resolve_joint(joint)
+
+
+def _enforce_relations(relations: Sequence[Any]) -> None:
+    """Recompute every DOF driven by ``relations`` from its root driver."""
+    updates: list[tuple[Any, str, float]] = []
+    for relation in relations:
+        (driver, driver_dof), _ = _relation_ends(relation)
+        root, root_dof, root_value = _back_solve(
+            driver, driver_dof, float(getattr(driver, driver_dof).value)
+        )
+        updates.extend(_relation_updates(root, root_dof, root_value))
+    if updates:
+        _apply_joint_values(updates)
+
+
+@register_method_fn("add_relation_method")
+def add_relation_method(inst: Assembly, relation: Any) -> bool:
+    """Couple two placed joints with a relation and enforce it right away.
+
+    The driven DOF is recomputed from the driver (``driven = k · driver +
+    offset``); afterwards ``set_angle`` / ``set_offset`` on either joint moves
+    both. Raises when a joint lacks the DOF, is not placed yet, the driven DOF
+    is already driven by another relation, or the relation would close a
+    cycle.
+    """
+    type_name = type(relation).__name__
+    driver_field, _, driven_field, _, _ = _relation_spec(relation)
+    (driver, driver_dof), (driven, driven_dof) = _relation_ends(relation)
+    _check_relation_dof(relation, driver, driver_dof, driver_field)
+    _check_relation_dof(relation, driven, driven_dof, driven_field)
+    if driven is driver and driven_dof == driver_dof:
+        raise ValueError(f"{type_name}: a joint cannot drive its own {driven_dof}")
+    _relation_gain(relation)  # validates the ratio / pitch up front
+
+    existing = _driven_relation(driven, driven_dof)
+    if existing is not None:
+        raise ValueError(
+            f"{type_name}: the {driven_dof} of {_joint_label(driven)} is already "
+            f"driven by a {type(existing).__name__}; a joint value can follow "
+            "only one relation (chain them instead: A drives B, B drives C)"
+        )
+    # Adding driver -> driven closes a cycle iff driver is downstream of driven.
+    stack = [(driven, driven_dof)]
+    while stack:
+        joint, dof = stack.pop()
+        if joint is driver and dof == driver_dof:
+            raise ValueError(
+                f"{type_name}: relating {_joint_label(driver)} to "
+                f"{_joint_label(driven)} closes a cycle of relations — "
+                f"{_joint_label(driven)} already drives it"
+            )
+        stack.extend((j, d) for _, j, d in _driven_dofs(joint, dof))
+
+    drives = getattr(driver, _DRIVES_ATTR, None)
+    if drives is None:
+        drives = []
+        object.__setattr__(driver, _DRIVES_ATTR, drives)
+    drives.append(relation)
+    driven_by = getattr(driven, _DRIVEN_BY_ATTR, None)
+    if driven_by is None:
+        driven_by = {}
+        object.__setattr__(driven, _DRIVEN_BY_ATTR, driven_by)
+    driven_by[driven_dof] = relation
+    inst.relations.append(relation)
+    try:
+        _enforce_relations([relation])
+    except ValueError:
+        # The driven joint cannot reach the value (limits): undo the coupling.
+        for holder in (drives, inst.relations):
+            holder[:] = [r for r in holder if r is not relation]
+        del driven_by[driven_dof]
+        raise
     return True
 
 
@@ -1908,7 +2160,7 @@ def _user_class_slug(component: Any, base_class_names: tuple[str, ...]) -> Optio
 
 _SOURCE_COMPONENT_ATTR = "_source_component"
 _LIVE_PART_FIELDS = ("operations", "planes", "anchors")
-_LIVE_ASSEMBLY_FIELDS = ("anchors", "joints")
+_LIVE_ASSEMBLY_FIELDS = ("anchors", "joints", "relations")
 
 
 def _bind_live_fields(root: Any, source: Any, fields: tuple[str, ...]) -> None:
@@ -2094,6 +2346,7 @@ def _convert_component_to_root(
             components=converted_components,
             anchors=component.anchors,
             joints=component.joints,
+            relations=component.relations,
             material=getattr(component, "_material", None),
         )
         if auto_assembly_slug is not None:
@@ -2434,11 +2687,50 @@ def part_revolve_method(inst: Any, shape: Any, axis: Any, angle: float = 360.0, 
     return op
 
 
-@register_method_fn("part_fillet_method")
-def part_fillet_method(inst: Any, solid: Any, radius: float, edges: Any = None) -> Any:
+def _fillet_radius_points(points: Any) -> Any:
+    """``radius_points`` as FilletRadiusPoint nodes: accepts ``(position, radius)`` pairs."""
+    from .gen.models import FilletRadiusPoint
+
+    if points is None:
+        return None
+    out = []
+    for pt in points:
+        if isinstance(pt, FilletRadiusPoint):
+            out.append(pt)
+            continue
+        position, radius = pt
+        if not 0.0 < float(position) < 1.0:
+            raise ValueError(
+                f"radius_points: position {position} must be strictly between 0 (the edge's start, "
+                "set by `radius`) and 1 (its end, set by `radius_end`)"
+            )
+        if float(radius) <= 0.0:
+            raise ValueError(f"radius_points: radius {radius} must be positive")
+        out.append(FilletRadiusPoint(position=float(position), radius=float(radius)))
+    return out
+
+
+def _make_fillet(solid: Any, radius: float, edges: Any, radius_end: Any, radius_points: Any) -> Any:
     from .gen.models import Fillet
 
-    op = Fillet(solid=solid, radius=radius, edge_finder=edges)
+    kwargs: dict = {"solid": solid, "radius": radius, "edge_finder": edges}
+    if radius_end is not None:
+        kwargs["radius_end"] = radius_end
+    if radius_points is not None:
+        kwargs["radius_points"] = _fillet_radius_points(radius_points)
+    return Fillet(**kwargs)
+
+
+@register_method_fn("part_fillet_method")
+def part_fillet_method(
+    inst: Any,
+    solid: Any,
+    radius: float,
+    edges: Any = None,
+    radius_end: Any = None,
+    radius_points: Any = None,
+) -> Any:
+    op = _make_fillet(solid, radius, edges, radius_end, radius_points)
     inst.add_operation(op)
     return op
 
@@ -2453,13 +2745,21 @@ def part_chamfer_method(inst: Any, solid: Any, distance: float, edges: Any = Non
 
 
 @register_method_fn("part_fillet_edges_method")
-def part_fillet_edges_method(inst: Any, radius: float, edges: Any = None) -> Any:
-    """Round edges of the part's body built so far (all edges, or those ``edges`` selects)."""
-    from .gen.models import Fillet
+def part_fillet_edges_method(
+    inst: Any,
+    radius: float,
+    edges: Any = None,
+    radius_end: Any = None,
+    radius_points: Any = None,
+) -> Any:
+    """Round edges of the part's body built so far (all edges, or those ``edges`` selects).
 
+    ``radius_end`` / ``radius_points`` make it a variable fillet: ``radius`` at
+    each edge's start, ``radius_end`` at its end, ``(position, radius)`` pairs in
+    between (position 0..1 along the edge)."""
     if not inst.operations:
         raise ValueError("fillet_edges: add the features to round before the fillet")
-    op = Fillet(radius=radius, edge_finder=edges)
+    op = _make_fillet(None, radius, edges, radius_end, radius_points)
     inst.add_operation(op)
     return op
 
@@ -2476,6 +2776,28 @@ def part_chamfer_edges_method(inst: Any, distance: float, edges: Any = None) -> 
     return op
 
 
+@register_method_fn("part_chamfer_vertices_method")
+def part_chamfer_vertices_method(inst: Any, distance: float, at: Any = None) -> Any:
+    """Bevel corners of the part's body built so far (vertex chamfer / corner setback).
+
+    ``at`` lists the corners as ``(x, y, z)`` points (or Point3D); ``None`` bevels
+    every convex corner where three straight edges meet."""
+    from .gen.models import Point3D, VertexChamfer
+
+    if not inst.operations:
+        raise ValueError("chamfer_vertices: add the features to bevel before the chamfer")
+    if float(distance) <= 0.0:
+        raise ValueError(f"chamfer_vertices: distance {distance} must be positive")
+    vertices = None
+    if at is not None:
+        vertices = [p if isinstance(p, Point3D) else Point3D(*(float(c) for c in p)) for p in at]
+        if not vertices:
+            raise ValueError("chamfer_vertices: `at` is empty — pass None to bevel every corner")
+    op = VertexChamfer(distance=distance, vertices=vertices)
+    inst.add_operation(op)
+    return op
+
+
 @register_method_fn("part_shell_method")
 def part_shell_method(inst: Any, solid: Any, thickness: float, faces: Any = None) -> Any:
     from .gen.models import Shell
@@ -2485,11 +2807,32 @@ def part_shell_method(inst: Any, solid: Any, thickness: float, faces: Any = None
     return op
 
 
+def _check_body_pattern(inst: Any, shape: Any, method: str) -> None:
+    """shape=None patterns the part's body so far: it needs features before it."""
+    if shape is None and not inst.operations:
+        raise ValueError(f"{method}: shape=None repeats the part's body; add features before the pattern")
+
+
 @register_method_fn("part_linear_pattern_method")
-def part_linear_pattern_method(inst: Any, shape: Any, direction: Any, count: int, spacing: float) -> Any:
+def part_linear_pattern_method(
+    inst: Any,
+    shape: Any,
+    direction: Any,
+    count: int,
+    spacing: float,
+    direction2: Any = None,
+    count2: int = 1,
+    spacing2: float = 0.0,
+) -> Any:
     from .gen.models import LinearPattern
 
-    op = LinearPattern(shape, _p3(direction), count, spacing)
+    _check_body_pattern(inst, shape, "linear_pattern")
+    if direction2 is None and count2 > 1:
+        raise ValueError("linear_pattern: count2 > 1 needs a direction2")
+    kwargs = {}
+    if direction2 is not None:
+        kwargs = {"direction2": _p3(direction2), "count2": count2, "spacing2": spacing2}
+    op = LinearPattern(shape, _p3(direction), count, spacing, **kwargs)
     inst.add_operation(op)
     return op
 
@@ -2500,7 +2843,50 @@ def part_polar_pattern_method(
 ) -> Any:
     from .gen.models import PolarPattern
 
+    _check_body_pattern(inst, shape, "polar_pattern")
     op = PolarPattern(shape, count, angle=angle, axis_direction=_p3(axis))
+    inst.add_operation(op)
+    return op
+
+
+def _body_list(method: str, bodies: Any) -> list:
+    """One operation or a list of them (the bodies to select)."""
+    out = list(bodies) if isinstance(bodies, (list, tuple)) else [bodies]
+    if not out:
+        raise ValueError(f"{method}: pass at least one body (an operation of the part)")
+    return out
+
+
+@register_method_fn("part_delete_bodies_method")
+def part_delete_bodies_method(inst: Any, bodies: Any) -> Any:
+    """Delete the part's bodies that share volume with ``bodies`` (one op or a list)."""
+    from .gen.models import DeleteBodies
+
+    if not inst.operations:
+        raise ValueError("delete_bodies: add the bodies to delete before deleting them")
+    op = DeleteBodies(_body_list("delete_bodies", bodies))
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_keep_bodies_method")
+def part_keep_bodies_method(inst: Any, bodies: Any) -> Any:
+    """Keep only the part's bodies that share volume with ``bodies`` (one op or a list)."""
+    from .gen.models import KeepBodies
+
+    if not inst.operations:
+        raise ValueError("keep_bodies: add the bodies to keep before selecting them")
+    op = KeepBodies(_body_list("keep_bodies", bodies))
+    inst.add_operation(op)
+    return op
+
+
+@register_method_fn("part_curve_pattern_method")
+def part_curve_pattern_method(inst: Any, shape: Any, path: Any, count: int, align_to_path: bool = False) -> Any:
+    from .gen.models import CurvePattern
+
+    _check_body_pattern(inst, shape, "curve_pattern")
+    op = CurvePattern(shape, path, count, align_to_path=align_to_path)
     inst.add_operation(op)
     return op
 

@@ -12,46 +12,63 @@ from .b_spline import BSpline
 from .ball_joint import BallJoint
 from .bezier import Bezier
 from .boolean_operation import BooleanOperation
+from .boundary_surface import BoundarySurface
 from .bounding_box import BoundingBox
 from .chamfer import Chamfer
 from .circle import Circle
+from .composite_curve import CompositeCurve
 from .contains_point_finder_rule import ContainsPointFinderRule
 from .convex_hull import ConvexHull
+from .curve_pattern import CurvePattern
 from .custom_closed_shape import CustomClosedShape
 from .custom_open_shape import CustomOpenShape
 from .cylindrical_joint import CylindricalJoint
+from .delete_bodies import DeleteBodies
+from .delete_face import DeleteFace
 from .draft import Draft
 from .edge_finder import EdgeFinder
 from .either_finder_rule import EitherFinderRule
 from .ellipse import Ellipse
 from .ellipse_arc import EllipseArc
 from .emboss import Emboss
+from .enclose import Enclose
+from .extend_surface import ExtendSurface
 from .extruded_surface import ExtrudedSurface
 from .extrusion import Extrusion
 from .face_finder import FaceFinder
+from .fill_surface import FillSurface
 from .fillet import Fillet
 from .full_round import FullRound
+from .gear_relation import GearRelation
 from .helix3_d import Helix3D
 from .hexagon import Hexagon
 from .hole import Hole
+from .import_step import ImportStep
 from .in_box_finder_rule import InBoxFinderRule
 from .in_direction_finder_rule import InDirectionFinderRule
 from .in_plane_finder_rule import InPlaneFinderRule
+from .intersection_curve import IntersectionCurve
 from .is_circle_rule import IsCircleRule
+from .isoparametric_curve import IsoparametricCurve
+from .keep_bodies import KeepBodies
 from .lathe import Lathe
 from .length_range_rule import LengthRangeRule
 from .line import Line
 from .linear_pattern import LinearPattern
+from .linear_relation import LinearRelation
 from .loft import Loft
 from .mirror import Mirror
 from .move_body import MoveBody
+from .move_face import MoveFace
 from .multi_section_sweep import MultiSectionSweep
 from .of_type_rule import OfTypeRule
 from .offset2_d import Offset2D
 from .offset_face import OffsetFace
+from .offset_surface import OffsetSurface
 from .on_face_rule import OnFaceRule
 from .parallel_to_axis_rule import ParallelToAxisRule
 from .part_root import PartRoot
+from .parting_line_draft import PartingLineDraft
 from .pin_slot_joint import PinSlotJoint
 from .planar_joint import PlanarJoint
 from .planar_surface import PlanarSurface
@@ -59,6 +76,9 @@ from .point import Point
 from .polar_pattern import PolarPattern
 from .polygon import Polygon
 from .project import Project
+from .projected_curve import ProjectedCurve
+from .projected_edges import ProjectedEdges
+from .rack_pinion_relation import RackPinionRelation
 from .radius_range_rule import RadiusRangeRule
 from .rectangle import Rectangle
 from .rectangle_from2_points import RectangleFrom2Points
@@ -73,17 +93,20 @@ from .ruled_surface import RuledSurface
 from .svg_shape import SVGShape
 from .scale import Scale
 from .screw_joint import ScrewJoint
+from .screw_relation import ScrewRelation
 from .section import Section
 from .sheet_metal_base_flange import SheetMetalBaseFlange
 from .sheet_metal_bead import SheetMetalBead
 from .sheet_metal_closed_corner import SheetMetalClosedCorner
 from .sheet_metal_contour_flange import SheetMetalContourFlange
+from .sheet_metal_corner_break import SheetMetalCornerBreak
 from .sheet_metal_corner_relief import SheetMetalCornerRelief
 from .sheet_metal_cut import SheetMetalCut
 from .sheet_metal_dimple import SheetMetalDimple
 from .sheet_metal_edge_flange import SheetMetalEdgeFlange
 from .sheet_metal_extruded_hole import SheetMetalExtrudedHole
 from .sheet_metal_fold import SheetMetalFold
+from .sheet_metal_form_tool import SheetMetalFormTool
 from .sheet_metal_from_solid import SheetMetalFromSolid
 from .sheet_metal_hem import SheetMetalHem
 from .sheet_metal_jog import SheetMetalJog
@@ -115,19 +138,22 @@ from .trace import Trace
 from .trapezoid import Trapezoid
 from .triangle import Triangle
 from .unfold import Unfold
+from .vertex_chamfer import VertexChamfer
 from .wedge import Wedge
 from .wrap import Wrap
 BoundaryElement2D = Union[Line, Arc, EllipseArc, Spline, Bezier, BSpline]
-ClosedShape2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, RectangleRounded, Trapezoid, Triangle, SlotCenterToCenter, SlotOverall, SlotCenterPoint, Offset2D, Trace, Text, TextOnPath, ConvexHull, CustomClosedShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
-LoftSection2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, CustomClosedShape, CustomOpenShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
+ClosedShape2D = Union[Circle, ProjectedEdges, Ellipse, Polygon, Hexagon, RegularPolygon, RectangleRounded, Trapezoid, Triangle, SlotCenterToCenter, SlotOverall, SlotCenterPoint, Offset2D, Trace, Text, TextOnPath, ConvexHull, CustomClosedShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
+LoftSection2D = Union[Circle, ProjectedEdges, Ellipse, Polygon, Hexagon, RegularPolygon, CustomClosedShape, CustomOpenShape, SVGShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides]
 Shape2D = Union[Circle, Ellipse, Polygon, Hexagon, RegularPolygon, CustomClosedShape, Square, Rectangle, SquareFromCenterAndSide, RectangleFrom2Points, RectangleFromCenterAndSides, Line, Arc, EllipseArc, Spline, Point]
-Path3D = Union[Helix3D, Spline3D]
+Path3D = Union[Helix3D, Spline3D, CompositeCurve, IntersectionCurve, IsoparametricCurve, ProjectedCurve]
 TextPath = Union[Line, Arc, Circle, CustomOpenShape, CustomClosedShape]
-SolidOperation = Union[Extrusion, Lathe, Loft, Sweep, MultiSectionSweep, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere, Wedge, Fillet, Chamfer, Mirror, Scale, Draft, FullRound, Split, BooleanOperation, MoveBody, LinearPattern, PolarPattern, OffsetFace, Emboss, Wrap, Rip]
-SurfaceOperation = Union[SurfaceLoft, ExtrudedSurface, RevolvedSurface, RuledSurface, PlanarSurface]
-SheetMetalOperation = Union[SheetMetalBaseFlange, SheetMetalContourFlange, SheetMetalFromSolid, SheetMetalTab, SheetMetalEdgeFlange, SheetMetalMiterFlange, SheetMetalHem, SheetMetalSketchedBend, SheetMetalJog, SheetMetalClosedCorner, SheetMetalCornerRelief, SheetMetalLoftedBend, SheetMetalFold, SheetMetalCut, SheetMetalDimple, SheetMetalExtrudedHole, SheetMetalBead, Unfold]
+SolidOperation = Union[Extrusion, Lathe, Loft, Sweep, MultiSectionSweep, Thicken, Stitch, Enclose, Shell, SheetMetalToSolid, Sphere, ImportStep, Wedge, Fillet, Chamfer, Mirror, Scale, Draft, PartingLineDraft, VertexChamfer, FullRound, Split, BooleanOperation, MoveBody, LinearPattern, PolarPattern, CurvePattern, OffsetFace, MoveFace, DeleteFace, Emboss, Wrap, Rip]
+SurfaceOperation = Union[SurfaceLoft, ExtrudedSurface, RevolvedSurface, RuledSurface, PlanarSurface, FillSurface, BoundarySurface, OffsetSurface, ExtendSurface]
+BodyOperation = Union[Extrusion, Lathe, Loft, Sweep, MultiSectionSweep, Thicken, Stitch, Enclose, Shell, SheetMetalToSolid, Sphere, ImportStep, Wedge, Fillet, Chamfer, Mirror, Scale, Draft, PartingLineDraft, VertexChamfer, FullRound, Split, BooleanOperation, MoveBody, LinearPattern, PolarPattern, CurvePattern, OffsetFace, MoveFace, DeleteFace, Emboss, Wrap, Rip, SurfaceLoft, ExtrudedSurface, RevolvedSurface, RuledSurface, PlanarSurface, FillSurface, BoundarySurface, OffsetSurface, ExtendSurface]
+SheetMetalOperation = Union[SheetMetalBaseFlange, SheetMetalContourFlange, SheetMetalFromSolid, SheetMetalTab, SheetMetalEdgeFlange, SheetMetalMiterFlange, SheetMetalHem, SheetMetalSketchedBend, SheetMetalJog, SheetMetalClosedCorner, SheetMetalCornerRelief, SheetMetalLoftedBend, SheetMetalFold, SheetMetalCut, SheetMetalDimple, SheetMetalExtrudedHole, SheetMetalBead, SheetMetalCornerBreak, SheetMetalFormTool, Unfold]
 FinderRule = Union[InPlaneFinderRule, AtAngleFinderRule, AtDistanceFinderRule, ContainsPointFinderRule, InBoxFinderRule, InDirectionFinderRule, AndFinderRule, EitherFinderRule, IsCircleRule, OfTypeRule, LengthRangeRule, RadiusRangeRule, ParallelToAxisRule, OnFaceRule, SortByRule]
 FaceSelection = Union[FaceFinder, EdgeFinder]
-Operation = Union[Extrusion, Hole, Lathe, Loft, Sweep, Thread, Fillet, Chamfer, MultiSectionSweep, SurfaceLoft, Thicken, Stitch, Shell, SheetMetalToSolid, Sphere, Mirror, BoundingBox, Scale, Wedge, Section, Split, Project, Draft, FullRound, BooleanOperation, MoveBody, LinearPattern, PolarPattern, OffsetFace, Emboss, Wrap, Rip]
+Operation = Union[Extrusion, Hole, Lathe, Loft, Sweep, Thread, Fillet, Chamfer, MultiSectionSweep, SurfaceLoft, FillSurface, BoundarySurface, OffsetSurface, ExtendSurface, Thicken, Stitch, Enclose, Shell, SheetMetalToSolid, Sphere, ImportStep, Mirror, BoundingBox, Scale, Wedge, Section, Split, Project, Draft, PartingLineDraft, VertexChamfer, FullRound, BooleanOperation, MoveBody, LinearPattern, PolarPattern, CurvePattern, OffsetFace, MoveFace, DeleteFace, Emboss, Wrap, Rip, DeleteBodies, KeepBodies]
 Joint = Union[RigidJoint, RevoluteJoint, SliderJoint, CylindricalJoint, PlanarJoint, BallJoint, PinSlotJoint, ScrewJoint]
+JointRelation = Union[GearRelation, RackPinionRelation, ScrewRelation, LinearRelation]
 ComponentRoot = Union[PartRoot, AssemblyRoot]

@@ -16,6 +16,14 @@ from. import helpers  # noqa: F401
 # Anchor patterns, rotate_deg/rotated_deg, add_anchors (monkey-patched)
 from. import anchors  # noqa: F401
 
+# Assembly linear_pattern / polar_pattern / replicate method fns
+from. import assembly_patterns  # noqa: F401
+
+# ImportStep constructors + Part.from_step (monkey-patched)
+from.mixin.import_step_mixin import StepFileError, install_part_from_step
+
+install_part_from_step()
+
 # Export PlaneFactory for backward compatibility
 from.helpers import PlaneFactory, TFHelper, anchor_plane, make_anchor
 

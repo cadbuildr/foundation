@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 from .enums import (
+    IsoDirection,
     ExtrudeEndCondition,
     HoleFit,
     TextPathAlign,
+    SurfaceContinuity,
     EmbossMode,
     BooleanOp,
     SheetDirection,
@@ -18,7 +20,8 @@ from .enums import (
     CornerType,
     CornerReliefType,
     DimensionPosition,
-    FlangeEdge
+    FlangeEdge,
+    CornerBreakType
 )
 from .float_parameter import FloatParameter
 from .int_parameter import IntParameter
@@ -53,6 +56,7 @@ from .regular_polygon import RegularPolygon
 from .hexagon import Hexagon
 from .bezier import Bezier
 from .b_spline import BSpline
+from .projected_edges import ProjectedEdges
 from .custom_closed_shape import CustomClosedShape
 from .custom_open_shape import CustomOpenShape
 from .svg_shape import SVGShape
@@ -66,12 +70,18 @@ from .plane import Plane
 from .point3_d import Point3D
 from .helix3_d import Helix3D
 from .spline3_d import Spline3D
+from .composite_curve import CompositeCurve
+from .intersection_curve import IntersectionCurve
+from .isoparametric_curve import IsoparametricCurve
+from .projected_curve import ProjectedCurve
 from .sketch import Sketch
 from .extrusion import Extrusion
 from .tapped_hole import TappedHole
 from .clearance_hole import ClearanceHole
 from .hole import Hole
 from .draft import Draft
+from .parting_line_draft import PartingLineDraft
+from .vertex_chamfer import VertexChamfer
 from .convex_hull import ConvexHull
 from .trace import Trace
 from .full_round import FullRound
@@ -85,6 +95,7 @@ from .bounding_box import BoundingBox
 from .text import Text
 from .text_on_path import TextOnPath
 from .wedge import Wedge
+from .import_step import ImportStep
 from .sphere import Sphere
 from .cylinder import Cylinder
 from .cone import Cone
@@ -100,21 +111,31 @@ from .multi_section_sweep import MultiSectionSweep
 from .surface_loft import SurfaceLoft
 from .thicken import Thicken
 from .stitch import Stitch
+from .enclose import Enclose
 from .shell import Shell
 from .thread import Thread
 from .rib import Rib
 from .offset_face import OffsetFace
+from .move_face import MoveFace
+from .delete_face import DeleteFace
 from .move_body import MoveBody
 from .linear_pattern import LinearPattern
 from .polar_pattern import PolarPattern
+from .curve_pattern import CurvePattern
 from .extruded_surface import ExtrudedSurface
 from .revolved_surface import RevolvedSurface
 from .ruled_surface import RuledSurface
 from .planar_surface import PlanarSurface
+from .fill_surface import FillSurface
+from .boundary_surface import BoundarySurface
+from .offset_surface import OffsetSurface
+from .extend_surface import ExtendSurface
 from .emboss import Emboss
 from .wrap import Wrap
 from .rip import Rip
 from .boolean_operation import BooleanOperation
+from .delete_bodies import DeleteBodies
+from .keep_bodies import KeepBodies
 from .edge_ref import EdgeRef
 from .sheet_metal_body import SheetMetalBody
 from .sheet_metal_base_flange import SheetMetalBaseFlange
@@ -133,6 +154,8 @@ from .sheet_metal_cut import SheetMetalCut
 from .sheet_metal_dimple import SheetMetalDimple
 from .sheet_metal_extruded_hole import SheetMetalExtrudedHole
 from .sheet_metal_bead import SheetMetalBead
+from .sheet_metal_corner_break import SheetMetalCornerBreak
+from .sheet_metal_form_tool import SheetMetalFormTool
 from .sheet_metal_to_solid import SheetMetalToSolid
 from .unfold import Unfold
 from .sheet_metal_fold import SheetMetalFold
@@ -154,6 +177,7 @@ from .sort_by_rule import SortByRule
 from .edge_finder import EdgeFinder
 from .face_finder import FaceFinder
 from .fillet import Fillet
+from .fillet_radius_point import FilletRadiusPoint
 from .chamfer import Chamfer
 from .material_options import MaterialOptions
 from .material import Material
@@ -167,6 +191,10 @@ from .planar_joint import PlanarJoint
 from .ball_joint import BallJoint
 from .pin_slot_joint import PinSlotJoint
 from .screw_joint import ScrewJoint
+from .gear_relation import GearRelation
+from .rack_pinion_relation import RackPinionRelation
+from .screw_relation import ScrewRelation
+from .linear_relation import LinearRelation
 from .part_modifier import PartModifier
 from .connection import Connection
 from .fixed_translation_constraint import FixedTranslationConstraint
@@ -185,11 +213,13 @@ from .unions import (
     TextPath,
     SolidOperation,
     SurfaceOperation,
+    BodyOperation,
     SheetMetalOperation,
     FinderRule,
     FaceSelection,
     Operation,
     Joint,
+    JointRelation,
     ComponentRoot
 )
 FloatParameter.model_rebuild()
@@ -258,6 +288,8 @@ Bezier.model_rebuild()
 
 BSpline.model_rebuild()
 
+ProjectedEdges.model_rebuild()
+
 CustomClosedShape.model_rebuild()
 
 CustomOpenShape.model_rebuild()
@@ -284,6 +316,14 @@ Helix3D.model_rebuild()
 
 Spline3D.model_rebuild()
 
+CompositeCurve.model_rebuild()
+
+IntersectionCurve.model_rebuild()
+
+IsoparametricCurve.model_rebuild()
+
+ProjectedCurve.model_rebuild()
+
 Sketch.model_rebuild()
 
 Extrusion.model_rebuild()
@@ -295,6 +335,10 @@ ClearanceHole.model_rebuild()
 Hole.model_rebuild()
 
 Draft.model_rebuild()
+
+PartingLineDraft.model_rebuild()
+
+VertexChamfer.model_rebuild()
 
 ConvexHull.model_rebuild()
 
@@ -321,6 +365,8 @@ Text.model_rebuild()
 TextOnPath.model_rebuild()
 
 Wedge.model_rebuild()
+
+ImportStep.model_rebuild()
 
 Sphere.model_rebuild()
 
@@ -352,6 +398,8 @@ Thicken.model_rebuild()
 
 Stitch.model_rebuild()
 
+Enclose.model_rebuild()
+
 Shell.model_rebuild()
 
 Thread.model_rebuild()
@@ -360,11 +408,17 @@ Rib.model_rebuild()
 
 OffsetFace.model_rebuild()
 
+MoveFace.model_rebuild()
+
+DeleteFace.model_rebuild()
+
 MoveBody.model_rebuild()
 
 LinearPattern.model_rebuild()
 
 PolarPattern.model_rebuild()
+
+CurvePattern.model_rebuild()
 
 ExtrudedSurface.model_rebuild()
 
@@ -374,6 +428,14 @@ RuledSurface.model_rebuild()
 
 PlanarSurface.model_rebuild()
 
+FillSurface.model_rebuild()
+
+BoundarySurface.model_rebuild()
+
+OffsetSurface.model_rebuild()
+
+ExtendSurface.model_rebuild()
+
 Emboss.model_rebuild()
 
 Wrap.model_rebuild()
@@ -381,6 +443,10 @@ Wrap.model_rebuild()
 Rip.model_rebuild()
 
 BooleanOperation.model_rebuild()
+
+DeleteBodies.model_rebuild()
+
+KeepBodies.model_rebuild()
 
 EdgeRef.model_rebuild()
 
@@ -417,6 +483,10 @@ SheetMetalDimple.model_rebuild()
 SheetMetalExtrudedHole.model_rebuild()
 
 SheetMetalBead.model_rebuild()
+
+SheetMetalCornerBreak.model_rebuild()
+
+SheetMetalFormTool.model_rebuild()
 
 SheetMetalToSolid.model_rebuild()
 
@@ -460,6 +530,8 @@ FaceFinder.model_rebuild()
 
 Fillet.model_rebuild()
 
+FilletRadiusPoint.model_rebuild()
+
 Chamfer.model_rebuild()
 
 MaterialOptions.model_rebuild()
@@ -485,6 +557,14 @@ BallJoint.model_rebuild()
 PinSlotJoint.model_rebuild()
 
 ScrewJoint.model_rebuild()
+
+GearRelation.model_rebuild()
+
+RackPinionRelation.model_rebuild()
+
+ScrewRelation.model_rebuild()
+
+LinearRelation.model_rebuild()
 
 PartModifier.model_rebuild()
 
@@ -517,6 +597,10 @@ register_type("InterfaceGridSpec", InterfaceGridSpec)
 
 register_type("IsCircleRule", IsCircleRule)
 
+register_type("GearRelation", GearRelation)
+
+register_type("LinearRelation", LinearRelation)
+
 register_type("Material", Material)
 
 register_type("MultiSectionSweep", MultiSectionSweep)
@@ -525,13 +609,23 @@ register_type("Helix3D", Helix3D)
 
 register_type("Loft", Loft)
 
+register_type("RackPinionRelation", RackPinionRelation)
+
+register_type("ScrewRelation", ScrewRelation)
+
 register_type("SheetMetalClosedCorner", SheetMetalClosedCorner)
 
 register_type("SheetMetalCornerRelief", SheetMetalCornerRelief)
 
 register_type("SlotOverall", SlotOverall)
 
+register_type("CurvePattern", CurvePattern)
+
+register_type("LinearPattern", LinearPattern)
+
 register_type("MoveBody", MoveBody)
+
+register_type("MoveFace", MoveFace)
 
 register_type("PolarPattern", PolarPattern)
 
@@ -542,6 +636,8 @@ register_type("SheetMetalFromSolid", SheetMetalFromSolid)
 register_type("Sphere", Sphere)
 
 register_type("Frame", Frame)
+
+register_type("ImportStep", ImportStep)
 
 register_type("Plane", Plane)
 
@@ -567,13 +663,13 @@ register_type("InPlaneFinderRule", InPlaneFinderRule)
 
 register_type("Lathe", Lathe)
 
-register_type("Part", Part)
-
 register_type("Connection", Connection)
 
 register_type("Assembly", Assembly)
 
 register_type("AssemblyInterface", AssemblyInterface)
+
+register_type("PartingLineDraft", PartingLineDraft)
 
 register_type("PinSlotJoint", PinSlotJoint)
 
@@ -627,6 +723,8 @@ register_type("SquareFromCenterAndSide", SquareFromCenterAndSide)
 
 register_type("SurfaceLoft", SurfaceLoft)
 
+register_type("IsoparametricCurve", IsoparametricCurve)
+
 register_type("Stitch", Stitch)
 
 register_type("Sweep", Sweep)
@@ -644,6 +742,8 @@ register_type("Torus", Torus)
 register_type("Trapezoid", Trapezoid)
 
 register_type("Triangle", Triangle)
+
+register_type("Part", Part)
 try:
     from ... import compute_functions  # noqa: F401
 except ImportError:
@@ -652,9 +752,11 @@ except ImportError:
 
 
 __all__ = [
+    "IsoDirection",
     "ExtrudeEndCondition",
     "HoleFit",
     "TextPathAlign",
+    "SurfaceContinuity",
     "EmbossMode",
     "BooleanOp",
     "SheetDirection",
@@ -666,6 +768,7 @@ __all__ = [
     "CornerReliefType",
     "DimensionPosition",
     "FlangeEdge",
+    "CornerBreakType",
     "FloatParameter",
     "IntParameter",
     "BoolParameter",
@@ -699,6 +802,7 @@ __all__ = [
     "Hexagon",
     "Bezier",
     "BSpline",
+    "ProjectedEdges",
     "CustomClosedShape",
     "CustomOpenShape",
     "SVGShape",
@@ -712,12 +816,18 @@ __all__ = [
     "Point3D",
     "Helix3D",
     "Spline3D",
+    "CompositeCurve",
+    "IntersectionCurve",
+    "IsoparametricCurve",
+    "ProjectedCurve",
     "Sketch",
     "Extrusion",
     "TappedHole",
     "ClearanceHole",
     "Hole",
     "Draft",
+    "PartingLineDraft",
+    "VertexChamfer",
     "ConvexHull",
     "Trace",
     "FullRound",
@@ -731,6 +841,7 @@ __all__ = [
     "Text",
     "TextOnPath",
     "Wedge",
+    "ImportStep",
     "Sphere",
     "Cylinder",
     "Cone",
@@ -746,21 +857,31 @@ __all__ = [
     "SurfaceLoft",
     "Thicken",
     "Stitch",
+    "Enclose",
     "Shell",
     "Thread",
     "Rib",
     "OffsetFace",
+    "MoveFace",
+    "DeleteFace",
     "MoveBody",
     "LinearPattern",
     "PolarPattern",
+    "CurvePattern",
     "ExtrudedSurface",
     "RevolvedSurface",
     "RuledSurface",
     "PlanarSurface",
+    "FillSurface",
+    "BoundarySurface",
+    "OffsetSurface",
+    "ExtendSurface",
     "Emboss",
     "Wrap",
     "Rip",
     "BooleanOperation",
+    "DeleteBodies",
+    "KeepBodies",
     "EdgeRef",
     "SheetMetalBody",
     "SheetMetalBaseFlange",
@@ -779,6 +900,8 @@ __all__ = [
     "SheetMetalDimple",
     "SheetMetalExtrudedHole",
     "SheetMetalBead",
+    "SheetMetalCornerBreak",
+    "SheetMetalFormTool",
     "SheetMetalToSolid",
     "Unfold",
     "SheetMetalFold",
@@ -800,6 +923,7 @@ __all__ = [
     "EdgeFinder",
     "FaceFinder",
     "Fillet",
+    "FilletRadiusPoint",
     "Chamfer",
     "MaterialOptions",
     "Material",
@@ -813,6 +937,10 @@ __all__ = [
     "BallJoint",
     "PinSlotJoint",
     "ScrewJoint",
+    "GearRelation",
+    "RackPinionRelation",
+    "ScrewRelation",
+    "LinearRelation",
     "PartModifier",
     "Connection",
     "FixedTranslationConstraint",
@@ -830,10 +958,12 @@ __all__ = [
     "TextPath",
     "SolidOperation",
     "SurfaceOperation",
+    "BodyOperation",
     "SheetMetalOperation",
     "FinderRule",
     "FaceSelection",
     "Operation",
     "Joint",
+    "JointRelation",
     "ComponentRoot",
 ]

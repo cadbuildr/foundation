@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.2.21
+
+Onshape-parity release: the features below were missing compared with Onshape's Part Studio and Assembly toolbars.
+
+**Parts**
+- **Patterns:** `LinearPattern` takes a second direction (`direction2`, `count2`, `spacing2`) to make a grid. New `CurvePattern(shape, path, count, align_to_path=False)` places copies evenly along a 3D path. Without a `shape`, Linear, Polar and Curve patterns repeat the whole body built so far.
+- **Bodies:** `DeleteBodies(bodies)` / `KeepBodies(bodies)` (`part.delete_bodies`, `part.keep_bodies`).
+- **Fillets and chamfers:**
+  - variable fillet through radius control points: `Fillet.radius_points`, or `fillet_edges(..., radius_points=[(0.5, 4)])`;
+  - vertex chamfer: `VertexChamfer`, `part.chamfer_vertices`.
+- **Draft:** parting-line draft, `PartingLineDraft(solid, angle_deg, parting_plane=…)`.
+- **Direct edit:**
+  - `MoveFace` moves planar faces of prismatic regions;
+  - `DeleteFace` removes holes, pockets and bosses and heals the gap.
+- **Enclose:** `Enclose(surfaces)` gives the solid region closed off by crossing or overhanging sheets.
+- **Surfaces:** `FillSurface` (N-sided patch, G0/G1 to a support), `BoundarySurface`, `OffsetSurface`, `ExtendSurface`.
+- **Curves:** `CompositeCurve`, `IntersectionCurve`, `IsoparametricCurve` and `ProjectedCurve`, usable as Sweep paths, Loft guides and fill boundaries.
+- **Sketch:**
+  - sketch "Use": `ProjectedEdges(sketch, body)`;
+  - `mirror()` now also handles arcs, splines, Bézier curves, B-splines, ellipses and custom shapes.
+- **STEP import:** `ImportStep(path_or_file)` reads a STEP file like `open()` does. `ImportStep.from_text(...)` and `Part.from_step(...)` are also available. The file's units are honoured.
+- **Sheet metal:**
+  - corner break (`SheetMetalCornerBreak`, fillet or chamfer), carried into the flat pattern;
+  - form tool (`SheetMetalFormTool`): press any solid into the sheet.
+
+**Assemblies**
+- **Joint relations:** `GearRelation`, `RackPinionRelation`, `ScrewRelation`, `LinearRelation` via `assembly.add_relation(...)`. Driving one joint moves the coupled joints, and anything downstream follows.
+- **Component patterns:** `assembly.linear_pattern`, `polar_pattern`, `replicate(component, onto=[anchors])`.
+
 ## 0.2.20
 
 - **Edge fillet / chamfer on the part's body**, as in CAD tools: a `Fillet` or

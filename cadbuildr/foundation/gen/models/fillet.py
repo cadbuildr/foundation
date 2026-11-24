@@ -8,6 +8,7 @@ from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFie
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .edge_finder import EdgeFinder
+    from .fillet_radius_point import FilletRadiusPoint
     from .float_parameter import FloatParameter
     from .unions import SolidOperation
 
@@ -29,7 +30,7 @@ class Fillet(ParameterFieldsMixin, BaseModel):
             kwargs,
             cast_info=None,
             field_order=['solid', 'radius'],
-            list_fields=None,
+            list_fields=['radius_points'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -45,5 +46,6 @@ class Fillet(ParameterFieldsMixin, BaseModel):
     radius: FloatParameter = Field(...)
     edge_finder: Optional[EdgeFinder] = Field(default=None)
     radius_end: Optional[FloatParameter] = Field(default=None)
+    radius_points: Optional[List[FilletRadiusPoint]] = Field(default=None)
 
     model_config = {"protected_namespaces": ()}  # Pydantic v2 config

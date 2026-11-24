@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from .string_parameter import StringParameter
     from .unions import ComponentRoot
     from .unions import Joint
+    from .unions import JointRelation
 
 class AssemblyRoot(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object AssemblyRoot."""
@@ -29,6 +30,7 @@ class AssemblyRoot(ParameterFieldsMixin, BaseModel, Computable):
     components: List[ComponentRoot] = Field(...)
     anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     joints: List[Joint] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    relations: List[JointRelation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     material: Optional[Material] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

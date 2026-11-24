@@ -492,6 +492,7 @@ def _solid_boxes(op: Any, part_frame: Any) -> Optional[list[OBB]]:
         "Sphere",
         "Sweep",
         "MultiSectionSweep",
+        "ImportStep",
     ) and _is_cut(op):
         return None  # subtractive: never grows the part
     if name == "Extrusion":
@@ -502,10 +503,15 @@ def _solid_boxes(op: Any, part_frame: Any) -> Optional[list[OBB]]:
         return _sphere_boxes(op, part_frame)
     if name == "Wedge":
         return _wedge_boxes(op, part_frame)
+    if name == "ImportStep":
+        # Only the kernel reads STEP geometry; set extents by hand if needed.
+        raise _Unknown(f"ImportStep {op.filename.value!r} (use set_extents)")
     if name == "Loft":
         return _loft_boxes(op, part_frame)
     if name in ("Fillet", "Chamfer", "FullRound", "Split"):
         return None  # only removes material / rounds within the hull
+    if name in ("DeleteBodies", "KeepBodies"):
+        return None  # only removes bodies (the outer bound is kept)
     if name == "BooleanOperation":
         target = _solid_boxes(op.target, part_frame) or []
         kind = getattr(op.op, "value", op.op)
@@ -515,6 +521,8 @@ def _solid_boxes(op: Any, part_frame: Any) -> Optional[list[OBB]]:
         for tool in op.tools:
             out += _solid_boxes(tool, part_frame) or []
         return out
+    if name in ("LinearPattern", "PolarPattern", "CurvePattern") and op.shape is None:
+        raise _Unknown(f"{name} of the part's body")
     if name == "LinearPattern":
         if _is_cut(_expand(op.shape)):
             return None
@@ -524,8 +532,16 @@ def _solid_boxes(op: Any, part_frame: Any) -> Optional[list[OBB]]:
             raise _Unknown("LinearPattern with a zero direction")
         d = d / np.linalg.norm(d)
         step = _val(op.spacing)
+        count2 = max(int(_val(op.count2)), 1)
+        d2 = np.zeros(3)
+        if op.direction2 is not None and count2 > 1:
+            d2 = _vec3(op.direction2)
+            if np.linalg.norm(d2) < 1e-12:
+                raise _Unknown("LinearPattern with a zero direction2")
+            d2 = d2 / np.linalg.norm(d2) * _val(op.spacing2)
         return [
-            box.transformed(np.eye(3), d * step * i)
+            box.transformed(np.eye(3), d * step * i + d2 * j)
+            for j in range(count2)
             for i in range(max(int(_val(op.count)), 1))
             for box in seed
         ]
@@ -704,8 +720,9 @@ def estimate_part_extents(part: Any) -> PartExtents:
       control polygons, polygons and every rectangle/slot/polygon sugar that
       expands to them, ``Offset2D``, ``Trace``.
 
-    Subtractive operations (``cut=True``, holes) and ``Fillet`` / ``Chamfer`` /
-    ``FullRound`` / ``Split`` never grow a part. A straight cut extrusion of
+    Subtractive operations (``cut=True``, holes), ``Fillet`` / ``Chamfer`` /
+    ``FullRound`` / ``Split`` and ``DeleteBodies`` / ``KeepBodies`` never grow
+    a part. A straight cut extrusion of
     axis-aligned rectangles (tenon shoulders, notches, rebates) removes exactly
     its box and is carved out of the axis-aligned boxes built before it, so a
     tenoned rail is bounded by its beam box plus a tenon box; other cuts are
