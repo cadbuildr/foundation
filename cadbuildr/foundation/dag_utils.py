@@ -12,9 +12,21 @@ from cadbuildr.foundation.gen.dag import (
 )
 from cadbuildr.foundation.gen.dag.validation import print_node_hierarchy_report
 from cadbuildr.foundation.foundation_hooks import setup_foundation_hooks
+from cadbuildr.foundation import source_capture
 
 
-def show_dag(obj: Any, valid_types: Optional[List[str]] = None) -> Dict[str, Any]:
+def _resolve_with_source(with_source: Optional[bool]) -> bool:
+    """``None`` follows the capture switch (``CADBUILDR_WITH_SOURCE`` / enable())."""
+    if with_source is None:
+        return source_capture.is_enabled()
+    return bool(with_source)
+
+
+def show_dag(
+    obj: Any,
+    valid_types: Optional[List[str]] = None,
+    with_source: Optional[bool] = None,
+) -> Dict[str, Any]:
     """
     Convert a Pydantic model to a formatted DAG ready for visualization.
 
@@ -22,10 +34,38 @@ def show_dag(obj: Any, valid_types: Optional[List[str]] = None) -> Dict[str, Any
         obj: Pydantic model instance
         valid_types: Optional list of valid type names for expansion.
                      If None, uses DEFAULT_VALID_TYPES.
+        with_source: Emit ``src`` / ``fieldSrc`` (where each node was built in
+                     user code) on the nodes. ``None`` follows
+                     ``source_capture.is_enabled()``. Locations are recorded at
+                     construction, so capture must have been on while the
+                     model was built (see ``cadbuildr.foundation.source_capture``).
 
     Returns:
         Formatted DAG dictionary
     """
+    with source_capture.suspended():
+        return _show_dag(obj, valid_types, _resolve_with_source(with_source))
+
+
+def _show_dag(
+    obj: Any, valid_types: Optional[List[str]], with_source: bool
+) -> Dict[str, Any]:
+    # Assemblies built with interfaces (ground / connect) are checked on every
+    # build; the issues travel with the DAG (``checks``) for the viewer.
+    # Parts / assemblies with ``__checks__`` hooks or attached reports
+    # (library DFM, printability, fits...) add theirs, from the whole tree.
+    from cadbuildr.foundation.compute_functions import _SOURCE_COMPONENT_ATTR
+
+    checks = None
+    source = getattr(obj, _SOURCE_COMPONENT_ATTR, None) or obj
+    if isinstance(source, (Part, Assembly)):
+        from cadbuildr.foundation.checks import collect_checks
+        from cadbuildr.foundation.interfaces import uses_interfaces
+
+        found = collect_checks(source)
+        if found or uses_interfaces(obj):
+            checks = found
+
     # Convert Part/Assembly subclasses to their root representations
     # This ensures custom Part/Assembly classes get converted to PartRoot/AssemblyRoot
     if isinstance(obj, (Part, Assembly)):
@@ -51,16 +91,36 @@ def show_dag(obj: Any, valid_types: Optional[List[str]] = None) -> Dict[str, Any
         # Create type registry from provided valid_types
         type_registry = {type_name: i for i, type_name in enumerate(valid_types)}
 
-    root_id = pydantic_to_dag(obj, memo, type_registry, hooks)
+    root_id = pydantic_to_dag(obj, memo, type_registry, hooks, with_source=with_source)
     dag_data = format_dag(memo, root_id, type_registry)
 
     # Add serializableNodes mapping for frontend compatibility
     dag_data["serializableNodes"] = type_registry
+    if checks is not None:
+        dag_data["checks"] = checks
 
     return dag_data
 
 
-def show(obj: Any, valid_types: Optional[List[str]] = None) -> Optional[str]:
+def report_checks(checks: Optional[List[Dict[str, Any]]]) -> None:
+    """Print ``assembly.check()`` issues to the run output (one line each,
+    ``check: <severity> <code>: <message>``); info lines are skipped."""
+    import sys
+
+    for issue in checks or []:
+        if issue.get("severity") == "info":
+            continue
+        fix = f" (fix: {issue['fix']})" if issue.get("fix") else ""
+        sys.stdout.write(
+            f"check: {issue['severity']} {issue['code']}: {issue['message']}{fix}\n"
+        )
+
+
+def show(
+    obj: Any,
+    valid_types: Optional[List[str]] = None,
+    with_source: Optional[bool] = None,
+) -> Optional[str]:
     """
     Show a CAD object by converting it to DAG and sending via WebRTC broker.
 
@@ -68,6 +128,10 @@ def show(obj: Any, valid_types: Optional[List[str]] = None) -> Optional[str]:
         obj: Pydantic model instance to visualize
         valid_types: Optional list of valid type names. Nodes not in this list
                      will be expanded if possible.
+        with_source: Emit ``src`` / ``fieldSrc`` on each node so viewer edits
+                     map back to the user's code. ``None`` reads the capture
+                     switch (``CADBUILDR_WITH_SOURCE=1`` or
+                     ``source_capture.enable()``); see ``show_dag``.
 
     Returns:
         Request ID for tracking the build, or None if failed
@@ -75,29 +139,22 @@ def show(obj: Any, valid_types: Optional[List[str]] = None) -> Optional[str]:
     try:
         from cadbuildr.foundation.coms.utils_webrtc import show_ext
 
-        # Convert Part to PartRoot for viewer compatibility
-        if isinstance(obj, Part):
-            from cadbuildr.foundation.compute_functions import (  # pragma: allowlist secret
-                _convert_component_to_root,
-                _finalize_root_names,
-            )
+        # Objects built while converting belong to serialization, not user code.
+        with source_capture.suspended():
+            # Convert Part/Assembly to PartRoot/AssemblyRoot for the viewer
+            if isinstance(obj, (Part, Assembly)):
+                # Import here to avoid circular dependency
+                from cadbuildr.foundation.compute_functions import (  # pragma: allowlist secret
+                    _convert_component_to_root,
+                    _finalize_root_names,
+                )
 
-            obj = _convert_component_to_root(obj)
-            _finalize_root_names(obj)
+                # _convert_component_to_root handles frame hierarchy correctly
+                obj = _convert_component_to_root(obj)
+                _finalize_root_names(obj)
 
-        # Convert Assembly to AssemblyRoot
-        if isinstance(obj, Assembly):
-            # Import here to avoid circular dependency
-            from cadbuildr.foundation.compute_functions import (  # pragma: allowlist secret
-                _convert_component_to_root,
-                _finalize_root_names,
-            )
-
-            # Use _convert_component_to_root which handles frame hierarchy correctly
-            obj = _convert_component_to_root(obj)
-            _finalize_root_names(obj)
-
-        dag = show_dag(obj, valid_types)
+        dag = show_dag(obj, valid_types, with_source=with_source)
+        report_checks(dag.get("checks"))
 
         # Check for cycles BEFORE sending to frontend (prevents infinite loops)
         # This is critical - frontend will infinite loop if there's a cycle in frame hierarchy

@@ -18,7 +18,7 @@ wheels = [
 
 [[package]]
 name = "cadbuildr-foundation"
-version = "0.2.21"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
@@ -35,6 +35,7 @@ exact = [
 [package.dev-dependencies]
 dev = [
     { name = "graphql-core" },
+    { name = "manifold3d" },
     { name = "pytest" },
 ]
 
@@ -50,6 +51,7 @@ provides-extras = ["exact"]
 [package.metadata.requires-dev]
 dev = [
     { name = "graphql-core", specifier = ">=3.2.3,<4.0.0" },
+    { name = "manifold3d", specifier = ">=3.0.0,<4.0.0" },
     { name = "pytest", specifier = ">=8.0.0,<9.0.0" },
 ]
 
@@ -181,7 +183,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [

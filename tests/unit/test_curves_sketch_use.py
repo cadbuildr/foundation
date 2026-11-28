@@ -36,9 +36,10 @@ from cadbuildr.foundation import (
 )
 from cadbuildr.foundation.dag_utils import show_dag
 
-SCHEMA = (
-    pathlib.Path(__file__).resolve().parents[6] / "schemas/foundation/schema.graphql"
-)
+# Monorepo root (six levels up); a shallow standalone checkout has fewer
+# parents, so fall back to the filesystem root, where the schema is absent.
+_PARENTS = pathlib.Path(__file__).resolve().parents
+SCHEMA = _PARENTS[min(6, len(_PARENTS) - 1)] / "schemas/foundation/schema.graphql"
 
 
 def _xy(p):

@@ -18,6 +18,11 @@ class Rectangle(SketchElementMixin, BaseModel, Computable, Expandable):
     """Generated from GraphQL object Rectangle."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['p1', 'p2', 'p3', 'p4']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

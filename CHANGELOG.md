@@ -1,5 +1,54 @@
 # Changelog
 
+## 0.3.0
+
+Synced from the CADbuildr monorepo (Nov-27). Libraries built for this release
+pin `cadbuildr-foundation>=0.3.0,<0.4.0`.
+
+**Design checks: `__checks__` hook, reports, recursive `check()`**
+- Any Part or Assembly class can define `__checks__()` and return `issue(...)` dicts, `Report`s or strings. Libraries use it for printability, DFM and fit checks. Do not override `check()`.
+- Code that is not a method (an `@operation`, a rule) attaches findings with `add_check(component, issue_or_report)` or `Report(...).attach(component)`. An `@operation` may return `(geometry, report)`.
+- `part.check()` and `assembly.check()` collect the whole tree. Nested components are named by path (`sub/part`). `assembly.check(recursive=False)` keeps only the assembly's own interface checks. `collect_checks(obj)` is the function behind both.
+- `show_dag(obj)["checks"]` carries the issues for parts and assemblies. Each issue has the shape `{severity, code, interfaces, components, delta, message, fix}`.
+- Mate rules can warn without failing (`ctx.warn`). `screw_in_hole` warns `thread_engagement` and `thread_bottoms_out` for tapped holes; the reusable helper is `interfaces.rules.thread_engagement`.
+- Fix: an assembly's `frame` still chains after it is nested or serialised (`math_utils.frame_aliases`). Before this, `tf_relative_to_frame(x, asm.frame)` and `check_interference(asm)` raised "does not chain up to frame origin".
+
+**Public component API**
+- `owner_of(anchor_or_interface)`, `source_of(placed_root)` and `component_extents(component)`, which returns `ComponentExtents(lo, hi, boxes, unknown)`. They replace the private helpers `compute_functions._anchor_owner`, the `_source_component` attribute and `interference._walk`.
+- `assembly.ground(part, at=..., rot_deg=...)`, or `z_axis=` / `x_axis=`, grounds a component at a pose.
+- New helpers: `scale_about(shape, factor, center)` and `plane_from_normal(part, origin, normal, x_dir=None)`.
+- `self.head = ...` is allowed on a Part or Assembly.
+- Component names stay in sync after placement.
+- Fix: `check_interference` handles identical parts on free planes and after `show()`.
+
+**Compact DAG geometry**
+- `CompactPolygon` / `CompactPolyline` keep a whole outline in one node: flat coordinates, plus an optional bulge per edge for true arcs. `bulge_from_sweep` converts a sweep angle to a bulge. Bad input raises `CompactProfileError`.
+- `hole_pattern(...)` turns a `GridLocations` into one hole plus a `LinearPattern`, or a list of points into one multi-circle cut.
+- `ring(...)` makes an annulus or groove as one thin-wall `Extrusion`.
+
+**Joints and interfaces** (`cadbuildr.foundation.interfaces`, new)
+- Typed mating sites: `ScrewHole`, `ScrewHead`, `Shaft`, `Bore`, `BearingSeat`, `RodHole`, `NemaFace`, `TSlot`, `PlaneFace`, `PivotPin` / `PivotHole`, `SlideRail` / `SlideCarriage`, `StructuralEnd`, … Subclass `Interface` to add more; `clock_symmetry=n` is supported.
+- Add one with `part.add_interface(...)`. `assembly.connect(a, b, limits=(lo, hi), clock=k, **dof_or_options)` picks the joint from the mate-rule table (`@mate_rule`, `Mate` with `at` / `rotate` for computed placement, `export_rules()`). `assembly.check()` reports interfaces left unconnected, parts placed by coordinates and loops that no longer close.
+- Hole wizards take `fastener=`: `TappedHole` binds a threaded `ScrewHole` and `ClearanceHole` binds a clearance one. New features `RodHole`, `BearingPocket`, `NemaMount` and `ShaftFeature`.
+- Assembly patterns copy the relations that drive the patterned joint.
+- Joint DOF and sketch-dimension fields are documented in rad / mm (`@unit` in the schema).
+
+**Also in this release**
+- Sketch constraints (opt-in): `sketch.constrain([...])` with `Coincident`, `Horizontal`, `Vertical`, `Parallel`, `Perpendicular`, `Tangent`, `Equal`, `Fix`, `Distance`, `HorizontalDistance`, `VerticalDistance`, `Radius`, `Diameter`, `Angle`, `Concentric` and `PointOnLine`. They are solved into plain coordinates when the sketch is serialised, so kernels are unchanged.
+- Libraries (`cadbuildr.foundation.library`): `@part` / `@assembly` / `@operation` decorators with typed inputs (`Num`, `OneOf`, `Color`, `InputOf`). Libraries are discovered through the `cadbuildr.libraries` entry point and listed in a manifest. The CLI (`python -m cadbuildr.foundation.library`) provides eval / insert / sources. `PartRoot` / `AssemblyRoot` gain an optional `library: LibraryRef`.
+- Source locations on DAG nodes (opt-in): with `CADBUILDR_WITH_SOURCE=1` or `source_capture.enable()`, nodes carry `src` / `fieldSrc`. `show` / `show_dag` take `with_source=`. Columns and `fieldSrc` need Python 3.11 or later; on 3.10 only file and line are recorded.
+
+**Backward compatibility**
+- Most changes add API. Existing models build to the same DAG node ids: source capture, compact profiles and sketch constraints change nothing unless you use them.
+- The private helpers `_anchor_owner`, `_source_component` and `interference._walk` keep working as aliases. Move to `owner_of`, `source_of` and `component_extents`.
+- `show_dag` output may contain a new top-level `checks` key. `show()` prints warnings and errors as `check: <severity> <code>: …` lines.
+- Assigning a read-only foundation property on a Part or Assembly (`pf`, `live`, …) still raises `AttributeError`. The message now names the property instead of pydantic's "has no setter". `head` is now settable.
+- `CompactPolygon` / `CompactPolyline` are serialised as `CustomClosedShape` / `CustomOpenShape` made of Lines and Arcs, so existing kernels render them unchanged.
+- The exported mate-rule table is unchanged unless an interface sets `clock_symmetry`.
+- The new `library` field on `PartRoot` / `AssemblyRoot` is optional and defaults to `None`.
+- `manifold3d` joins the dev dependency group, for the exact-interference tests.
+- `Part.check` and `Assembly.check` are new methods. A subclass that already defines its own `check()` still overrides them, but it then skips the `__checks__` / report collection. New code should implement `__checks__` instead.
+
 ## 0.2.21
 
 Onshape-parity release: the features below were missing compared with Onshape's Part Studio and Assembly toolbars.

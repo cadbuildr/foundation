@@ -17,6 +17,11 @@ class EllipseArc(SketchElementMixin, ParameterFieldsMixin, BaseModel, Computable
     """Generated from GraphQL object EllipseArc."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['center', 'a', 'b', 'start_angle', 'end_angle']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

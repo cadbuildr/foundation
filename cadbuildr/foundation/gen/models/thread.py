@@ -19,6 +19,11 @@ class Thread(ParameterFieldsMixin, BaseModel, Computable, Expandable):
     """Generated from GraphQL object Thread."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['profile', 'pitch', 'height', 'radius', 'center', 'dir', 'lefthand']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

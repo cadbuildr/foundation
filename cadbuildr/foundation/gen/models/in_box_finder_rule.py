@@ -12,6 +12,11 @@ class InBoxFinderRule(BaseModel):
     """Generated from GraphQL object InBoxFinderRule."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['corner1', 'corner2']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

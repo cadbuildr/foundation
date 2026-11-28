@@ -16,6 +16,11 @@ class EllipticalCenterArc(ParameterFieldsMixin, BaseModel, Computable, Expandabl
     """Generated from GraphQL object EllipticalCenterArc."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['center', 'x_radius', 'y_radius', 'start_angle_deg', 'end_angle_deg']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

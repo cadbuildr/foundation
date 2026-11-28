@@ -4,15 +4,16 @@ from typing import Any, Callable, Iterable, Optional, Sequence
 import math
 import re
 
-from.gen.runtime import register_compute_fn, register_method_fn
-from.gen.runtime.helpers import register_cast_fn
+from .gen.runtime import register_compute_fn, register_method_fn
+from .gen.runtime.helpers import register_cast_fn
 
 
 @register_cast_fn("cast_edge_ref")
 def _cast_edge_ref(v):
     """Route a bare value passed for an EdgeRef field: an EdgeFinder becomes a
     query reference, anything else (a Line) becomes a constructed reference."""
-    from.gen.models import EdgeFinder, Line
+    from .gen.models import EdgeFinder, Line
+
     if isinstance(v, EdgeFinder):
         return {"finder": v}
     if isinstance(v, Line):
@@ -21,7 +22,7 @@ def _cast_edge_ref(v):
     return {"flange": v}
 
 
-from.gen.models import (
+from .gen.models import (
     Arc,
     Plane,
     Frame,
@@ -35,23 +36,48 @@ from.gen.models import (
     Assembly,
     AssemblyRoot,
 )
-from.helpers import PlaneFactory
-from.constants import ColorSpec, PLANES_CONFIG, resolve_color
-from.math_utils import (
+from .helpers import PlaneFactory
+from .constants import ColorSpec, PLANES_CONFIG, resolve_color
+from .math_utils import (
     quaternion_to_axes,
     axis_angle_to_quaternion,
     quaternion_multiply,
     create_frame_from_xdir_and_normal,
     compose_tf,
     invert_tf,
+    link_frame_aliases,
     tf_relative_to_frame,
 )
-from.placement import (
+from .placement import (
     DEFAULT_ANGLE_TOL_DEG,
     DEFAULT_POS_TOL,
     check_loop_closure,
     rotation_from_deg,
 )
+
+
+@register_compute_fn("solve_sketch_constraints")
+def solve_sketch_constraints(
+    inst: Sketch, field_name: str, meta: dict[str, Any]
+) -> str | None:
+    """Solve a sketch's optional constraints (see sketch_solver); None when it has none."""
+    from .sketch_solver import solve_sketch
+
+    return solve_sketch(inst)
+
+
+@register_method_fn("constrain_method")
+def constrain_method(inst: Sketch, constraints: Any) -> bool:
+    """Add constraints / dimensions to a sketch: ``sketch.constrain([Horizontal(l1), Distance(a, b, 60)])``."""
+    items = (
+        list(constraints) if isinstance(constraints, (list, tuple)) else [constraints]
+    )
+    if inst.constraints is None:
+        inst.constraints = []
+    inst.constraints.extend(items)
+    # Solve again at the next serialization.
+    object.__setattr__(inst, "solve_status", None)
+    return True
 
 
 @register_compute_fn("get_plane_factory")
@@ -67,13 +93,11 @@ def get_sketch_origin(inst: Sketch, field_name: str, meta: dict[str, Any]) -> Po
 
 
 @register_compute_fn("compute_convex_hull_lines")
-def compute_convex_hull_lines(
-    inst: Any, field_name: str, meta: dict[str, Any]
-) -> list:
+def compute_convex_hull_lines(inst: Any, field_name: str, meta: dict[str, Any]) -> list:
     """Compute the 2D convex hull of `inst.points` and return its boundary
     as a list of Lines (CCW). Falls back to a numpy-only Andrew monotone-chain
     algorithm so we don't take a hard dep on scipy.spatial.ConvexHull."""
-    from.gen.models import Line
+    from .gen.models import Line
 
     pts = list(inst.points)
     if len(pts) < 3:
@@ -104,16 +128,19 @@ def compute_convex_hull_lines(
     hull = lower[:-1] + upper[:-1]
 
     def pt(x: float, y: float) -> Point:
-        return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)
+        )
 
     hull_pts = [pt(*c) for c in hull]
-    return [Line(p1=hull_pts[i], p2=hull_pts[(i + 1) % len(hull_pts)]) for i in range(len(hull_pts))]
+    return [
+        Line(p1=hull_pts[i], p2=hull_pts[(i + 1) % len(hull_pts)])
+        for i in range(len(hull_pts))
+    ]
 
 
 @register_compute_fn("compute_helix2d_points")
-def compute_helix2d_points(
-    inst: Any, field_name: str, meta: dict[str, Any]
-) -> list:
+def compute_helix2d_points(inst: Any, field_name: str, meta: dict[str, Any]) -> list:
     """Sample an Archimedean spiral r(θ) = pitch · θ / (2π) on [0, n_turns·2π].
     The spiral starts at (center.x, center.y) and grows outward to
     `radius_outer` at θ = n_turns·2π. Sampling density: ~32 points per turn,
@@ -141,7 +168,9 @@ def compute_helix2d_points(
         r = pitch * theta / (2 * math.pi)
         x = cx + r * math.cos(theta)
         y = cy + r * math.sin(theta)
-        out.append(Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)))
+        out.append(
+            Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        )
     return out
 
 
@@ -167,7 +196,9 @@ def compute_sagitta_arc_control_point(
     nx, ny = -dy / length, dx / length
     apex_x = mx + nx * sagitta
     apex_y = my + ny * sagitta
-    return Point(sketch=sketch, x=FloatParameter(value=apex_x), y=FloatParameter(value=apex_y))
+    return Point(
+        sketch=sketch, x=FloatParameter(value=apex_x), y=FloatParameter(value=apex_y)
+    )
 
 
 @register_compute_fn("compute_tangent_arc_control_point")
@@ -200,7 +231,9 @@ def compute_tangent_arc_control_point(
     if abs(n_dot_c) < 1e-12:
         # Tangent collinear with chord ⇒ degenerate arc; return chord midpoint.
         mx, my = (p1x + p3x) / 2.0, (p1y + p3y) / 2.0
-        return Point(sketch=sketch, x=FloatParameter(value=mx), y=FloatParameter(value=my))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=mx), y=FloatParameter(value=my)
+        )
     r = chord_len_sq / (2.0 * n_dot_c)
     ox, oy = p1x + r * nx, p1y + r * ny
     abs_r = abs(r)
@@ -231,7 +264,9 @@ def compute_tangent_arc_control_point(
     ry = sin_h * a1x + cos_h * a1y
     apex_x = ox + rx
     apex_y = oy + ry
-    return Point(sketch=sketch, x=FloatParameter(value=apex_x), y=FloatParameter(value=apex_y))
+    return Point(
+        sketch=sketch, x=FloatParameter(value=apex_x), y=FloatParameter(value=apex_y)
+    )
 
 
 @register_compute_fn("compute_jern_arc_endpoint")
@@ -292,7 +327,7 @@ def compute_polyline_primitives(
     inst: Any, field_name: str, meta: dict[str, Any]
 ) -> list:
     """N-1 consecutive Lines through `inst.points`."""
-    from.gen.models import Line
+    from .gen.models import Line
 
     pts = list(inst.points)
     if len(pts) < 2:
@@ -309,7 +344,7 @@ def compute_fillet_polyline_primitives(
       - a Line from the previous tangent-out point to the new tangent-in
         point (cut short to leave room for the fillet);
       - an Arc with p2 at the arc midpoint on the inscribed circle."""
-    from.gen.models import Line, Arc
+    from .gen.models import Line, Arc
 
     pts = list(inst.points)
     if len(pts) < 2:
@@ -322,7 +357,9 @@ def compute_fillet_polyline_primitives(
     coords = [(p.x.value, p.y.value) for p in pts]
 
     def pt(x: float, y: float) -> Point:
-        return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)
+        )
 
     def normalize(vx: float, vy: float) -> tuple[float, float]:
         mag = math.hypot(vx, vy)
@@ -426,12 +463,16 @@ def compute_hole_axis_line(inst: Any, field_name: str, meta: dict[str, Any]) -> 
     The axis is the local-Y line of the perpendicular revolve sketch (see
     :func:`_hole_revolve_sketch`), which maps to the host sketch normal — so the
     bore is drilled along the face normal, matching the plain ``Hole``."""
-    from.gen.models import Line
+    from .gen.models import Line
 
     sketch = _hole_revolve_sketch(inst.point)
     return Line(
-        p1=Point(sketch=sketch, x=FloatParameter(value=0.0), y=FloatParameter(value=-1.0)),
-        p2=Point(sketch=sketch, x=FloatParameter(value=0.0), y=FloatParameter(value=1.0)),
+        p1=Point(
+            sketch=sketch, x=FloatParameter(value=0.0), y=FloatParameter(value=-1.0)
+        ),
+        p2=Point(
+            sketch=sketch, x=FloatParameter(value=0.0), y=FloatParameter(value=1.0)
+        ),
     )
 
 
@@ -448,7 +489,7 @@ def compute_counterbore_profile_lines(
     The wide counterbore step sits at the entry surface (depth 0); the narrow
     bore continues to ``depth``.
     """
-    from.gen.models import Line
+    from .gen.models import Line
 
     sketch = _hole_revolve_sketch(inst.point)
     rad = inst.radius.value
@@ -462,7 +503,9 @@ def compute_counterbore_profile_lines(
         raise ValueError("CounterBoreHole.cbore_depth must be less than depth")
 
     def pt(x: float, y: float) -> Point:
-        return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)
+        )
 
     p0 = pt(0.0, 0.0)
     p1 = pt(cb_rad, 0.0)
@@ -494,7 +537,7 @@ def compute_countersink_profile_lines(
     `cs_depth = (csink_radius - radius) / tan(half_angle)`. After the chamfer, a
     straight cylindrical section of radius `radius` continues to total `depth`.
     """
-    from.gen.models import Line
+    from .gen.models import Line
 
     sketch = _hole_revolve_sketch(inst.point)
     rad = inst.radius.value
@@ -516,7 +559,9 @@ def compute_countersink_profile_lines(
         )
 
     def pt(x: float, y: float) -> Point:
-        return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)
+        )
 
     p0 = pt(0.0, 0.0)
     p1 = pt(cs_rad, 0.0)
@@ -540,7 +585,7 @@ def compute_slot_center_to_center_primitives(
     """Build the 4 boundary primitives (2 lines + 2 semicircular arcs) of a
     SlotCenterToCenter from the centerline endpoints p1, p2 and slot width
     `height`."""
-    from.gen.models import Line, Arc
+    from .gen.models import Line, Arc
 
     p1x, p1y = inst.p1.x.value, inst.p1.y.value
     p2x, p2y = inst.p2.x.value, inst.p2.y.value
@@ -556,7 +601,9 @@ def compute_slot_center_to_center_primitives(
     nx, ny = -uy, ux
 
     def pt(x: float, y: float) -> Point:
-        return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)
+        )
 
     # Side line endpoints.
     a1 = pt(p1x + nx * r, p1y + ny * r)  # +offset at p1
@@ -577,14 +624,16 @@ def compute_slot_center_to_center_primitives(
 
 
 @register_compute_fn("compute_rounded_rectangle_primitives")
-def compute_rounded_rectangle_primitives(inst: Any, field_name: str, meta: dict[str, Any]) -> list:
+def compute_rounded_rectangle_primitives(
+    inst: Any, field_name: str, meta: dict[str, Any]
+) -> list:
     """Build the 8 boundary primitives (4 lines + 4 arcs) of a RectangleRounded.
 
     The rectangle is centered on `inst.center` with width `inst.w`, height
     `inst.h`, and corner fillet radius `inst.radius`. Each corner arc is a
     90° quarter-circle with `p2` placed at the arc midpoint (radius from the
     corner center, at 45°)."""
-    from.gen.models import Line, Arc
+    from .gen.models import Line, Arc
 
     cx = inst.center.x.value
     cy = inst.center.y.value
@@ -601,7 +650,9 @@ def compute_rounded_rectangle_primitives(inst: Any, field_name: str, meta: dict[
         )
 
     def pt(x: float, y: float) -> Point:
-        return Point(sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y))
+        return Point(
+            sketch=sketch, x=FloatParameter(value=x), y=FloatParameter(value=y)
+        )
 
     inv_sqrt2 = math.sqrt(2) / 2
 
@@ -634,7 +685,9 @@ def compute_rounded_rectangle_primitives(inst: Any, field_name: str, meta: dict[
 
 
 @register_compute_fn("compute_arc_control_point")
-def compute_arc_control_point(inst: Arc, field_name: str, meta: dict[str, Any]) -> Point:
+def compute_arc_control_point(
+    inst: Arc, field_name: str, meta: dict[str, Any]
+) -> Point:
     """Compute the control point (p2) for an arc from two points and radius.
 
     Based on old foundation implementation in arc.py:from_two_points_and_radius
@@ -782,7 +835,7 @@ def compute_sweep_sketch(inst: Any, field_name: str, meta: dict[str, Any]) -> Sk
 @register_compute_fn("compute_thread_path")
 def compute_thread_path(inst: Any, field_name: str, meta: dict[str, Any]) -> Any:
     """Compute the helix path used by a thread macro node."""
-    from.gen.models import Helix3D
+    from .gen.models import Helix3D
 
     return Helix3D(
         pitch=inst.pitch,
@@ -866,7 +919,7 @@ def _fully_expand_operation(operation: Any) -> Any:
     it either, and the kernel — which has no real ``Hole`` handler — fails to
     build the geometry. Loop until the result is no longer expandable.
     """
-    from.gen.runtime import Expandable
+    from .gen.runtime import Expandable
 
     # Guard against a pathological expand() that never reaches a terminal node.
     for _ in range(100):
@@ -1012,8 +1065,7 @@ def add_anchor_method(inst: Part | Assembly, anchor: Any) -> Any:
             return anchor
         if existing.name.value == name:
             raise ValueError(
-                f"Anchor name '{name}' already exists on "
-                f"'{inst.name.value}'."
+                f"Anchor name '{name}' already exists on " f"'{inst.name.value}'."
             )
     derived = _derived_names(inst)
     merged = getattr(inst, _MERGED_NAMESPACES_ATTR, None) or []
@@ -1066,7 +1118,7 @@ def anchor_from_plane(inst: Any, plane: Any, name: str) -> Any:
     Static method: ``inst`` is always None (run_method passes it for parity
     with instance methods).
     """
-    from.gen.models import Anchor
+    from .gen.models import Anchor
 
     return Anchor(
         frame=Frame(
@@ -1102,7 +1154,7 @@ def make_child_anchor(
     quaternion: Sequence[float],
 ) -> Any:
     """Anchor named exactly ``derived_name`` (already reserved) under ``base``."""
-    from.gen.models import Anchor
+    from .gen.models import Anchor
 
     derived = Anchor(
         frame=Frame(
@@ -1125,7 +1177,9 @@ def make_child_anchor(
 
 
 @register_method_fn("anchor_offset_method")
-def anchor_offset_method(inst: Any, translation: Sequence[float], name: str = "offset") -> Any:
+def anchor_offset_method(
+    inst: Any, translation: Sequence[float], name: str = "offset"
+) -> Any:
     """Derive an anchor translated in this anchor's local frame."""
     return _derive_anchor(inst, name, translation, [1.0, 0.0, 0.0, 0.0])
 
@@ -1348,7 +1402,9 @@ def _resolve_joint_tf(joint: Any, assembly: Any) -> tuple[list[float], list[floa
     p_t, p_q = _parent_anchor_tf(joint, assembly)
     t, q = compose_tf(p_t, p_q, *_joint_dof_tf(joint))
     if joint.flip.value:
-        t, q = compose_tf(t, q, [0.0, 0.0, 0.0], axis_angle_to_quaternion([1, 0, 0], math.pi))
+        t, q = compose_tf(
+            t, q, [0.0, 0.0, 0.0], axis_angle_to_quaternion([1, 0, 0], math.pi)
+        )
     c_t, c_q = tf_in_component(joint.child_anchor.frame, child_owner)
     return compose_tf(t, q, *invert_tf(c_t, c_q))
 
@@ -1669,7 +1725,7 @@ def _apply_joint_values(
 ) -> None:
     """Write DOF values atomically (limits checked, all-or-nothing), then
     re-place each touched joint and what is jointed downstream of it."""
-    from.gen.models import FloatParameter as FloatParam
+    from .gen.models import FloatParameter as FloatParam
 
     merged: dict[tuple[int, str], tuple[Any, str, float]] = {}
     for joint, dof, value in updates:
@@ -1861,20 +1917,27 @@ def ground_method(
     anchor: Any,
     at: Optional[Sequence[float]] = None,
     rot_deg: Any = None,
+    quaternion: Optional[Sequence[float]] = None,
 ) -> bool:
     """Fix a component to the assembly via a rigid joint.
 
     The component moves so that ``anchor`` coincides with the assembly frame
     translated by ``at`` (mm) and rotated by ``rot_deg`` (degrees, see
-    :func:`cadbuildr.foundation.placement.rotation_from_deg`). Axes are
-    aligned, not mated face-to-face. Defaults: the assembly origin.
+    :func:`cadbuildr.foundation.placement.rotation_from_deg`) or by
+    ``quaternion`` (``[w, x, y, z]``). Axes are aligned, not mated
+    face-to-face. Defaults: the assembly origin.
     """
-    from.gen.models import Anchor, RigidJoint
+    from .gen.models import Anchor, RigidJoint
 
+    if rot_deg is not None and quaternion is not None:
+        raise TypeError("ground: pass either rot_deg= or quaternion=, not both")
     position = _normalize_vector(at, 3) if at is not None else [0.0, 0.0, 0.0]
-    quaternion = (
-        rotation_from_deg(rot_deg) if rot_deg is not None else [1.0, 0.0, 0.0, 0.0]
-    )
+    if quaternion is not None:
+        quaternion = _normalize_vector(quaternion, 4)
+    else:
+        quaternion = (
+            rotation_from_deg(rot_deg) if rot_deg is not None else [1.0, 0.0, 0.0, 0.0]
+        )
     origin_anchor = Anchor(
         frame=Frame(
             top_frame=inst.frame,
@@ -1914,12 +1977,14 @@ def interface_add_constraint_method(
     quaternion: Sequence[float] = (1.0, 0.0, 0.0, 0.0),
 ) -> bool:
     """Append a translation/quaternion-based placement constraint."""
-    from.gen.models import FixedTranslationConstraint
+    from .gen.models import FixedTranslationConstraint
 
     vector = _normalize_vector(translation, 3)
     quat = _normalize_vector(quaternion, 4)
     inst.constraints.append(
-        FixedTranslationConstraint(component=component, translation=vector, quaternion=quat)
+        FixedTranslationConstraint(
+            component=component, translation=vector, quaternion=quat
+        )
     )
     return True
 
@@ -1960,14 +2025,16 @@ _material_counter = 0
 
 
 @register_method_fn("paint_method")
-def paint_method(inst: Part | Assembly, color: ColorSpec, transparency: float = 0.5) -> bool:
+def paint_method(
+    inst: Part | Assembly, color: ColorSpec, transparency: float = 0.5
+) -> bool:
     """Paint a part (creates Material instance).
 
     ``color`` may be a named color, a hex string (e.g. ``"#212121"``), or an
     ``[r, g, b]`` sequence; see :func:`cadbuildr.foundation.constants.resolve_color`.
     """
     global _material_counter
-    from.gen.models import Material, MaterialOptions
+    from .gen.models import Material, MaterialOptions
 
     # Resolve named color / hex string / [r, g, b] to an RGB triple.
     diffuse_color = resolve_color(color)
@@ -1977,7 +2044,9 @@ def paint_method(inst: Part | Assembly, color: ColorSpec, transparency: float = 
     material = Material(
         name=f"Material_{_material_counter}",
         painted_node_ids=[],
-        options=MaterialOptions(diffuse_color=diffuse_color, transparency=float(transparency)),
+        options=MaterialOptions(
+            diffuse_color=diffuse_color, transparency=float(transparency)
+        ),
     )
 
     # Store material on instance
@@ -2018,7 +2087,9 @@ def translate_z_method(inst: Part | Assembly, z: float) -> bool:
 
 
 @register_method_fn("rotate_method")
-def rotate_method(inst: Part | Assembly, angle: float, axis: Sequence[float] = (0.0, 0.0, 1.0)) -> bool:
+def rotate_method(
+    inst: Part | Assembly, angle: float, axis: Sequence[float] = (0.0, 0.0, 1.0)
+) -> bool:
     """Rotate a part or assembly around an axis by updating its frame quaternion.
 
     Args:
@@ -2044,12 +2115,28 @@ def rotate_method(inst: Part | Assembly, angle: float, axis: Sequence[float] = (
 
 @register_method_fn("to_dag_method")
 def to_dag_method(
-    inst: Part | Assembly, memo: dict[str, Any] | None = None
+    inst: Part | Assembly,
+    memo: dict[str, Any] | None = None,
+    with_source: bool = False,
 ) -> dict[str, Any]:
-    """Convert Part or Assembly to raw DAG dictionary (not formatted with version/rootNodeId)."""
-    from.foundation_hooks import setup_foundation_hooks
-    from.gen.dag import pydantic_to_dag
-    from.constants import DEFAULT_TYPE_REGISTRY
+    """Convert Part or Assembly to raw DAG dictionary (not formatted with version/rootNodeId).
+
+    ``with_source`` attaches recorded source locations (``src`` / ``fieldSrc``,
+    see ``cadbuildr.foundation.source_capture``) to the nodes; ids are unchanged.
+    """
+    from .source_capture import suspended
+
+    # Objects built while serializing are not user code: record no source.
+    with suspended():
+        return _to_dag(inst, memo, with_source)
+
+
+def _to_dag(
+    inst: Part | Assembly, memo: dict[str, Any] | None, with_source: bool
+) -> dict[str, Any]:
+    from .foundation_hooks import setup_foundation_hooks
+    from .gen.dag import pydantic_to_dag
+    from .constants import DEFAULT_TYPE_REGISTRY
 
     if memo is None:
         memo = {}
@@ -2058,7 +2145,7 @@ def to_dag_method(
     type_registry = DEFAULT_TYPE_REGISTRY.copy()
 
     # Convert to root if needed
-    from.compute_functions import _convert_component_to_root
+    from .compute_functions import _convert_component_to_root
 
     if isinstance(inst, (Part, Assembly)):
         inst = _convert_component_to_root(inst)
@@ -2066,7 +2153,7 @@ def to_dag_method(
     # Resolve slug-name collisions across the full tree before serializing.
     _finalize_root_names(inst)
 
-    pydantic_to_dag(inst, memo, type_registry, hooks)
+    pydantic_to_dag(inst, memo, type_registry, hooks, with_source=with_source)
 
     # Return raw memo dictionary (like old foundation)
     return memo
@@ -2089,7 +2176,7 @@ def make_origin_frame_default_frame(
         component_id: Unique identifier for the component
         new_top_frame: The parent frame (assembly frame) to point to
     """
-    from.gen.models import StringParameter
+    from .gen.models import StringParameter
 
     # Update the frame's top_frame in place (like old foundation's change_top_frame)
     if new_top_frame is not None:
@@ -2126,7 +2213,9 @@ def _camel_to_snake(name: str) -> str:
     return re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
-def _user_class_slug(component: Any, base_class_names: tuple[str, ...]) -> Optional[str]:
+def _user_class_slug(
+    component: Any, base_class_names: tuple[str, ...]
+) -> Optional[str]:
     """Return a snake_case slug if the component's runtime class is a user
     subclass of ``Part`` / ``Assembly`` (not the base class itself).
 
@@ -2159,8 +2248,8 @@ def _user_class_slug(component: Any, base_class_names: tuple[str, ...]) -> Optio
 # --------------------------------------------------------------------------- #
 
 _SOURCE_COMPONENT_ATTR = "_source_component"
-_LIVE_PART_FIELDS = ("operations", "planes", "anchors")
-_LIVE_ASSEMBLY_FIELDS = ("anchors", "joints", "relations")
+_LIVE_PART_FIELDS = ("operations", "planes", "anchors", "interfaces")
+_LIVE_ASSEMBLY_FIELDS = ("anchors", "interfaces", "joints", "relations")
 
 
 def _bind_live_fields(root: Any, source: Any, fields: tuple[str, ...]) -> None:
@@ -2177,6 +2266,49 @@ def _sync_material(root: Any, source: Any) -> None:
     material = getattr(source, "_material", None)
     if material is not None:
         root.material = material
+    _sync_library(root, source)
+
+
+# Instance attribute holding the ``LibraryRef`` a library configurable
+# (``cadbuildr.foundation.library``) stamps on the Part/Assembly it built.
+_LIBRARY_REF_ATTR = "_library_ref"
+
+
+def _library_ref_of(component: Any) -> Any:
+    return (
+        component.__dict__.get(_LIBRARY_REF_ATTR)
+        if hasattr(component, "__dict__")
+        else None
+    )
+
+
+def _sync_library(root: Any, source: Any) -> None:
+    ref = _library_ref_of(source)
+    if ref is not None:
+        root.library = ref
+
+
+def _inherit_component_source(root: Any, component: Any) -> None:
+    """A root stands for the user's Part/Assembly: point it at that object's
+    construction site (``source_capture``), not at the conversion call."""
+    from .gen.dag.conversion import SOURCE_ATTR
+
+    meta = component.__dict__.get(SOURCE_ATTR)
+    if meta and meta.get("src"):
+        root.__dict__[SOURCE_ATTR] = {"src": meta["src"]}
+
+
+def _sync_name(root: Any, source: Any, default: str) -> None:
+    """A name the user set on the Part / Assembly after placing it (``leg.name
+    = ...`` in the assembly's ``__init__``) wins over the root's copy, which
+    was taken at placement. Default names keep the root's generated name."""
+    name = getattr(source, "name", None)
+    value = getattr(name, "value", None)
+    if value is None or value == default or value == root.name.value:
+        return
+    root.name = name
+    if hasattr(root, _AUTO_SLUG_ATTR):
+        object.__delattr__(root, _AUTO_SLUG_ATTR)
 
 
 def _sync_part_root(root: PartRoot) -> None:
@@ -2185,6 +2317,7 @@ def _sync_part_root(root: PartRoot) -> None:
         return
     _bind_live_fields(root, source, _LIVE_PART_FIELDS)
     _sync_material(root, source)
+    _sync_name(root, source, "part0")
 
 
 def _convert_component_to_root(
@@ -2202,7 +2335,7 @@ def _convert_component_to_root(
         component: Part or Assembly to convert
         parent_frame: Optional parent frame (assembly frame) that component frame should point to
     """
-    from.gen.models import Frame, StringParameter, BoolParameter
+    from .gen.models import Frame, StringParameter, BoolParameter
 
     if isinstance(component, PartRoot):
         # Component is already a PartRoot, but we may need to update its frame's top_frame
@@ -2222,6 +2355,7 @@ def _convert_component_to_root(
             children = list(source.components)
             _bind_live_fields(component, source, _LIVE_ASSEMBLY_FIELDS)
             _sync_material(component, source)
+            _sync_name(component, source, "assembly0")
             for anchor in source.anchors:
                 if anchor.frame.top_frame is source.frame:
                     anchor.frame.top_frame = component.frame
@@ -2273,33 +2407,38 @@ def _convert_component_to_root(
             operations=component.operations,  # No need to update - frames reference component.frame which we just updated
             planes=component.planes,  # No need to update - frames reference component.frame which we just updated
             anchors=component.anchors,  # Anchor frames also chain through component.frame
+            interfaces=component.interfaces,
             material=getattr(component, "_material", None),
+            library=_library_ref_of(component),
         )
         if auto_slug is not None:
             object.__setattr__(part_root, _AUTO_SLUG_ATTR, auto_slug)
         object.__setattr__(part_root, _SOURCE_COMPONENT_ATTR, component)
+        _inherit_component_source(part_root, component)
         _bind_live_fields(part_root, component, _LIVE_PART_FIELDS)
         return part_root
     if isinstance(component, Assembly):
         # Create assembly frame first
         original_frame = component.frame
-        unique_frame_name = (
-            f"assembly_{_format_component_path(component_path)}_frame"
-        )
+        unique_frame_name = f"assembly_{_format_component_path(component_path)}_frame"
 
         # KEEP the assembly's position - it represents the transform applied to this assembly
         assembly_frame = Frame(
-            top_frame=original_frame.top_frame
-            if parent_frame is None
-            else parent_frame,
+            top_frame=(
+                original_frame.top_frame if parent_frame is None else parent_frame
+            ),
             name=StringParameter(value=unique_frame_name),
             display=BoolParameter(value=original_frame.display.value),
-            position=original_frame.position.copy()
-            if isinstance(original_frame.position, list)
-            else original_frame.position,
-            quaternion=original_frame.quaternion.copy()
-            if isinstance(original_frame.quaternion, list)
-            else original_frame.quaternion,
+            position=(
+                original_frame.position.copy()
+                if isinstance(original_frame.position, list)
+                else original_frame.position
+            ),
+            quaternion=(
+                original_frame.quaternion.copy()
+                if isinstance(original_frame.quaternion, list)
+                else original_frame.quaternion
+            ),
         )
 
         # Unlike Part conversion (frame updated in place), the assembly gets a
@@ -2314,6 +2453,13 @@ def _convert_component_to_root(
             _ROOT_FRAMES_ATTR,
             [*getattr(component, _ROOT_FRAMES_ATTR, ()), assembly_frame],
         )
+        # The children are re-rooted onto ``assembly_frame`` below, so
+        # ``original_frame`` no longer sits on their chain. Record that both
+        # frames are one coordinate system: ``tf_relative_to_frame(x,
+        # assembly.frame)`` (and so ``assembly.check()`` /
+        # ``check_interference(assembly)``) keeps working once the assembly
+        # is nested or serialised.
+        link_frame_aliases(original_frame, assembly_frame)
 
         # RECURSIVELY convert nested components, passing assembly frame so component frames can point to it
         converted_components = []
@@ -2345,15 +2491,16 @@ def _convert_component_to_root(
             name=assembly_name,
             components=converted_components,
             anchors=component.anchors,
+            interfaces=component.interfaces,
             joints=component.joints,
             relations=component.relations,
             material=getattr(component, "_material", None),
+            library=_library_ref_of(component),
         )
         if auto_assembly_slug is not None:
-            object.__setattr__(
-                assembly_root, _AUTO_SLUG_ATTR, auto_assembly_slug
-            )
+            object.__setattr__(assembly_root, _AUTO_SLUG_ATTR, auto_assembly_slug)
         object.__setattr__(assembly_root, _SOURCE_COMPONENT_ATTR, component)
+        _inherit_component_source(assembly_root, component)
         _bind_live_fields(assembly_root, component, _LIVE_ASSEMBLY_FIELDS)
         return assembly_root
 
@@ -2432,9 +2579,7 @@ def add_component_method(
     * ``at`` -- then a translation ``(x, y, z)`` in mm, in assembly space.
     """
     if tf is not None and (at is not None or rot_deg is not None):
-        raise TypeError(
-            "add_component: pass either tf= or at=/rot_deg=, not both"
-        )
+        raise TypeError("add_component: pass either tf= or at=/rot_deg=, not both")
     component_root = _convert_component_to_root(
         component,
         parent_frame=inst.frame,
@@ -2491,7 +2636,7 @@ def _parse_component_tf(tf: Any) -> tuple[list[float] | None, list[float] | None
             matrix = [list(tf[i * 4 : i * 4 + 4]) for i in range(4)]
         if matrix is not None:
             import numpy as np
-            from.math_utils import rotation_matrix_to_quaternion
+            from .math_utils import rotation_matrix_to_quaternion
 
             rot_matrix = np.array([row[:3] for row in matrix[:3]], dtype=float)
             translation = [
@@ -2516,7 +2661,9 @@ def _normalize_vector(value: Any, expected_len: int) -> list[float]:
 
 
 @register_method_fn("get_parallel_plane_method")
-def get_parallel_plane_method(inst: Plane, distance: float, name: str = "parallel") -> Plane:
+def get_parallel_plane_method(
+    inst: Plane, distance: float, name: str = "parallel"
+) -> Plane:
     """Create a plane parallel to this plane, offset by ``distance`` along its normal.
 
     The new frame is a CHILD of this plane's frame, so its transform is purely
@@ -2657,7 +2804,9 @@ def _p3(v: Any) -> Any:
 
 
 @register_method_fn("part_extrude_method")
-def part_extrude_method(inst: Any, shape: Any, depth: float, cut: bool = False, end_condition: Any = None) -> Any:
+def part_extrude_method(
+    inst: Any, shape: Any, depth: float, cut: bool = False, end_condition: Any = None
+) -> Any:
     from .gen.models import Extrusion
 
     kwargs = {"cut": cut}
@@ -2669,12 +2818,18 @@ def part_extrude_method(inst: Any, shape: Any, depth: float, cut: bool = False, 
 
 
 @register_method_fn("part_cut_extrude_method")
-def part_cut_extrude_method(inst: Any, shape: Any, depth: float, end_condition: Any = None) -> Any:
-    return part_extrude_method(inst, shape, depth, cut=True, end_condition=end_condition)
+def part_cut_extrude_method(
+    inst: Any, shape: Any, depth: float, end_condition: Any = None
+) -> Any:
+    return part_extrude_method(
+        inst, shape, depth, cut=True, end_condition=end_condition
+    )
 
 
 @register_method_fn("part_revolve_method")
-def part_revolve_method(inst: Any, shape: Any, axis: Any, angle: float = 360.0, cut: bool = False) -> Any:
+def part_revolve_method(
+    inst: Any, shape: Any, axis: Any, angle: float = 360.0, cut: bool = False
+) -> Any:
     from .gen.models import Axis, Lathe, Line
 
     if isinstance(axis, Line):
@@ -2710,7 +2865,9 @@ def _fillet_radius_points(points: Any) -> Any:
     return out
 
 
-def _make_fillet(solid: Any, radius: float, edges: Any, radius_end: Any, radius_points: Any) -> Any:
+def _make_fillet(
+    solid: Any, radius: float, edges: Any, radius_end: Any, radius_points: Any
+) -> Any:
     from .gen.models import Fillet
 
     kwargs: dict = {"solid": solid, "radius": radius, "edge_finder": edges}
@@ -2736,7 +2893,9 @@ def part_fillet_method(
 
 
 @register_method_fn("part_chamfer_method")
-def part_chamfer_method(inst: Any, solid: Any, distance: float, edges: Any = None) -> Any:
+def part_chamfer_method(
+    inst: Any, solid: Any, distance: float, edges: Any = None
+) -> Any:
     from .gen.models import Chamfer
 
     op = Chamfer(solid=solid, radius=distance, edge_finder=edges)
@@ -2785,21 +2944,29 @@ def part_chamfer_vertices_method(inst: Any, distance: float, at: Any = None) -> 
     from .gen.models import Point3D, VertexChamfer
 
     if not inst.operations:
-        raise ValueError("chamfer_vertices: add the features to bevel before the chamfer")
+        raise ValueError(
+            "chamfer_vertices: add the features to bevel before the chamfer"
+        )
     if float(distance) <= 0.0:
         raise ValueError(f"chamfer_vertices: distance {distance} must be positive")
     vertices = None
     if at is not None:
-        vertices = [p if isinstance(p, Point3D) else Point3D(*(float(c) for c in p)) for p in at]
+        vertices = [
+            p if isinstance(p, Point3D) else Point3D(*(float(c) for c in p)) for p in at
+        ]
         if not vertices:
-            raise ValueError("chamfer_vertices: `at` is empty — pass None to bevel every corner")
+            raise ValueError(
+                "chamfer_vertices: `at` is empty — pass None to bevel every corner"
+            )
     op = VertexChamfer(distance=distance, vertices=vertices)
     inst.add_operation(op)
     return op
 
 
 @register_method_fn("part_shell_method")
-def part_shell_method(inst: Any, solid: Any, thickness: float, faces: Any = None) -> Any:
+def part_shell_method(
+    inst: Any, solid: Any, thickness: float, faces: Any = None
+) -> Any:
     from .gen.models import Shell
 
     op = Shell(solid=solid, thickness=thickness, face_finder=faces)
@@ -2810,7 +2977,9 @@ def part_shell_method(inst: Any, solid: Any, thickness: float, faces: Any = None
 def _check_body_pattern(inst: Any, shape: Any, method: str) -> None:
     """shape=None patterns the part's body so far: it needs features before it."""
     if shape is None and not inst.operations:
-        raise ValueError(f"{method}: shape=None repeats the part's body; add features before the pattern")
+        raise ValueError(
+            f"{method}: shape=None repeats the part's body; add features before the pattern"
+        )
 
 
 @register_method_fn("part_linear_pattern_method")
@@ -2882,7 +3051,9 @@ def part_keep_bodies_method(inst: Any, bodies: Any) -> Any:
 
 
 @register_method_fn("part_curve_pattern_method")
-def part_curve_pattern_method(inst: Any, shape: Any, path: Any, count: int, align_to_path: bool = False) -> Any:
+def part_curve_pattern_method(
+    inst: Any, shape: Any, path: Any, count: int, align_to_path: bool = False
+) -> Any:
     from .gen.models import CurvePattern
 
     _check_body_pattern(inst, shape, "curve_pattern")
@@ -2898,5 +3069,7 @@ def compute_rib_lines(inst: Any, field_name: str, meta: dict[str, Any]) -> list:
 
     pts = list(inst.points)
     if len(pts) < 3:
-        raise ValueError("Rib needs at least 3 points (two segments and the closing chord)")
+        raise ValueError(
+            "Rib needs at least 3 points (two segments and the closing chord)"
+        )
     return [Line(pts[i], pts[(i + 1) % len(pts)]) for i in range(len(pts))]

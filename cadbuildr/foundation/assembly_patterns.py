@@ -20,6 +20,11 @@ Placement follows the original:
   limits) on a parent anchor *derived* from the original's parent anchor and
   moved by the pattern step. Derived anchors chain through their base, so
   the copies still follow the parent component when it moves.
+* joint relations -> every relation of the assembly that *drives* the
+  original's joint (a ``GearRelation`` from the sun to a planet) is copied
+  onto each copy's joint, so patterned planets turn with the sun. Relations
+  the original's joint drives are not copied (their driven DOF can follow
+  only one driver).
 
 No pattern node is serialized: kernels and viewers see the concrete
 instances and joints, exactly as if they had been added by hand, and the BOM
@@ -36,10 +41,13 @@ from .compute_functions import (
     _JOINT_ASSEMBLY_ATTR,
     _JOINT_CHILD_ROOT_ATTR,
     _PLACED_IN_ATTR,
+    _RELATION_SPECS,
     _SOURCE_COMPONENT_ATTR,
     _parent_anchor_tf,
     _placement_frame,
+    _relation_ends,
     add_joint_method,
+    add_relation_method,
     component_frames,
     make_child_anchor,
     unique_derived_anchor_name,
@@ -141,6 +149,31 @@ def _copy_joint(joint: Any, parent_anchor: Any, child_anchor: Any) -> Any:
     return type(joint)(parent_anchor=parent_anchor, child_anchor=child_anchor, **fields)
 
 
+def _driving_relations(assembly: Any, joint: Any) -> list[Any]:
+    """Relations of ``assembly`` whose driven end is ``joint``."""
+    out = []
+    for relation in assembly.relations:
+        _, (driven, _) = _relation_ends(relation)
+        if driven is joint:
+            out.append(relation)
+    return out
+
+
+def _add_joint_copy(assembly: Any, joint: Any, copy_joint: Any) -> None:
+    """Add ``copy_joint`` and re-create on it the relations driving ``joint``."""
+    add_joint_method(assembly, copy_joint)
+    for relation in _driving_relations(assembly, joint):
+        driver_field, _, driven_field, _, _ = _RELATION_SPECS[type(relation).__name__]
+        fields = {name: getattr(relation, name) for name in type(relation).model_fields}
+        if getattr(relation, driven_field) is None:  # ScrewRelation on itself
+            fields[driver_field] = copy_joint
+        else:
+            fields[driven_field] = copy_joint
+            if fields[driver_field] is joint:
+                fields[driver_field] = copy_joint
+        add_relation_method(assembly, type(relation)(**fields))
+
+
 def _place_copies(
     assembly: Any, component: Any, steps: list[Tf], label: str
 ) -> list[Any]:
@@ -179,7 +212,7 @@ def _place_copies(
             local_q,
         )
         clone, (child_anchor,) = _fresh_copy(component, [joint.child_anchor])
-        add_joint_method(assembly, _copy_joint(joint, parent, child_anchor))
+        _add_joint_copy(assembly, joint, _copy_joint(joint, parent, child_anchor))
         instances.append(clone)
     return instances
 
@@ -318,7 +351,7 @@ def assembly_replicate_method(
     instances = [component]
     for anchor in targets:
         clone, (clone_anchor,) = _fresh_copy(component, [joint.child_anchor])
-        add_joint_method(inst, _copy_joint(joint, anchor, clone_anchor))
+        _add_joint_copy(inst, joint, _copy_joint(joint, anchor, clone_anchor))
         instances.append(clone)
     return instances
 

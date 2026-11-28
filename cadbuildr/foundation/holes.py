@@ -86,3 +86,88 @@ def hole_point_from_anchor(anchor: Any) -> Any:
         display=BoolParameter(value=False),
     )
     return Sketch(plane).origin
+
+
+def hole_pattern(
+    locations: Any,
+    radius: float,
+    depth: float,
+    *,
+    other_depth: float = 0.0,
+) -> Any:
+    """N identical holes as ONE operation instead of N ``Hole`` cuts.
+
+    ``locations`` is a :class:`~cadbuildr.foundation.pattern.GridLocations`,
+    any other pattern with ``positions()`` (``Locations``, ``PolarLocations``,
+    ``HexLocations``) or a list of sketch Points, all on one sketch.
+
+    * A ``GridLocations`` becomes one hole plus a two-direction
+      ``LinearPattern`` (directions taken from the sketch plane's X / Y axes),
+      so a 29 x 53 grid plate is a handful of DAG nodes, not 1537 holes.
+    * Anything else becomes one cutting ``Extrusion`` of all the circles (one
+      boolean in the kernel, one feature in the tree).
+
+        part.add_operation(hole_pattern(GridLocations(s.origin, 8, 8, 29, 53), 2.0, -5))
+    """
+    from .gen.models import (
+        Circle,
+        Extrusion,
+        FloatParameter,
+        Hole,
+        LinearPattern,
+        Point,
+        Point3D,
+    )
+    from .pattern import GridLocations
+
+    radius, depth = float(radius), float(depth)
+    if radius <= 0:
+        raise ValueError(f"hole_pattern: radius must be > 0; got {radius:g}")
+    if isinstance(locations, GridLocations):
+        # Only the first position: every Point registers on its sketch, so
+        # building all of them would put the whole grid back in the DAG.
+        c = locations.center
+        first = Point(
+            sketch=c.sketch,
+            x=FloatParameter(
+                value=c.x.value - (locations.n_x - 1) * locations.x_pitch / 2.0
+            ),
+            y=FloatParameter(
+                value=c.y.value - (locations.n_y - 1) * locations.y_pitch / 2.0
+            ),
+        )
+        seed = Hole(
+            point=first, radius=radius, depth=depth, other_depth=other_depth
+        ).expand()
+        plane = first.sketch.plane
+        dirs = [
+            (plane.get_x_axis(), locations.n_x, locations.x_pitch),
+            (plane.get_y_axis(), locations.n_y, locations.y_pitch),
+        ]
+        dirs = [d for d in dirs if d[1] > 1]
+        if not dirs:
+            return seed
+        kwargs = {}
+        if len(dirs) == 2:
+            kwargs = {
+                "direction2": Point3D(*dirs[1][0]),
+                "count2": dirs[1][1],
+                "spacing2": dirs[1][2],
+            }
+        direction, count, spacing = dirs[0]
+        return LinearPattern(seed, Point3D(*direction), count, spacing, **kwargs)
+
+    points = list(
+        locations.positions() if hasattr(locations, "positions") else locations
+    )
+    if not points:
+        raise ValueError("hole_pattern: no hole locations")
+    sketch = points[0].sketch
+    if any(p.sketch is not sketch for p in points):
+        raise ValueError("hole_pattern: every location must be on the same sketch")
+    return Extrusion(
+        [Circle(p, radius) for p in points],
+        end=depth,
+        start=float(other_depth),
+        cut=True,
+    )

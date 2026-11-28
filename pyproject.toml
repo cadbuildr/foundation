@@ -1,6 +1,6 @@
 [project]
 name = "cadbuildr-foundation"
-version = "0.2.21"
+version = "0.3.0"
 description = "Foundation library for CADbuildr - Core types for parametric CAD"
 readme = "README.md"
 requires-python = ">=3.10.0,<4.0.0"
@@ -23,6 +23,7 @@ exact = [
 dev = [
     "pytest>=8.0.0,<9.0.0",
     "graphql-core>=3.2.3,<4.0.0",
+    "manifold3d>=3.0.0,<4.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]

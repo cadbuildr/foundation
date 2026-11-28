@@ -49,6 +49,8 @@ from .slot_center_point import SlotCenterPoint
 from .slot_overall import SlotOverall
 from .polyline import Polyline
 from .fillet_polyline import FilletPolyline
+from .compact_polygon import CompactPolygon
+from .compact_polyline import CompactPolyline
 from .triangle import Triangle
 from .trapezoid import Trapezoid
 from .rectangle_rounded import RectangleRounded
@@ -74,6 +76,22 @@ from .composite_curve import CompositeCurve
 from .intersection_curve import IntersectionCurve
 from .isoparametric_curve import IsoparametricCurve
 from .projected_curve import ProjectedCurve
+from .coincident import Coincident
+from .point_on_line import PointOnLine
+from .horizontal import Horizontal
+from .vertical import Vertical
+from .parallel import Parallel
+from .perpendicular import Perpendicular
+from .equal import Equal
+from .tangent import Tangent
+from .concentric import Concentric
+from .fix import Fix
+from .distance import Distance
+from .horizontal_distance import HorizontalDistance
+from .vertical_distance import VerticalDistance
+from .angle import Angle
+from .radius import Radius
+from .diameter import Diameter
 from .sketch import Sketch
 from .extrusion import Extrusion
 from .tapped_hole import TappedHole
@@ -182,6 +200,7 @@ from .chamfer import Chamfer
 from .material_options import MaterialOptions
 from .material import Material
 from .anchor import Anchor
+from .interface import Interface
 from .joint_limits import JointLimits
 from .rigid_joint import RigidJoint
 from .revolute_joint import RevoluteJoint
@@ -201,6 +220,7 @@ from .fixed_translation_constraint import FixedTranslationConstraint
 from .interface_grid_spec import InterfaceGridSpec
 from .assembly_interface import AssemblyInterface
 from .part import Part
+from .library_ref import LibraryRef
 from .part_root import PartRoot
 from .assembly import Assembly
 from .assembly_root import AssemblyRoot
@@ -210,6 +230,7 @@ from .unions import (
     LoftSection2D,
     Shape2D,
     Path3D,
+    SketchConstraint,
     TextPath,
     SolidOperation,
     SurfaceOperation,
@@ -274,6 +295,10 @@ Polyline.model_rebuild()
 
 FilletPolyline.model_rebuild()
 
+CompactPolygon.model_rebuild()
+
+CompactPolyline.model_rebuild()
+
 Triangle.model_rebuild()
 
 Trapezoid.model_rebuild()
@@ -323,6 +348,38 @@ IntersectionCurve.model_rebuild()
 IsoparametricCurve.model_rebuild()
 
 ProjectedCurve.model_rebuild()
+
+Coincident.model_rebuild()
+
+PointOnLine.model_rebuild()
+
+Horizontal.model_rebuild()
+
+Vertical.model_rebuild()
+
+Parallel.model_rebuild()
+
+Perpendicular.model_rebuild()
+
+Equal.model_rebuild()
+
+Tangent.model_rebuild()
+
+Concentric.model_rebuild()
+
+Fix.model_rebuild()
+
+Distance.model_rebuild()
+
+HorizontalDistance.model_rebuild()
+
+VerticalDistance.model_rebuild()
+
+Angle.model_rebuild()
+
+Radius.model_rebuild()
+
+Diameter.model_rebuild()
 
 Sketch.model_rebuild()
 
@@ -540,6 +597,8 @@ Material.model_rebuild()
 
 Anchor.model_rebuild()
 
+Interface.model_rebuild()
+
 JointLimits.model_rebuild()
 
 RigidJoint.model_rebuild()
@@ -577,6 +636,8 @@ InterfaceGridSpec.model_rebuild()
 AssemblyInterface.model_rebuild()
 
 Part.model_rebuild()
+
+LibraryRef.model_rebuild()
 
 PartRoot.model_rebuild()
 
@@ -660,6 +721,8 @@ register_type("Cylinder", Cylinder)
 register_type("Hole", Hole)
 
 register_type("InPlaneFinderRule", InPlaneFinderRule)
+
+register_type("Interface", Interface)
 
 register_type("Lathe", Lathe)
 
@@ -795,6 +858,8 @@ __all__ = [
     "SlotOverall",
     "Polyline",
     "FilletPolyline",
+    "CompactPolygon",
+    "CompactPolyline",
     "Triangle",
     "Trapezoid",
     "RectangleRounded",
@@ -820,6 +885,22 @@ __all__ = [
     "IntersectionCurve",
     "IsoparametricCurve",
     "ProjectedCurve",
+    "Coincident",
+    "PointOnLine",
+    "Horizontal",
+    "Vertical",
+    "Parallel",
+    "Perpendicular",
+    "Equal",
+    "Tangent",
+    "Concentric",
+    "Fix",
+    "Distance",
+    "HorizontalDistance",
+    "VerticalDistance",
+    "Angle",
+    "Radius",
+    "Diameter",
     "Sketch",
     "Extrusion",
     "TappedHole",
@@ -928,6 +1009,7 @@ __all__ = [
     "MaterialOptions",
     "Material",
     "Anchor",
+    "Interface",
     "JointLimits",
     "RigidJoint",
     "RevoluteJoint",
@@ -947,6 +1029,7 @@ __all__ = [
     "InterfaceGridSpec",
     "AssemblyInterface",
     "Part",
+    "LibraryRef",
     "PartRoot",
     "Assembly",
     "AssemblyRoot",
@@ -955,6 +1038,7 @@ __all__ = [
     "LoftSection2D",
     "Shape2D",
     "Path3D",
+    "SketchConstraint",
     "TextPath",
     "SolidOperation",
     "SurfaceOperation",

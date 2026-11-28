@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .extrusion import Extrusion
     from .fillet import Fillet
     from .frame import Frame
+    from .interface import Interface
     from .keep_bodies import KeepBodies
     from .lathe import Lathe
     from .linear_pattern import LinearPattern
@@ -234,6 +235,7 @@ class Part(ParameterFieldsMixin, BaseModel, Computable):
     operations: List[Operation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     planes: List[Plane] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    interfaces: List[Interface] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     pf: Optional[Any] = Field(default=None, json_schema_extra={'compute': {'fn': 'get_plane_factory'}})
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

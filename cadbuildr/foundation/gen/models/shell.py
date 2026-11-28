@@ -15,6 +15,11 @@ class Shell(ParameterFieldsMixin, BaseModel):
     """Generated from GraphQL object Shell."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['solid', 'thickness']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

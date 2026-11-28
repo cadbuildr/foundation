@@ -10,10 +10,16 @@ if TYPE_CHECKING:
     from .plane import Plane
     from .point import Point
     from .unions import Shape2D
+    from .unions import SketchConstraint
 
 class Sketch(BaseModel, Computable):
     """Generated from GraphQL object Sketch."""
 
+
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['plane']
 
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
@@ -29,7 +35,7 @@ class Sketch(BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['plane'],
-            list_fields=['elements'],
+            list_fields=['constraints', 'elements'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -45,10 +51,18 @@ class Sketch(BaseModel, Computable):
             'element': element
         }
         return run_method(self, 'add_element_method', _locals)
+    def constrain(self, constraints: List[SketchConstraint]) -> Optional[bool]:
+        # Build local namespace with parameters for method function
+        _locals = {
+            'constraints': constraints
+        }
+        return run_method(self, 'constrain_method', _locals)
 
 
     plane: Plane = Field(...)
+    solve_status: Optional[str] = Field(default=None, json_schema_extra={'compute': {'fn': 'solve_sketch_constraints', 'includeInDag': True}})
     elements: List[Shape2D] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     origin: Optional[Point] = Field(default=None, json_schema_extra={'compute': {'fn': 'get_sketch_origin', 'includeInDag': True}})
+    constraints: Optional[List[SketchConstraint]] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

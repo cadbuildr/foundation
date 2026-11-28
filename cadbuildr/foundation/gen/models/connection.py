@@ -8,6 +8,7 @@ from ..runtime import Computable, _eval_expr, run_method
 from cadbuildr.foundation.gen.runtime.parameter_fields_mixin import ParameterFieldsMixin
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
+    from .interface import Interface
     from .part_modifier import PartModifier
     from .string_parameter import StringParameter
     from .unions import Joint
@@ -15,6 +16,11 @@ if TYPE_CHECKING:
 class Connection(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object Connection."""
 
+
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['name', 'joint', 'modifiers']
 
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
@@ -30,7 +36,7 @@ class Connection(ParameterFieldsMixin, BaseModel, Computable):
             kwargs,
             cast_info=None,
             field_order=['name', 'joint', 'modifiers'],
-            list_fields=['modifiers'],
+            list_fields=['interfaces', 'modifiers'],
         )
         if use_normal:
             super().__init__(*args, **kwargs)
@@ -45,5 +51,6 @@ class Connection(ParameterFieldsMixin, BaseModel, Computable):
     name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='connection')"), json_schema_extra={'default': {'expr': "StringParameter(value='connection')"}})
     joint: Optional[Joint] = Field(default=None)
     modifiers: List[PartModifier] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    interfaces: Optional[List[Interface]] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config
