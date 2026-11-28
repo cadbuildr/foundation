@@ -16,6 +16,11 @@ class Rip(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object Rip."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['solid', 'edge_finder']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

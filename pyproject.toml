@@ -23,6 +23,7 @@ exact = [
 dev = [
     "pytest>=8.0.0,<9.0.0",
     "graphql-core>=3.2.3,<4.0.0",
+    "manifold3d>=3.0.0,<4.0.0",
 ]
 
 [tool.hatch.build.targets.wheel]

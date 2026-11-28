@@ -1,34 +1,41 @@
 """CADbuildr Foundation - Core types for parametric CAD (auto-generated from GraphQL schema)."""
 
 # Re-export all generated types dynamically
-from.gen.models import *
-from.gen.runtime import *
+from .gen.models import *
+from .gen.runtime import *
 
 # Import compute functions to register them
-from. import compute_functions  # noqa: F401
+from . import compute_functions  # noqa: F401
 
 # Import shape transformation methods to register them
-from. import shape_methods  # noqa: F401
+from . import shape_methods  # noqa: F401
 
 # Import helpers to add monkey-patched methods
-from. import helpers  # noqa: F401
+from . import helpers  # noqa: F401
 
 # Anchor patterns, rotate_deg/rotated_deg, add_anchors (monkey-patched)
-from. import anchors  # noqa: F401
+from . import anchors  # noqa: F401
 
 # Assembly linear_pattern / polar_pattern / replicate method fns
-from. import assembly_patterns  # noqa: F401
+from . import assembly_patterns  # noqa: F401
 
 # ImportStep constructors + Part.from_step (monkey-patched)
-from.mixin.import_step_mixin import StepFileError, install_part_from_step
+from .mixin.import_step_mixin import StepFileError, install_part_from_step
 
 install_part_from_step()
 
 # Export PlaneFactory for backward compatibility
-from.helpers import PlaneFactory, TFHelper, anchor_plane, make_anchor
+from .helpers import (
+    PlaneFactory,
+    TFHelper,
+    anchor_plane,
+    make_anchor,
+    plane_from_normal,
+    scale_about,
+)
 
 # Export pattern classes
-from.pattern import (
+from .pattern import (
     CircularPattern,
     RectangularPattern,
     GridLocations,
@@ -49,12 +56,32 @@ from .parameters import (
 )
 
 # DAG and WebRTC utilities
-from.dag_utils import show, show_dag
-from.sketch_ops import linear_copies, polar_copies, mirror, mirror_point, extend, intersect, trim_corner
-from.holes import ISO_METRIC_COARSE, tap_drill_diameter, clearance_diameter
-from.placement import LoopClosureError, rotation_from_deg
+from .dag_utils import show, show_dag
+
+# Opt-in source locations on DAG nodes (CADBUILDR_WITH_SOURCE=1 / enable())
+from . import source_capture  # noqa: F401
+from .sketch_ops import (
+    linear_copies,
+    polar_copies,
+    mirror,
+    mirror_point,
+    extend,
+    intersect,
+    trim_corner,
+)
+from .holes import (
+    ISO_METRIC_COARSE,
+    tap_drill_diameter,
+    clearance_diameter,
+    hole_pattern,
+)
+
+# CompactPolygon / CompactPolyline compute fns, ring(), bulge helpers
+from .compact import CompactProfileError, bulge_from_sweep, ring
+from .placement import LoopClosureError, rotation_from_deg
+
 # Assembly.check_interference / Part.set_extents (monkey-patched)
-from.interference import (
+from .interference import (
     OBB,
     Interference,
     InterferenceError,
@@ -65,9 +92,21 @@ from.interference import (
     obb_penetration,
     set_part_extents,
 )
-from.sheet_metal_materials import MATERIALS, sheet_thickness
-from.coms.screenshot_framing import build_screenshot_framing, request_viewer_screenshot
-from.coms.utils_webrtc import (
+
+# Public introspection: owner_of(anchor), source_of(root), component_extents(c)
+from .components import ComponentExtents, component_extents, owner_of, source_of
+
+# Typed interfaces: part.add_interface / assembly.connect / check (monkey-patched).
+from . import interfaces  # noqa: F401
+
+# Part.check / __checks__ hook / reports (Assembly.check recurses with them).
+from .checks import Report, add_check, collect_checks, issue, part_check
+
+if "check" not in Part.__dict__:
+    setattr(Part, "check", part_check)
+from .sheet_metal_materials import MATERIALS, sheet_thickness
+from .coms.screenshot_framing import build_screenshot_framing, request_viewer_screenshot
+from .coms.utils_webrtc import (
     set_port,
     set_broker_url,
     get_build_status,
@@ -75,7 +114,7 @@ from.coms.utils_webrtc import (
     wait_for_feedback,
     collect_and_display_feedback,
 )
-from.coms.kernel_api import KernelApiClient, KernelApiError
+from .coms.kernel_api import KernelApiClient, KernelApiError
 
 
 # Helpful error hints for unknown-symbol imports (PEP 562).
@@ -122,9 +161,7 @@ def __getattr__(name: str):
             + ", ".join(f"`from {mn} import {name}`" for mn in found_in[:3])
         )
     if close:
-        hints.append(
-            "close top-level names: " + ", ".join(close)
-        )
+        hints.append("close top-level names: " + ", ".join(close))
     hints.append("see the foundation-cheatsheet skill for the public API")
     hint_msg = " | ".join(hints)
 

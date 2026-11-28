@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .anchor import Anchor
     from .frame import Frame
+    from .interface import Interface
+    from .library_ref import LibraryRef
     from .material import Material
     from .plane import Plane
     from .string_parameter import StringParameter
@@ -29,6 +31,8 @@ class PartRoot(ParameterFieldsMixin, BaseModel, Computable):
     operations: List[Operation] = Field(...)
     planes: List[Plane] = Field(...)
     anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    interfaces: List[Interface] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     material: Optional[Material] = Field(default=None)
+    library: Optional[LibraryRef] = Field(default=None)
 
     model_config = {"protected_namespaces": (), "extra": "allow"}  # Pydantic v2 config

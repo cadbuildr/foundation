@@ -150,7 +150,9 @@ def quaternion_inverse(q: Sequence[float]) -> list[float]:
 def quaternion_rotate_vector(q: Sequence[float], v: Sequence[float]) -> list[float]:
     """Rotate vector [x, y, z] by quaternion [w, x, y, z]."""
     qv = [0.0, float(v[0]), float(v[1]), float(v[2])]
-    rotated = quaternion_multiply(quaternion_multiply(list(q), qv), quaternion_conjugate(q))
+    rotated = quaternion_multiply(
+        quaternion_multiply(list(q), qv), quaternion_conjugate(q)
+    )
     return [rotated[1], rotated[2], rotated[3]]
 
 
@@ -180,6 +182,42 @@ def invert_tf(
     return t_inv, q_inv
 
 
+# Instance attribute (on a Frame) holding the list of frames that stand for
+# the same coordinate system: an Assembly's own frame and the fresh root
+# frames ``_convert_component_to_root`` gives it each time it is placed in a
+# parent or serialised (``to_dag`` / ``show_dag``). The list object is shared
+# by every member of the group.
+_FRAME_ALIASES_ATTR = "_frame_aliases"
+
+
+def frame_aliases(frame: Any) -> list[Any]:
+    """Every frame that stands for the same coordinate system as ``frame``
+    (``frame`` itself first). An Assembly's frame and the root frames created
+    when it is nested or serialised are aliases of one another."""
+    if frame is None:
+        return []
+    group = getattr(frame, "__dict__", {}).get(_FRAME_ALIASES_ATTR)
+    if not group:
+        return [frame]
+    return [frame, *(f for f in group if f is not frame)]
+
+
+def link_frame_aliases(frame: Any, alias: Any) -> None:
+    """Record that ``alias`` stands for the same coordinate system as
+    ``frame`` (see :func:`frame_aliases`)."""
+    group = frame.__dict__.get(_FRAME_ALIASES_ATTR)
+    if group is None:
+        group = [frame]
+    other = alias.__dict__.get(_FRAME_ALIASES_ATTR) or [alias]
+    for f in other:
+        if not any(f is g for g in group):
+            group.append(f)
+    for f in group:
+        # Bypass pydantic: a private, non-field attribute (ignored by ==,
+        # serialisation and the DAG).
+        object.__setattr__(f, _FRAME_ALIASES_ATTR, group)
+
+
 def tf_relative_to_frame(
     frame: Any, ancestor_frame: Any = None
 ) -> tuple[list[float], list[float]]:
@@ -194,14 +232,22 @@ def tf_relative_to_frame(
     ``ancestor_frame`` may also be a list/tuple of frames that all stand for
     the same coordinate system (an assembly's own frame and the frames of the
     roots created from it when it was placed); the walk stops at the first one
-    it meets.
+    it meets. Aliases of a stop frame (:func:`frame_aliases`) count too, so an
+    assembly's ``frame`` keeps working as ``ancestor_frame`` after the
+    assembly was nested in another one or serialised with ``show_dag`` /
+    ``to_dag`` (which re-root its children onto a fresh frame).
     """
     if isinstance(ancestor_frame, (list, tuple)):
-        stops = list(ancestor_frame)
+        given = list(ancestor_frame)
     elif ancestor_frame is None:
-        stops = []
+        given = []
     else:
-        stops = [ancestor_frame]
+        given = [ancestor_frame]
+    stops: list[Any] = []
+    for stop in given:
+        for alias in frame_aliases(stop):
+            if not any(alias is s for s in stops):
+                stops.append(alias)
     chain = []
     cursor = frame
     while cursor is not None and not any(cursor is stop for stop in stops):

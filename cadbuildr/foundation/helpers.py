@@ -46,6 +46,8 @@ def _enable_auto_init(base_cls: type) -> None:
             original_init(self, *args, **kwargs)
 
         wrapped_init.__foundation_auto_init__ = True  # type: ignore[attr-defined]
+        # The user's own __init__ (its signature = the class's inputs).
+        wrapped_init.__foundation_original_init__ = original_init  # type: ignore[attr-defined]
         cls.__init__ = wrapped_init  # type: ignore[assignment]
 
     base_cls.__init_subclass__ = classmethod(_auto_init_subclass)  # type: ignore[assignment]
@@ -264,6 +266,58 @@ def _assembly_head_property(self: Assembly) -> AssemblyHeadCompat:
 
 
 setattr(Assembly, "head", property(_assembly_head_property))
+
+
+# ``head`` is only a legacy read-alias for ``.frame``; libraries name a
+# sub-part ``self.head`` (a screw head, a robot head). Assigning it stores the
+# user's value, which then shadows the compat alias on that instance.
+_USER_HEAD_ATTR = "_user_head"
+
+
+def _head_getter(compat: Any) -> Any:
+    def get(self: Any) -> Any:
+        if _USER_HEAD_ATTR in self.__dict__:
+            return self.__dict__[_USER_HEAD_ATTR]
+        return compat(self)
+
+    return get
+
+
+def _head_setter(self: Any, value: Any) -> None:
+    object.__setattr__(self, _USER_HEAD_ATTR, value)
+
+
+setattr(Part, "head", property(_head_getter(_part_head_property), _head_setter))
+setattr(
+    Assembly,
+    "head",
+    property(_head_getter(_assembly_head_property), _head_setter),
+)
+
+
+def _install_reserved_name_errors(cls: Any) -> None:
+    """Assigning over a read-only foundation property (``pf``, ``live``...)
+    raises an error that names the attribute instead of pydantic's
+    "property '_part_x_property' of 'Part' object has no setter"."""
+    previous = cls.__setattr__
+
+    def __setattr__(self: Any, name: str, value: Any) -> None:
+        if not name.startswith("_"):
+            attr = getattr(type(self), name, None)
+            if isinstance(attr, property) and attr.fset is None:
+                raise AttributeError(
+                    f"'{name}' is a reserved read-only attribute of "
+                    f"{type(self).__name__} (foundation API "
+                    f"{cls.__name__}.{name}); store your value under another "
+                    f"name, e.g. self.{name}_ = ..."
+                )
+        previous(self, name, value)
+
+    cls.__setattr__ = __setattr__
+
+
+_install_reserved_name_errors(Part)
+_install_reserved_name_errors(Assembly)
 
 
 # Add set_diffuse_color method to Material for backward compatibility
@@ -612,6 +666,81 @@ def make_anchor(
             display=BoolParameter(value=False),
             position=[float(p) for p in position],
             quaternion=[float(q) for q in quaternion],
+        ),
+        name=StringParameter(value=name),
+    )
+
+
+def scale_about(
+    shape: Any, factor: float, center: Sequence[float] = (0.0, 0.0, 0.0)
+) -> Any:
+    """Uniformly scale a solid by ``factor`` about ``center`` (part frame, mm).
+
+    ``Scale`` scales about the part origin; this moves ``center`` to the
+    origin, scales, and moves it back (``MoveBody`` -> ``Scale`` ->
+    ``MoveBody``), so no kernel support is needed. Add the result with
+    ``part.add_operation(...)`` like any solid operation, e.g. a 1.5 %
+    shrinkage allowance about a mould's datum:
+    ``part.add_operation(scale_about(body, 1.015, (0, 0, 10)))``.
+    """
+    from .gen.models import FloatParameter, MoveBody, Point3D, Scale
+
+    if float(factor) <= 0.0:
+        raise ValueError(f"scale_about: factor must be > 0, got {factor!r}")
+    c = [float(v) for v in center]
+    if len(c) != 3:
+        raise ValueError(f"scale_about: center must be (x, y, z), got {center!r}")
+
+    def p3(v: Sequence[float]) -> Any:
+        return Point3D(
+            x=FloatParameter(value=v[0]),
+            y=FloatParameter(value=v[1]),
+            z=FloatParameter(value=v[2]),
+        )
+
+    if not any(c):
+        return Scale(shape=shape, factor=FloatParameter(value=float(factor)))
+    moved = MoveBody(shape=shape, translation=p3([-v for v in c]))
+    scaled = Scale(shape=moved, factor=FloatParameter(value=float(factor)))
+    return MoveBody(shape=scaled, translation=p3(c))
+
+
+def plane_from_normal(
+    owner: Any,
+    origin: Sequence[float] = (0.0, 0.0, 0.0),
+    normal: Sequence[float] = (0.0, 0.0, 1.0),
+    x_dir: Optional[Sequence[float]] = None,
+    name: str = "plane_from_normal",
+) -> Plane:
+    """Sketching plane through ``origin`` with normal ``normal`` (and +X
+    toward ``x_dir``), in ``owner``'s coordinates.
+
+    ``owner`` is the Part (or Assembly, or a Plane / Frame) the plane hangs
+    from, so the plane moves with it; ``None`` gives a free-standing plane,
+    read in the coordinates of the part that uses it. Without ``x_dir``
+    the in-plane X follows the same rule as ``make_anchor(z_axis=...)``.
+    """
+    from .gen.models import Frame, StringParameter
+    from .math_utils import quaternion_from_directions
+
+    if owner is None:
+        top = None
+    elif isinstance(owner, Frame):
+        top = owner
+    elif hasattr(owner, "frame"):
+        top = owner.frame
+    else:
+        raise TypeError(
+            "plane_from_normal: owner must be a Part, Assembly, Plane, Frame or None, "
+            f"got {type(owner).__name__}"
+        )
+    return Plane(
+        frame=Frame(
+            top_frame=top,
+            name=StringParameter(value=f"{name}_frame"),
+            display=BoolParameter(value=False),
+            position=[float(v) for v in origin],
+            quaternion=[float(q) for q in quaternion_from_directions(normal, x_dir)],
         ),
         name=StringParameter(value=name),
     )

@@ -19,6 +19,11 @@ class PartingLineDraft(ParameterFieldsMixin, BaseModel, Computable):
     """Generated from GraphQL object PartingLineDraft."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['solid', 'angle_deg', 'parting_plane']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

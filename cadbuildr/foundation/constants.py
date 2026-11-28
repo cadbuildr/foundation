@@ -191,6 +191,27 @@ DEFAULT_VALID_TYPES: list[str] = [
     "RackPinionRelation",
     "ScrewRelation",
     "LinearRelation",
+    # Sketch constraints and dimensions (optional intent; metadata for kernels).
+    "Coincident",
+    "PointOnLine",
+    "Horizontal",
+    "Vertical",
+    "Parallel",
+    "Perpendicular",
+    "Equal",
+    "Tangent",
+    "Concentric",
+    "Fix",
+    "Distance",
+    "HorizontalDistance",
+    "VerticalDistance",
+    "Angle",
+    "Radius",
+    "Diameter",
+    # Library provenance on PartRoot / AssemblyRoot (cadbuildr.foundation.library).
+    "LibraryRef",
+    # Typed mating sites (cadbuildr.foundation.interfaces).
+    "Interface",
 ]
 
 DEFAULT_TYPE_REGISTRY: dict[str, int] = {

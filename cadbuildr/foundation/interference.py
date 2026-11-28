@@ -42,6 +42,7 @@ Entry point: ``assembly.check_interference(tolerance=0.0, allow=[...])``.
 from __future__ import annotations
 
 import math
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Optional, Sequence, Union
 
@@ -338,9 +339,41 @@ def _shape_points_2d(shape: Any) -> list[tuple[float, float]]:
         pts = [_xy(p) for p in shape.path_points]
         xs, ys = [p[0] for p in pts], [p[1] for p in pts]
         return [(min(xs) - w, min(ys) - w), (max(xs) + w, max(ys) + w)]
+    if name == "Text" and _TEXT_ESTIMATE.get():
+        return _text_points(shape)
     # Spline interpolates (may overshoot its points); Text / SVG need a font or
-    # an SVG parser: none of these can be bounded without guessing.
+    # an SVG parser: none of these can be bounded without guessing (Text is
+    # bounded only on request, see ``estimate_part_extents(text=True)``).
     raise _Unknown(f"2D shape {name}")
+
+
+#: Font-free Text box, in em (``size``): every glyph advance <= 1 em, the
+#: ascender <= 1 em above the baseline, the descender <= 0.3 em below it, a
+#: line pitch of 1.2 em and 0.1 em of left side bearing. An outer bound for
+#: ordinary Latin fonts (the default font included), not a measurement.
+_TEXT_ADVANCE_EM = 1.0
+_TEXT_ASCENT_EM = 1.0
+_TEXT_DESCENT_EM = 0.3
+_TEXT_LINE_EM = 1.2
+_TEXT_BEARING_EM = 0.1
+
+_TEXT_ESTIMATE: ContextVar[bool] = ContextVar("cadbuildr_text_estimate", default=False)
+
+
+def _text_points(shape: Any) -> list[tuple[float, float]]:
+    size = abs(_val(shape.size))
+    lines = str(getattr(shape.text, "value", shape.text) or "").split("\n")
+    longest = max((len(line) for line in lines), default=0)
+    if not longest:
+        raise _Unknown("Text: empty text")
+    x0, y0 = _val(shape.xshift), _val(shape.yshift)
+    return [
+        (
+            x0 - _TEXT_BEARING_EM * size,
+            y0 - (_TEXT_DESCENT_EM + _TEXT_LINE_EM * (len(lines) - 1)) * size,
+        ),
+        (x0 + longest * _TEXT_ADVANCE_EM * size, y0 + _TEXT_ASCENT_EM * size),
+    ]
 
 
 def _bounds_2d(shapes: Sequence[Any]) -> tuple[float, float, float, float]:
@@ -357,15 +390,28 @@ def _rotation(q: Sequence[float]) -> np.ndarray:
     return np.column_stack([x, y, z]).astype(float)
 
 
+def _root_frame(frame: Any) -> Any:
+    while frame.top_frame is not None:
+        frame = frame.top_frame
+    return frame
+
+
 def _frame_in_part(frame: Any, part_frame: Any) -> tuple[np.ndarray, np.ndarray]:
     """(R, t) of ``frame`` in ``part_frame`` coordinates."""
     try:
         t, q = tf_relative_to_frame(frame, part_frame)
         return _rotation(q), np.asarray(t, dtype=float)
     except ValueError:
-        # Not under the part frame (e.g. a plane on a foreign frame): go
-        # through the common root.
         t_f, q_f = tf_relative_to_frame(frame, None)
+        if _root_frame(frame) is not _root_frame(part_frame):
+            # A free-standing frame (``make_anchor`` never attached, e.g. a
+            # sketch on ``anchor_plane(make_anchor(...))``): the kernel reads
+            # it in the part's own coordinates, so it moves with the part.
+            # Going through the world root would pin it at the world origin
+            # and make identical placed parts look stacked on each other.
+            return _rotation(q_f), np.asarray(t_f, dtype=float)
+        # A plane on another component's frame in the same tree: go through
+        # the common root.
         t_p, q_p = tf_relative_to_frame(part_frame, None)
         r_f, r_p = _rotation(q_f), _rotation(q_p)
         return r_p.T @ r_f, r_p.T @ (np.asarray(t_f) - np.asarray(t_p))
@@ -704,8 +750,13 @@ def _carve(boxes: list[OBB], cuts: list[tuple[np.ndarray, np.ndarray]]) -> list[
     return boxes
 
 
-def estimate_part_extents(part: Any) -> PartExtents:
+def estimate_part_extents(part: Any, *, text: bool = False) -> PartExtents:
     """Bound a part (``Part`` or ``PartRoot``) from its operations.
+
+    ``text=True`` also bounds ``Text`` profiles with a font-free estimate
+    (glyph advance <= 1 em, ascender 1 em, descender 0.3 em, 1.2 em line
+    pitch: an outer bound for ordinary Latin fonts, not a measurement).
+    ``check_interference`` keeps the default, where Text is unknown.
 
     Estimated (outer bounds, in the part frame):
 
@@ -746,7 +797,14 @@ def estimate_part_extents(part: Any) -> PartExtents:
         )
     if explicit is not None:
         return explicit
+    token = _TEXT_ESTIMATE.set(bool(text))
+    try:
+        return _estimate_from_operations(part)
+    finally:
+        _TEXT_ESTIMATE.reset(token)
 
+
+def _estimate_from_operations(part: Any) -> PartExtents:
     boxes: list[OBB] = []
     inflate = 0.0
     unknown: list[str] = []
@@ -891,11 +949,21 @@ def _display_names(children: Sequence[Any]) -> list[str]:
 
 def _walk(
     assembly: Any,
+    *,
+    text: bool = False,
 ) -> tuple[list[_Leaf], dict[int, set[int]], list[Any], dict[str, set[int]]]:
     """Leaves, component-id -> leaf indices, every (sub)assembly object, and
     path -> leaf indices (for parts and sub-assemblies)."""
-    from .compute_functions import _SOURCE_COMPONENT_ATTR, _convert_component_to_root
+    from .compute_functions import (
+        _SOURCE_COMPONENT_ATTR,
+        _convert_component_to_root,
+        component_frames,
+    )
     from .gen.models import AssemblyRoot, PartRoot
+
+    # Every frame standing for the assembly: after show()/to_dag converted it
+    # to a root, its children hang from that root's frame, not ``.frame``.
+    own_frames = component_frames(assembly)
 
     leaves: list[_Leaf] = []
     members: dict[int, set[int]] = {}
@@ -918,9 +986,9 @@ def _walk(
                 assemblies.append(source if source is not None else child)
                 idxs = visit(child.components, path + "/")
             elif isinstance(child, PartRoot):
-                t, q = tf_relative_to_frame(child.frame, assembly.frame)
+                t, q = tf_relative_to_frame(child.frame, own_frames)
                 rot, trans = _rotation(q), np.asarray(t, dtype=float)
-                extents = estimate_part_extents(child)
+                extents = estimate_part_extents(child, text=text)
                 leaves.append(
                     _Leaf(
                         path,
@@ -1059,7 +1127,9 @@ def kernel_api_mesher(
         from .dag_utils import show_dag
 
         api = client or KernelApiClient()
-        out = api.compile_mesh(dag=show_dag(part), mesh_config=config)
+        out = api.compile_mesh(
+            dag=show_dag(part, with_source=False), mesh_config=config
+        )
         store = (out.get("mesh") or out).get("store") or {}
         geometries = []
         for entry in store.values():

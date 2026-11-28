@@ -8,6 +8,61 @@ from .hash import compute_hash
 from .hooks import HookRegistry, TraversalContext, run_hooks
 
 
+# Instance ``__dict__`` key holding where a model was built in user code:
+# ``{"src": SourceRef, "fieldSrc": {field: SourceRef}}``. Written by the host
+# package's source capture (e.g. ``cadbuildr.foundation.source_capture``); it is
+# not a pydantic field, so it never reaches validation, dumps or equality.
+SOURCE_ATTR = "_dag_source"
+
+# Node keys that carry source metadata. They are attached *after* the node is
+# hashed, so node ids are identical with and without them.
+SOURCE_NODE_KEYS = ("src", "fieldSrc")
+
+
+def get_source(obj: Any) -> Optional[Dict[str, Any]]:
+    """Return the source metadata recorded on ``obj``, if any."""
+    data = getattr(obj, "__dict__", None)
+    if not data:
+        return None
+    return data.get(SOURCE_ATTR)
+
+
+def _attach_source(node: Dict[str, Any], obj: Any) -> None:
+    """Copy ``obj``'s source metadata onto an emitted node.
+
+    Deduplicated nodes stand for several objects: the first one that has a
+    location wins, and ``src`` / ``fieldSrc`` always come from that same one.
+    """
+    if "src" in node:
+        return
+    meta = get_source(obj)
+    if not meta or not meta.get("src"):
+        return
+    for key in SOURCE_NODE_KEYS:
+        value = meta.get(key)
+        if value:
+            node[key] = value
+
+
+def _inherit_source(target: Any, origin: Any) -> None:
+    """Give an expanded object its origin's source when it has none.
+
+    Expansions are built while serializing, far from user code; the node they
+    emit stands for ``origin``, so it carries ``origin``'s location. Field
+    locations are kept only for fields the expanded type also has.
+    """
+    meta = get_source(origin)
+    data = getattr(target, "__dict__", None)
+    if not meta or data is None or data.get(SOURCE_ATTR):
+        return
+    fields = getattr(type(target), "model_fields", {})
+    inherited = {"src": meta.get("src")}
+    field_src = {k: v for k, v in (meta.get("fieldSrc") or {}).items() if k in fields}
+    if field_src:
+        inherited["fieldSrc"] = field_src
+    data[SOURCE_ATTR] = inherited
+
+
 def _get_type_id(type_name: str, type_registry: Dict[str, int]) -> int:
     """Get type ID from registry, adding it if not present."""
     if type_name not in type_registry:
@@ -210,10 +265,12 @@ class _Traversal(set):
     one conversion an object therefore keeps the id of its first visit.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, with_source: bool = False) -> None:
         super().__init__()
         # id(obj) -> (obj, node id); holding obj keeps its id() from being reused.
         self.emitted: Dict[int, Tuple[Any, str]] = {}
+        # Attach recorded source locations (``src`` / ``fieldSrc``) to nodes.
+        self.with_source = with_source
 
 
 def pydantic_to_dag(
@@ -221,7 +278,8 @@ def pydantic_to_dag(
     memo: Dict[str, Any],
     type_registry: Optional[Dict[str, int]] = None,
     hooks: Optional[HookRegistry] = None,
-    processing: Optional[Set[int]] = None
+    processing: Optional[Set[int]] = None,
+    with_source: bool = False,
 ) -> str:
     """
     Convert a Pydantic model to DAG format recursively.
@@ -233,6 +291,8 @@ def pydantic_to_dag(
         type_registry: Dynamic mapping of type names to integer IDs (defaults to empty dict)
         hooks: Optional hook registry for custom processing
         processing: Set of object IDs currently being processed (for cycle detection)
+        with_source: Attach each object's recorded source location to its node
+            as ``src`` / ``fieldSrc`` (see ``SOURCE_ATTR``). Never hashed.
         
     Returns:
         Hash ID of the object
@@ -249,7 +309,10 @@ def pydantic_to_dag(
     
     # Initialize processing set if not provided
     if processing is None:
-        processing = _Traversal()
+        processing = _Traversal(with_source)
+    elif with_source and isinstance(processing, _Traversal):
+        processing.with_source = True
+    attach_source = getattr(processing, "with_source", False)
     
     # Get object identity for cycle detection
     obj_id = id(obj)
@@ -289,6 +352,8 @@ def pydantic_to_dag(
     # Check for expansion if valid_types is provided and type is not valid
     expanded = _expand_type_if_needed(obj, type_name, valid_types, context, hooks)
     if expanded is not None:
+        if attach_source:
+            _inherit_source(expanded, obj)
         node_id = pydantic_to_dag(expanded, memo, type_registry, hooks, processing)
         if emitted is not None:
             emitted[obj_id] = (obj, node_id)
@@ -329,13 +394,17 @@ def pydantic_to_dag(
 
         # If already in memo, return the hash
         if node_hash in memo:
+            if attach_source:
+                _attach_source(memo[node_hash], obj)
             return node_hash
         
         # Run after_node hook
         if hooks:
             run_hooks("after_node", obj, context, hooks)
         
-        # Add to memo
+        # Add to memo (source metadata goes on after hashing, never into it)
+        if attach_source:
+            _attach_source(node_content, obj)
         memo[node_hash] = node_content
         
         return node_hash

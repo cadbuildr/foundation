@@ -50,6 +50,26 @@ def setup_foundation_hooks(registry: Optional[HookRegistry] = None) -> HookRegis
 
     reg.register("should_skip_field", "*", skip_pf_field)
 
+    # An empty ``interfaces`` list (most components) is not written, so the
+    # DAG of a component without interfaces is the same as before they existed.
+    def skip_empty_interfaces(
+        field_name: str, obj: BaseModel, context: TraversalContext
+    ) -> bool:
+        return field_name == "interfaces" and not getattr(obj, "interfaces", None)
+
+    reg.register("should_skip_field", "*", skip_empty_interfaces)
+
+    # A CompactPolygon / CompactPolyline that a kernel reads natively is
+    # written as coords + bulges only; its Line/Arc `primitives` are the
+    # lowering, and writing them would undo the compaction.
+    def skip_compact_primitives(
+        field_name: str, obj: BaseModel, context: TraversalContext
+    ) -> bool:
+        return field_name == "primitives"
+
+    for compact in ("CompactPolygon", "CompactPolyline"):
+        reg.register("should_skip_field", compact, skip_compact_primitives)
+
     # Propagate sketch context after expansion (e.g., Square -> Polygon)
     def propagate_sketch_after_expand(
         obj: BaseModel, context: TraversalContext
@@ -74,6 +94,34 @@ def setup_foundation_hooks(registry: Optional[HookRegistry] = None) -> HookRegis
                 pass
 
     reg.register("after_expand", "*", propagate_sketch_after_expand)
+
+    # A constrained sketch is solved before any of its geometry is written: an
+    # operation can reach a sketch's points (through its shape) before the
+    # Sketch node itself, and those points must already hold solved values.
+    def solve_sketch_before_elements(obj: BaseModel, context: TraversalContext) -> None:
+        # Any node with a sketch (an Extrusion, a shape, a point): reached before the
+        # shapes an expansion may copy, so the copies carry solved values too.
+        if "sketch" not in type(obj).model_fields:
+            return
+        sketch = getattr(obj, "sketch", None)
+        if type(sketch).__name__ == "Sketch" and getattr(sketch, "constraints", None):
+            if getattr(sketch, "solve_status", None) is None:
+                # As conversion computes a None @compute field; stored so it runs once.
+                object.__setattr__(
+                    sketch, "solve_status", sketch.compute("solve_status")
+                )
+
+    # Hooks are looked up by exact type name: register for every type with a sketch.
+    from cadbuildr.foundation.gen import models
+
+    with_sketch = [
+        name
+        for name, cls in vars(models).items()
+        if isinstance(cls, type)
+        and issubclass(cls, BaseModel)
+        and "sketch" in getattr(cls, "model_fields", {})
+    ]
+    reg.register("on_encounter", with_sketch, solve_sketch_before_elements)
 
     # Special case: Material.options should be serialized as dict in params
     def process_material_options(

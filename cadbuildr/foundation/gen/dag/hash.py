@@ -93,6 +93,10 @@ def _truncate_dag_hashes(dag: dict, root_hash: str, initial_length: int = 4) -> 
             "params": node["params"],
             "deps": {},
         }
+        # Carry the non-hashed source metadata through (see conversion.py).
+        for extra_key in ("src", "fieldSrc"):
+            if extra_key in node:
+                updated_node[extra_key] = node[extra_key]
         
         for dep_key, dep_value in node.get("deps", {}).items():
             if isinstance(dep_value, list):

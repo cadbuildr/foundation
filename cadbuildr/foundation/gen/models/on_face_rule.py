@@ -12,6 +12,11 @@ class OnFaceRule(BaseModel):
     """Generated from GraphQL object OnFaceRule."""
 
 
+    # Field each positional constructor argument lands in (read by source
+    # capture to map a call's arguments back to fields; pydantic ignores
+    # dunder class attributes).
+    __positional_fields__ = ['face_finder']
+
     # --- Positional-argument constructor shim --------------------- #
     def __init__(self, *args, **kwargs):
         """

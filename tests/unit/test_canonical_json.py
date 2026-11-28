@@ -14,8 +14,11 @@ import pytest
 from cadbuildr.foundation.gen.dag.canonical_json import serialize
 
 
+# Monorepo root (six levels up); a shallow standalone checkout has fewer
+# parents, so fall back to the filesystem root, where the fixture is absent.
+_PARENTS = Path(__file__).resolve().parents
 _FIXTURE_PATH = (
-    Path(__file__).resolve().parents[6]
+    _PARENTS[min(6, len(_PARENTS) - 1)]
     / "tsjs/packages/dag/dag-utils/__test__/fixtures/canonical-json/cases.json"
 )
 

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from .anchor import Anchor
     from .connection import Connection
     from .frame import Frame
+    from .interface import Interface
     from .plane import Plane
     from .string_parameter import StringParameter
     from .unions import ComponentRoot
@@ -148,6 +149,7 @@ class Assembly(ParameterFieldsMixin, BaseModel, Computable):
     name: StringParameter = Field(default_factory=lambda: _eval_expr({}, "StringParameter(value='assembly0')"), json_schema_extra={'default': {'expr': "StringParameter(value='assembly0')"}})
     components: List[ComponentRoot] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     anchors: List[Anchor] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
+    interfaces: List[Interface] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     joints: List[Joint] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
     relations: List[JointRelation] = Field(default_factory=lambda: _eval_expr({}, '[]'), json_schema_extra={'default': {'expr': '[]'}})
 
