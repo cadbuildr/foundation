@@ -41,6 +41,13 @@ MODEL = textwrap.dedent("""\
     """)
 
 
+# Columns, source text and fieldSrc come from code positions (co_positions),
+# which Python 3.10 lacks: there capture records only ``file`` + ``line``.
+needs_columns = pytest.mark.skipif(
+    sys.version_info < (3, 11), reason="columns and fieldSrc need Python 3.11+"
+)
+
+
 def _line_of(source: str, needle: str) -> int:
     for number, line in enumerate(source.splitlines(), start=1):
         if needle in line:
@@ -88,6 +95,7 @@ def _assert_ref_points_at_text(ref, source):
     assert line[ref["col"] : ref["endCol"]] == ref["text"]
 
 
+@needs_columns
 def test_literal_argument_maps_to_owner_field(project, capture):
     dag = _build(project)
     node = _extrusion_with_end_text(dag, "10")
@@ -107,6 +115,7 @@ def test_literal_argument_maps_to_owner_field(project, capture):
     assert node["fieldSrc"]["shape"]["text"] == "sq"
 
 
+@needs_columns
 def test_variable_argument_text_is_the_variable_name(project, capture):
     dag = _build(project)
 
@@ -124,6 +133,7 @@ def test_variable_argument_text_is_the_variable_name(project, capture):
     assert "endCol" not in multi["src"]  # the call spans several lines
 
 
+@needs_columns
 def test_shared_parameter_is_one_node_with_per_owner_locations(project, capture):
     dag = _build(project)
     owners = [
@@ -147,6 +157,7 @@ def test_shared_parameter_is_one_node_with_per_owner_locations(project, capture)
     assert param["src"]["text"] == "FloatParameter(7)"
 
 
+@needs_columns
 def test_root_points_at_the_part_construction(project, capture):
     dag = _build(project)
     root = dag["DAG"][dag["rootNodeId"]]
@@ -190,6 +201,7 @@ def test_capture_off_emits_no_source_keys(project):
     )
 
 
+@needs_columns
 def test_exec_with_real_filename_and_non_ascii_columns(tmp_path, monkeypatch, capture):
     source = textwrap.dedent("""\
         from cadbuildr.foundation import Part, Sketch, Square, Extrusion

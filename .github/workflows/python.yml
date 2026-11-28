@@ -10,8 +10,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.10"]
+        # requires-python is >=3.10; source capture's columns need 3.11+
+        # (those tests skip on 3.10).
+        python-version: ["3.10", "3.11", "3.12"]
+    env:
+      # Every uv call, including the ones tests/unit/test_library_sources.py
+      # runs offline, uses the matrix Python, whose deps the sync step cached.
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -21,6 +28,7 @@ jobs:
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
-        run: uv sync --dev
+        # --locked: fail if uv.lock is out of date with pyproject.toml.
+        run: uv sync --dev --locked
       - name: Test with pytest
-        run: uv run pytest
+        run: uv run --locked pytest tests -q
